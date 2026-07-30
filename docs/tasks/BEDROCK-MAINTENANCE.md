@@ -7,7 +7,7 @@
 - Roadmap lane: maintain & evolve the spine (this IS bedrock's own roadmap; `ROADMAP.md` is
   the consumer placeholder — see `MAINTAINING.md`)
 - Created: `2026-07-24`
-- Last updated: `2026-07-24`
+- Last updated: `2026-07-30`
 - Owner: repo-local workflow
 
 ## Goal
