@@ -1,5 +1,26 @@
 # CHANGELOG.md
 
+## bedrock-scaffold 0.3.0 — WAIVER-ROUTING, and the neutrality bar for every future port
+
+`BEDROCK-MAINTENANCE.2.2`.
+
+- **Added the `WAIVER-ROUTING` doctrine** (`scripts/check_waiver_routing.sh`): a task leaf saying a
+  gate DOES NOT APPLY must name the leaf that owns fixing the gate. ⭐ An author writing a waiver
+  IS the gate reporting a missing capability — the highest-signal defect report a gate can get.
+  Deliberately does **not** punish honesty: the waiver stays legal, it just has to name an owner.
+- **Chosen by measurement.** All 15 upstream doctrines were classified by domain-dependence of
+  their LOGIC (comments stripped). `WAIVER-ROUTING` scored **0** — portable essentially unchanged.
+  The ranked remainder is now a frontier in `docs/tasks/BEDROCK-MAINTENANCE.md`, not a wish list.
+- ⭐⭐ **The port FIXED a defect rather than inheriting one**: the origin's `printf … | grep -q …
+  || continue` returns failure ON SUCCESS past the pipe buffer under `pipefail`, silently SKIPPING
+  the file — a **fail-open**. Both sites here read a file instead. Threshold measured, not assumed:
+  65,606 B → no SIGPIPE; 131,139 B → SIGPIPE.
+- **Wrote down the neutrality bar** (`MAINTAINING.md`): every doctrine here must be objectively
+  applicable to ANY project, with a measurable admission test and its honest bound — plus the rule
+  that **transfer runs both ways**, after this repo's layer-C check turned out to be stronger than
+  the reference deployment's.
+- Probes 5/0; `make gate` 7/7; added to the `update_scaffold.sh` NEUTRAL allow-list.
+
 ## bedrock-scaffold 0.2.0 — README Stability Policy + a layer-A byte cap
 
 `BEDROCK-MAINTENANCE.2.1`. Transferred from the reference deployment by maintainer order.

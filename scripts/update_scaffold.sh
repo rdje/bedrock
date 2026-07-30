@@ -37,6 +37,7 @@ NEUTRAL=(
   scripts/check_doctrines.sh
   scripts/check_memory_architecture.sh
   scripts/check_readme_stability.sh
+  scripts/check_waiver_routing.sh
   scripts/check_docpaths.sh
   scripts/check_task_tree_ownership.sh
   knowledge-map/scripts/gen_knowledge_map.sh

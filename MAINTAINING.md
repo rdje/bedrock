@@ -62,6 +62,68 @@ it only makes sense with grammars/parsers/etc. → it stays in PGEN.
 
 Downstream projects then adopt it with `scripts/update_scaffold.sh <bedrock-url>`.
 
+## The neutrality bar — every doctrine here must be objectively applicable to ANY project
+
+> **Maintainer directive, 2026-07-30:** *"The next projects I will start using bedrock as a
+> template should inherit the best of the best, the best SOTA, best signoff, the best discipline,
+> that we currently have"* — and *"the doctrines in bedrock shall be project neutral, agnostic …
+> objectively applicable to any project, not just [the originating one]."*
+
+Two obligations, and they pull against each other on purpose:
+
+1. **Completeness** — a general improvement that lands upstream and is *not* ported is a defect in
+   every project started afterwards. bedrock is a seed, not an archive.
+2. **Neutrality** — a doctrine only belongs here if it is *objectively applicable to any project*.
+   A check that merely had its nouns renamed is not neutral; a check whose LOGIC names a
+   domain artifact is domain-bound however it is described.
+
+**The measurable admission test**, applied to the check's *logic* rather than its prose (comments
+routinely and legitimately cite the originating evidence):
+
+```sh
+sed 's/#.*//' scripts/check_<doctrine>.sh | grep -ciE '<your domain nouns>'   # must be 0
+```
+
+⚠️ Honest bound: 0 is *necessary, not sufficient* — the count treats strings and heredocs as
+logic, and a check can still assume a repo layout no other project has. Use it to rank
+candidates and to catch self-deception, then judge each one.
+
+⛔ **A doctrine that cannot pass the neutrality bar stays upstream.** Porting it anyway converts a
+portable standard into a fork of one project, which is the failure this repo exists to prevent.
+
+## Transfer runs BOTH WAYS
+
+The flow above is the common case, not the only one — and until 2026-07-30 the process had **no
+step for the reverse**, so nothing would have surfaced a spine improvement the reference project
+lacked.
+
+⛔ **It happened, and it was found by accident.** bedrock's layer-C check already reconciled every
+decision record against `INDEX.md`; upstream asserted only that the index had *more than zero
+rows*, and passed at **135 records / 133 rows** — two records invisible to their own index with
+the doctrine green. The stronger implementation was **downstream**, and the weaker one would have
+kept passing indefinitely.
+
+⭐ **This is structural, not luck: generalizing a check is a REWRITE, not a copy.** Stripping
+domain assumptions regularly produces a cleaner, stronger check — so the distillation step can
+*improve* the thing. Expect it to recur. The same session produced a second instance: the ported
+`WAIVER-ROUTING` check had a latent **fail-open** in its origin (`printf … | grep -q … || continue`
+returns failure ON SUCCESS past the pipe buffer under `pipefail`, so the file is silently skipped);
+it was **fixed on the way in** rather than inherited, and the fix is owed back upstream.
+
+**So, when you port anything:**
+
+1. Ask whether bedrock's existing version of the same invariant is *already stronger*. If it is,
+   say so and push it back — do not silently overwrite it with the upstream one.
+2. Ask whether the thing you are porting carries a known defect. Fix it here, and record that the
+   fix is owed back.
+
+⚠️ **A raw `diff` of the two copies is NOT the trigger — measured and rejected.** Of the 12 files
+present in both repos, **11 differ, by 15–559 lines**, because the upstream copies deliberately
+carry project-specific evidence while these are deliberately neutral. A check reporting hundreds
+of intended differences teaches its authors to waive it. The right trigger compares **behaviour**:
+where both repos implement the same invariant, run both against one fixture and compare verdicts.
+That harness is **not built** — recorded as owed, not claimed.
+
 ## This repo's dual role (why its own memory files look "used")
 
 bedrock is **both** a template *and* a real project (its project = "maintain the spine").

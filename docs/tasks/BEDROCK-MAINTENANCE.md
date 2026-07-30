@@ -107,12 +107,60 @@ process.
   already implemented here. **Reported back rather than silently duplicated.** ⚠️ Honest bound:
   this check is one-directional — it catches a record with no row, not a row with no record.
 
+- ID: `BEDROCK-MAINTENANCE.2.2`
+  Status: `done`
+  Goal: port `WAIVER-ROUTING` — the highest-value doctrine that passes the neutrality bar
+  unchanged — and write that bar down as an explicit admission test for every future port.
+
+  **Why this one, chosen by measurement rather than taste.** The reference deployment enforces
+  **15** doctrines; this spine had **4**. Classifying all 15 by domain-dependence *of the logic*
+  (comments stripped, since comments legitimately cite the originating evidence):
+
+  | verdict | doctrines |
+  |---|---|
+  | ⭐⭐ neutral as-is (0 domain nouns in logic) | `MEMORY-ARCH` ✅here · `KNOWLEDGE-MAP` ✅here · **`WAIVER-ROUTING` ← this leaf** |
+  | ⭐ portable with 2–4 edits | `ROUTING-EVIDENCE` (3) · `DESTRUCTIVE-TARGET-GUARD` (4) · `GATE-REACHABILITY` (4) · `README-STABILITY` ✅`.2.1` |
+  | ⛔ domain-bound by construction | source-of-truth / self-hosting / oracle-anchor / version-currency / flow-integrity checks, plus `TASK-ACCEPTANCE` (10) and `DESIGN-PRIOR-ART` (7) |
+
+  ⚠️ **The first cut of that instrument was WRONG and was thrown away, not tuned.** Counting
+  domain nouns across the whole file scored `README-STABILITY` as domain-bound — a doctrine
+  already ported cleanly here — because its *routing-hint prose* names domain homes. Comments
+  were being read as logic. Re-measured on non-comment lines only, the ranking matched
+  independent judgement. ⚠️ Remaining honest bound: strings and heredocs still count as logic,
+  so the number ranks candidates; it does not rule.
+
+  ⛔ **`TASK-ACCEPTANCE` is the single highest-value discipline upstream and is deliberately NOT
+  ported**: its evidence-signature families name that project's own tools, so a neutral version
+  needs a project-declared token list — a design, not a copy. Recorded in the backlog rather
+  than half-ported.
+
+  ⭐⭐ **The port FIXED a defect instead of inheriting one.** The origin's version contains
+  `printf '%s\n' "$added" | grep -qE "$RE" || continue`. Under `pipefail`, `grep -q` exits at the
+  first match, the producer takes SIGPIPE (141), and 141 becomes the pipeline status — so the
+  `|| continue` **skips the file** and an unrouted waiver passes silently. It **fails OPEN**,
+  the worst direction. Both sites here are written to a file instead. ⚠️ The threshold is NOT a
+  flat 64 KiB: measured **65,606 B → PIPESTATUS=(0 0)** but **131,139 B → (141 0)**, i.e. pipe
+  capacity plus the consumer's read-ahead. The first CTRL fixture was built on the flat-64 KiB
+  assumption and **failed to reproduce** — the probe caught the over-claim, not review.
+
+  Acceptance: 0 domain nouns in the ported logic AND 0 project references anywhere in the file;
+  registered in the driver + mirrored; probes RED/GREEN/CONTROL green; `make gate` green; in the
+  `update_scaffold.sh` NEUTRAL allow-list; `DOCTRINE_VERSION` bumped.
+  Verification: see the Verification Log entry for `.2.2`.
+  Commit: see the Commit Log entry for `.2.2`.
+
+  🔜 **Owed back upstream**: the fail-open fix (that project tracks it, latent, as its own leaf).
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
 | --- | --- | --- | --- |
 | 1 | `BEDROCK-MAINTENANCE.2` | `active` | the ongoing transfer loop; pick a backlog item below |
 | — | `BEDROCK-MAINTENANCE.2.1` | `done` | README Stability Policy + the layer-A byte cap (0.2.0) |
+| — | `BEDROCK-MAINTENANCE.2.2` | `done` | `WAIVER-ROUTING` ported + the neutrality bar written down (0.3.0) |
+| 2 | `.2.x` — port `ROUTING-EVIDENCE` | `todo` | next by the measured ranking: 3 domain sites in logic |
+| 3 | `.2.x` — port `DESTRUCTIVE-TARGET-GUARD` / `GATE-REACHABILITY` | `todo` | 4 sites each; the latter needs ground-truth controls (its instrument produced six wrong answers upstream before it was right) |
+| 4 | `.2.x` — design a neutral `TASK-ACCEPTANCE` | `todo` | highest value, NOT a copy: needs a project-declared evidence-token list |
 
 ## Improvement backlog (seed — for a future session to pick up)
 
@@ -127,8 +175,14 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
   hook) if the cargo-generate path is used often — currently naming is done by `bootstrap.sh`.
 - **A `docs/decisions/` linter** (every record has the required frontmatter fields).
 - **Port memory-architecture refinements** (§ any new enforcement or layer discipline).
-  ⭐ Partly discharged by `.2.1`: the layer-A **byte cap** landed (the line-only form was
-  measurably not binding). Still open: the rest of the upstream enforcement surface.
+  ⭐ Partly discharged by `.2.1` (layer-A byte cap) and `.2.2` (layer-C reconcile was already
+  stronger here, and went the other way). Still open: the rest of the upstream enforcement
+  surface — see the ranked frontier rows above, which are now evidence-backed rather than a
+  wish list.
+- **Build the behavioural cross-repo differential** — where both repos implement the same
+  invariant, run both against one fixture and compare verdicts. This is the trigger that would
+  have surfaced the layer-C gap deliberately instead of by accident. ⛔ A raw text `diff` is NOT
+  the answer: 11 of the 12 shared files differ by 15–559 lines, by design.
 - **An example filled-in slice** (a tiny worked task-tree + commit) as living documentation.
 
 ## Decisions
@@ -142,6 +196,18 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 - None.
 
 ## Verification Log
+
+- `2026-07-30` — `.2.2`: `make gate` → **7/7 green** (adds `WAIVER-ROUTING`).
+  Neutrality: `sed 's/#.*//' scripts/check_waiver_routing.sh | grep -ciE '<domain nouns>'` → **0**;
+  project references anywhere in the file (including comments) → **0**.
+  Probes **5 pass / 0 fail** (`docs/tasks/artifacts/waiver_routing/run_waiver_routing_probes.sh`):
+  GREEN-1 ordinary leaf passes · RED-1 unrouted waiver blocked · **GREEN-2 the same waiver WITH an
+  owner passes** (the doctrine must not punish honesty) · **CTRL-1 the shipped form CATCHES a
+  343,376-byte staged addition while the unfixed pipe form MISSES it (exit 0)** ⇒ the port closed a
+  real fail-open · CTRL-2 an honest SCOPE statement is not bound.
+  `bash -n` clean. ⚠️ CTRL-1's first fixture (113,776 B) did **not** reproduce the fail-open; the
+  threshold was measured (65,606 B → no SIGPIPE, 131,139 B → SIGPIPE) and the fixture rebuilt past
+  the band. The probe caught the over-claim.
 
 - `2026-07-30` — `.2.1`: `make gate` → **6/6 green** (`MEMORY-ARCH`, `DOCPATH`,
   `TASK-TREE-OWNERSHIP`, **`README-STABILITY`** (new), `KNOWLEDGE-MAP`, `PROJECT-SPECIFIC`).
@@ -163,6 +229,10 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 | `2026-07-24` | `.1` | enforcer (5 checks) · cargo metadata · commit-msg hook · KM gen | all green |
 
 ## Commit Log
+
+- `2026-07-30` — `.2.2` — `BEDROCK-MAINTENANCE-0004`: port `WAIVER-ROUTING` (fixing its
+  fail-open), write down the neutrality bar and the both-ways transfer rule;
+  `DOCTRINE_VERSION` `0.2.0` → `0.3.0`.
 
 - `2026-07-30` — `.2.1` — `BEDROCK-MAINTENANCE-0002`: adopt the README Stability Policy and
   close the layer-A size-cap bypass; `DOCTRINE_VERSION` `0.1.0` → `0.2.0`.

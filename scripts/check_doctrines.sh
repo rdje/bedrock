@@ -24,6 +24,7 @@ DOCTRINES=(
   "DOCPATH|tracked .md files carry no checkout-specific absolute paths|scripts/check_docpaths.sh"
   "TASK-TREE-OWNERSHIP|every staged code change is owned by a task-tree leaf|scripts/check_task_tree_ownership.sh"
   "README-STABILITY|README.md stays a stable landing page — a line cap AND a byte cap (README_POLICY.md)|scripts/check_readme_stability.sh"
+  "WAIVER-ROUTING|a task leaf saying a gate does not apply names the leaf that owns fixing it|scripts/check_waiver_routing.sh"
 )
 # Optional derived-artifact sync check (present only when the subsystem exists).
 [ -x "knowledge-map/scripts/check_knowledge_map.sh" ] && \

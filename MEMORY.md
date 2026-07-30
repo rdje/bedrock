@@ -22,16 +22,17 @@
 
 - **Project:** bedrock — the project-neutral discipline spine extracted from PGEN
   (see `docs/decisions/reference_bedrock_provenance.md`; PGEN = `../pgen`).
-- **Active tree:** `BEDROCK-MAINTENANCE` — `.1` (spine extraction) **done**, `.2.1` (README
-  Stability Policy + layer-A byte cap) **done**; frontier `.2` = the standing transfer loop.
+- **Active tree:** `BEDROCK-MAINTENANCE` — `.1` **done**, `.2.1` (README policy + layer-A byte cap)
+  **done**, `.2.2` (`WAIVER-ROUTING` + the neutrality bar) **done**; frontier `.2` = the transfer
+  loop, now with an EVIDENCE-RANKED backlog (next: `ROUTING-EVIDENCE`, 3 domain sites).
 - **Next action:** pick a `.2.x` backlog item, or port a newly-landed **general** upstream
   doctrine/structure improvement (process in `MAINTAINING.md`).
-- **Latest commit:** `.2.1` — adopted `README_POLICY.md` + the `README-STABILITY` doctrine, and
-  closed the layer-A size-cap bypass the spine itself was shipping (line-only → line **and**
-  byte, in `check_memory_architecture.sh` *and* in `MEMORY_ARCHITECTURE.md` §6/§9/§9.1, so
-  adopters stop inheriting it). `DOCTRINE_VERSION` → `0.2.0`.
-- **Open, reported upstream:** this spine's layer-C check reconciles every decision record
-  against `INDEX.md`; the upstream deployment only asserts the index is non-empty (measured
-  there: 135 records / 133 rows, doctrine green). Reverse-flow — the fix upstream needs already
-  exists here.
+- **Latest commit:** `.2.2` — ported `WAIVER-ROUTING` (fixing a fail-open in the origin rather
+  than inheriting it) and wrote down the **neutrality bar**: every doctrine here must be
+  objectively applicable to ANY project, with a measurable admission test.
+  `DOCTRINE_VERSION` → `0.3.0`. Doctrines here: **5** (+ knowledge-map + project slot) vs 15
+  upstream — the ranked gap is the tree's frontier.
+- **Transfer runs BOTH WAYS** (maintainer-confirmed, now in `MAINTAINING.md`): this spine's
+  layer-C check was stronger than upstream's; upstream adopted it, strengthened it (row-anchored
+  + bidirectional) and sent it back. Owed upstream: the `WAIVER-ROUTING` fail-open fix.
 - **In-flight uncommitted work:** none — `make gate` green (6/6).
