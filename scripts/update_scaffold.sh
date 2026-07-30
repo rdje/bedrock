@@ -25,6 +25,7 @@ NEUTRAL=(
   MEMORY_ARCHITECTURE.md
   DOCTRINE_ENFORCEMENT.md
   TOOLBOX.md
+  README_POLICY.md
   COMMIT.md
   AGENTS.md
   docs/TASK_TREE.md
@@ -35,6 +36,7 @@ NEUTRAL=(
   .githooks/commit-msg
   scripts/check_doctrines.sh
   scripts/check_memory_architecture.sh
+  scripts/check_readme_stability.sh
   scripts/check_docpaths.sh
   scripts/check_task_tree_ownership.sh
   knowledge-map/scripts/gen_knowledge_map.sh

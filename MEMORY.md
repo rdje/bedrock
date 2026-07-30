@@ -22,9 +22,16 @@
 
 - **Project:** bedrock — the project-neutral discipline spine extracted from PGEN
   (see `docs/decisions/reference_bedrock_provenance.md`; PGEN = `../pgen`).
-- **Active tree:** `BEDROCK-MAINTENANCE` — leaf `.1` (spine extraction) **done**; frontier
-  `.2` = the standing PGEN→bedrock transfer loop + the improvement backlog in the tree.
-- **Next action:** pick a `.2.x` backlog item, or port a newly-landed **general** PGEN
+- **Active tree:** `BEDROCK-MAINTENANCE` — `.1` (spine extraction) **done**, `.2.1` (README
+  Stability Policy + layer-A byte cap) **done**; frontier `.2` = the standing transfer loop.
+- **Next action:** pick a `.2.x` backlog item, or port a newly-landed **general** upstream
   doctrine/structure improvement (process in `MAINTAINING.md`).
-- **Latest commit:** the genesis commit — bedrock spine extracted from PGEN (see `git log`).
-- **In-flight uncommitted work:** none — the spine is committed; `make gate` green.
+- **Latest commit:** `.2.1` — adopted `README_POLICY.md` + the `README-STABILITY` doctrine, and
+  closed the layer-A size-cap bypass the spine itself was shipping (line-only → line **and**
+  byte, in `check_memory_architecture.sh` *and* in `MEMORY_ARCHITECTURE.md` §6/§9/§9.1, so
+  adopters stop inheriting it). `DOCTRINE_VERSION` → `0.2.0`.
+- **Open, reported upstream:** this spine's layer-C check reconciles every decision record
+  against `INDEX.md`; the upstream deployment only asserts the index is non-empty (measured
+  there: 135 records / 133 rows, doctrine green). Reverse-flow — the fix upstream needs already
+  exists here.
+- **In-flight uncommitted work:** none — `make gate` green (6/6).

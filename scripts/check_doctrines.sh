@@ -23,6 +23,7 @@ DOCTRINES=(
   "MEMORY-ARCH|durable 4-layer memory architecture invariants (MEMORY_ARCHITECTURE.md)|scripts/check_memory_architecture.sh"
   "DOCPATH|tracked .md files carry no checkout-specific absolute paths|scripts/check_docpaths.sh"
   "TASK-TREE-OWNERSHIP|every staged code change is owned by a task-tree leaf|scripts/check_task_tree_ownership.sh"
+  "README-STABILITY|README.md stays a stable landing page — a line cap AND a byte cap (README_POLICY.md)|scripts/check_readme_stability.sh"
 )
 # Optional derived-artifact sync check (present only when the subsystem exists).
 [ -x "knowledge-map/scripts/check_knowledge_map.sh" ] && \

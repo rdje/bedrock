@@ -61,6 +61,10 @@ roadmap, task-trees, decisions, or code — run:
 
 The scaffold version is recorded in `DOCTRINE_VERSION`.
 
+This README is deliberately a **landing page**, governed by [`README_POLICY.md`](README_POLICY.md)
+and mechanically capped (line **and** byte) by the `README-STABILITY` doctrine. Route changing
+detail to its canonical home rather than growing this file.
+
 ## The non-negotiables (full detail in `CLAUDE.md`)
 
 - Nothing changes without a **task-tree leaf** first.
