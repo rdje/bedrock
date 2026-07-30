@@ -1,5 +1,27 @@
 # CHANGELOG.md
 
+## unreleased — the admission test asks about VALUE first, not vocabulary
+
+`BEDROCK-MAINTENANCE.2.3`. Process only; no check changed, so `DOCTRINE_VERSION` is unmoved
+(`MAINTAINING.md` and the maintenance tree are maintainer-only, not re-syncable spine files).
+
+- **The admission test is now two ordered questions.** Q1 (primary, about VALUE): *does this
+  objectively benefit any present and any future project?* — answered by stating what the check
+  prevents using no project's nouns, then asking whether a brand-new project is better off with it
+  on day one. Q2 (secondary, a filter): *can it be expressed without domain nouns?*
+- ⛔ **Q2 cannot substitute for Q1.** A check can score 0 domain nouns and still encode a workflow
+  only one project needs — neutral vocabulary, project-shaped substance. Q2 measures whether a
+  thing CAN be neutralized; Q1 asks whether it SHOULD be. Running Q2 first waves impostors through.
+- ⭐ **Measured worked example, which changed a verdict.** A "destructive automation must require
+  confirmation" check scored well on Q2 and was ranked an easy win; its logic hardcodes a Makefile
+  path and a `clean:` recipe, so it really offers *"benefits any project that builds with make"* —
+  a conditional. **Rejected as-is.** Meanwhile `ROUTING-EVIDENCE` measures 0 build-system
+  references and presumes only the task-tree system this template ships ⇒ promoted to top.
+- **The portability seam to look for:** does the check presume anything beyond what bedrock ships?
+  If yes, give it a project-declared seam or leave it upstream — never hardcode one project's
+  answer and call it neutral.
+- ✅ Retroactive audit: all four already-ported items PASS Q1. Nothing retracted.
+
 ## bedrock-scaffold 0.3.0 — WAIVER-ROUTING, and the neutrality bar for every future port
 
 `BEDROCK-MAINTENANCE.2.2`.

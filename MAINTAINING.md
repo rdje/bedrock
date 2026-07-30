@@ -77,19 +77,46 @@ Two obligations, and they pull against each other on purpose:
    A check that merely had its nouns renamed is not neutral; a check whose LOGIC names a
    domain artifact is domain-bound however it is described.
 
-**The measurable admission test**, applied to the check's *logic* rather than its prose (comments
-routinely and legitimately cite the originating evidence):
+### The admission test — ask these two, IN THIS ORDER
+
+**Q1 (primary, and it is a question about VALUE):**
+> *Does this objectively benefit **any** present and **any** future project?*
+
+Answer it by stating, in one sentence and using **no project's nouns**, what the check prevents —
+then asking whether a brand-new project would be better off with it **on day one**. If the honest
+answer needs a qualifier — *"any project **that** uses X"*, *"once a project **has** Y"* — then it
+is **conditional, not objective**, and it does not belong here as-is.
+
+**Q2 (secondary, and it is only a filter):**
+> *Can it be expressed without domain nouns?*
 
 ```sh
-sed 's/#.*//' scripts/check_<doctrine>.sh | grep -ciE '<your domain nouns>'   # must be 0
+sed 's/#.*//' scripts/check_<doctrine>.sh | grep -ciE '<domain nouns>'   # must be 0
 ```
 
-⚠️ Honest bound: 0 is *necessary, not sufficient* — the count treats strings and heredocs as
-logic, and a check can still assume a repo layout no other project has. Use it to rank
-candidates and to catch self-deception, then judge each one.
+⛔⛔ **Q2 CANNOT SUBSTITUTE FOR Q1, AND THE ORDERING IS THE WHOLE POINT.** A check can score **0**
+domain nouns and still encode a workflow only one project needs — *neutral vocabulary, project-shaped
+substance*. Q2 measures whether a thing **can** be neutralized; Q1 asks whether it **should** be.
+Running Q2 first waves the impostors straight through.
 
-⛔ **A doctrine that cannot pass the neutrality bar stays upstream.** Porting it anyway converts a
-portable standard into a fork of one project, which is the failure this repo exists to prevent.
+⭐ **Worked example, measured — this is not hypothetical.** A "destructive automation must require
+explicit confirmation" check scored well on Q2 and looked like an easy win. Its logic hardcodes a
+`Makefile` path and extracts a `clean:` recipe, so what it actually offers is *"benefits any project
+**that builds with make and has a clean target**"*. That is a conditional. The **principle** is
+universal and worth having; **that implementation is not portable**, and only Q1 catches the
+difference. Compare a check that presumes **only what this template itself ships** (task-trees, a
+decisions index, a README, a resume pointer) — that one is objectively applicable, because every
+consumer has those by construction.
+
+⇒ **The portability seam to look for:** does the check presume anything beyond what bedrock ships?
+If yes, either give it a project-declared seam (a config/list the project supplies) or leave it
+upstream. Do not hardcode one project's answer and call it neutral.
+
+⚠️ Honest bound on Q2: 0 is *necessary, not sufficient* — the count treats strings and heredocs as
+logic. Use it to rank and to catch self-deception, never as the verdict.
+
+⛔ **A doctrine that fails Q1 stays upstream.** Porting it anyway converts a portable standard into
+a fork of one project, which is the failure this repo exists to prevent.
 
 ## Transfer runs BOTH WAYS
 

@@ -151,6 +151,42 @@ process.
 
   🔜 **Owed back upstream**: the fail-open fix (that project tracks it, latent, as its own leaf).
 
+- ID: `BEDROCK-MAINTENANCE.2.3`
+  Status: `done`
+  Goal: put the **applicability** question ahead of the **neutralizability** question in the
+  admission test, and re-rank the port backlog by benefit rather than by cost.
+
+  **Maintainer directive, 2026-07-30, verbatim:** *"The thing you need to ask yourself before
+  porting to bedrock is, is this PGEN specific or project neutral. Is this thing I want to port
+  can benefit any present and any future projects objectively."*
+
+  ⛔ **What `.2.2` got wrong.** It wrote the bar down as a *mechanical* test — count domain nouns
+  in the logic, require 0 — and ranked the backlog by how cheap each port would be. That measures
+  whether a check **can** be neutralized. The prior question is whether it **should** be: does it
+  objectively benefit any present and any future project? A check can score 0 domain nouns and
+  still encode a workflow only one project needs — **neutral vocabulary, project-shaped
+  substance** — and a noun-count waves it straight through.
+
+  ⭐ **The re-ranking is not cosmetic; it changed a verdict, measured.**
+  `DESTRUCTIVE-TARGET-GUARD` was ranked a cheap win at 4 domain sites. Its logic hardcodes a
+  `Makefile` path and extracts a `clean:` recipe ⇒ what it actually offers is *"benefits any
+  project **that builds with make and has a clean target**"*. That is a **conditional**, so it
+  fails Q1 and is now **rejected as-is** — the principle is universal, that implementation is not.
+  Conversely `ROUTING-EVIDENCE` measures **0** build-system references and presumes only the
+  task-tree system this template ships ⇒ it passes Q1 outright and moves to the top.
+
+  ✅ **Retroactive audit of everything already ported — all four PASS Q1**, each stated with no
+  project nouns and each presuming only what bedrock itself ships:
+  README stability (a landing page becoming a changelog) · layer-A both caps (a "bounded pointer"
+  growing unbounded while green) · layer-C reconcile (a record its own index cannot see) ·
+  `WAIVER-ROUTING` (an author's report of a gate's blind spot left inert). Nothing to retract.
+
+  ⚠️ No `DOCTRINE_VERSION` bump: `MAINTAINING.md` and this tree are maintainer-only files, not in
+  the `update_scaffold.sh` NEUTRAL allow-list, so no re-syncable spine file changed. Stated rather
+  than bumped reflexively.
+  Verification: see the Verification Log entry for `.2.3`.
+  Commit: see the Commit Log entry for `.2.3`.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
@@ -158,9 +194,11 @@ process.
 | 1 | `BEDROCK-MAINTENANCE.2` | `active` | the ongoing transfer loop; pick a backlog item below |
 | — | `BEDROCK-MAINTENANCE.2.1` | `done` | README Stability Policy + the layer-A byte cap (0.2.0) |
 | — | `BEDROCK-MAINTENANCE.2.2` | `done` | `WAIVER-ROUTING` ported + the neutrality bar written down (0.3.0) |
-| 2 | `.2.x` — port `ROUTING-EVIDENCE` | `todo` | next by the measured ranking: 3 domain sites in logic |
-| 3 | `.2.x` — port `DESTRUCTIVE-TARGET-GUARD` / `GATE-REACHABILITY` | `todo` | 4 sites each; the latter needs ground-truth controls (its instrument produced six wrong answers upstream before it was right) |
-| 4 | `.2.x` — design a neutral `TASK-ACCEPTANCE` | `todo` | highest value, NOT a copy: needs a project-declared evidence-token list |
+| — | `BEDROCK-MAINTENANCE.2.3` | `done` | applicability (Q1) put AHEAD of neutralizability (Q2); backlog re-ranked by benefit |
+| 2 | `.2.x` — port `ROUTING-EVIDENCE` | `todo` | ⭐ passes Q1 outright: presumes **only** the task-tree system this template ships (measured: 0 build-system references). Universal discipline — a finding routed elsewhere must record what was measured, above all whether it reproduces outside the area it is being sent to |
+| 3 | `.2.x` — design a neutral `TASK-ACCEPTANCE` | `todo` | ⭐⭐ highest VALUE of anything outstanding — a change lands with evidence of cause *and* effect. Passes Q1 as a principle; ⛔ NOT a copy: its evidence-signature families name one project's tools, so it needs a **project-declared token list** seam |
+| 4 | `.2.x` — `GATE-REACHABILITY`, principle only | `todo` | universal principle (*a check nothing invokes is indistinguishable from one that does not exist*) but the implementation is **37 lines bound to make + workflow files**. Needs an enumeration seam before it can pass Q1. ⚠️ Its instrument produced six different confident answers upstream before it was right — port the ground-truth controls with it or not at all |
+| — | ⛔ `DESTRUCTIVE-TARGET-GUARD` — **do NOT port as-is** | `rejected` | fails **Q1**: hardcodes a `Makefile` path and a `clean:` recipe, so it benefits *any project that builds with make* — a conditional, not an objective benefit. Scored well on Q2, which is exactly why Q2 must not run first. Revisit only with a project-declared target list |
 
 ## Improvement backlog (seed — for a future session to pick up)
 
@@ -197,6 +235,12 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 
 ## Verification Log
 
+- `2026-07-30` — `.2.3`: `make gate` → **7/7 green** (docs/process only; no check changed).
+  Q1 re-applied to every shipped port — **4/4 pass**, each presuming only files this template
+  ships (`README.md`, `MEMORY.md`, `docs/decisions/INDEX.md`, `docs/tasks/`, the driver), all
+  verified present. Q1 re-applied to the backlog **changed one verdict**:
+  `DESTRUCTIVE-TARGET-GUARD` measured hardcoding `rust/Makefile` + a `clean:` recipe ⇒ rejected
+  as-is; `ROUTING-EVIDENCE` measured **0** build-system references ⇒ promoted to top.
 - `2026-07-30` — `.2.2`: `make gate` → **7/7 green** (adds `WAIVER-ROUTING`).
   Neutrality: `sed 's/#.*//' scripts/check_waiver_routing.sh | grep -ciE '<domain nouns>'` → **0**;
   project references anywhere in the file (including comments) → **0**.
@@ -233,6 +277,9 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 - `2026-07-30` — `.2.2` — `BEDROCK-MAINTENANCE-0004`: port `WAIVER-ROUTING` (fixing its
   fail-open), write down the neutrality bar and the both-ways transfer rule;
   `DOCTRINE_VERSION` `0.2.0` → `0.3.0`.
+- `2026-07-30` — `.2.3` — `BEDROCK-MAINTENANCE-0005`: put applicability ahead of
+  neutralizability in the admission test; re-rank the backlog by benefit; reject
+  `DESTRUCTIVE-TARGET-GUARD` as-is.
 
 - `2026-07-30` — `.2.1` — `BEDROCK-MAINTENANCE-0002`: adopt the README Stability Policy and
   close the layer-A size-cap bypass; `DOCTRINE_VERSION` `0.1.0` → `0.2.0`.

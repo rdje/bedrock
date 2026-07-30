@@ -23,10 +23,16 @@
 - **Project:** bedrock — the project-neutral discipline spine extracted from PGEN
   (see `docs/decisions/reference_bedrock_provenance.md`; PGEN = `../pgen`).
 - **Active tree:** `BEDROCK-MAINTENANCE` — `.1` **done**, `.2.1` (README policy + layer-A byte cap)
-  **done**, `.2.2` (`WAIVER-ROUTING` + the neutrality bar) **done**; frontier `.2` = the transfer
-  loop, now with an EVIDENCE-RANKED backlog (next: `ROUTING-EVIDENCE`, 3 domain sites).
+  **done**, `.2.2` (`WAIVER-ROUTING` + the neutrality bar) **done**, `.2.3` (admission test
+  re-ordered: applicability BEFORE neutralizability) **done**; frontier `.2` = the transfer loop,
+  backlog now ranked by BENEFIT (next: `ROUTING-EVIDENCE` — presumes only what this template
+  ships; `DESTRUCTIVE-TARGET-GUARD` **rejected as-is**, it is make-conditional).
 - **Next action:** pick a `.2.x` backlog item, or port a newly-landed **general** upstream
   doctrine/structure improvement (process in `MAINTAINING.md`).
+- **The bar for anything ported here (maintainer, 2026-07-30):** ask **Q1 first** — *does this
+  objectively benefit any present and any future project?* — and only then Q2, *can it be said
+  without domain nouns?* ⛔ A 0-noun score does NOT imply portability: neutral vocabulary can
+  still encode one project's workflow. See `MAINTAINING.md`.
 - **Latest commit:** `.2.2` — ported `WAIVER-ROUTING` (fixing a fail-open in the origin rather
   than inheriting it) and wrote down the **neutrality bar**: every doctrine here must be
   objectively applicable to ANY project, with a measurable admission test.
