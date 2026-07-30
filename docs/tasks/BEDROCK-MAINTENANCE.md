@@ -187,6 +187,92 @@ process.
   Verification: see the Verification Log entry for `.2.3`.
   Commit: see the Commit Log entry for `.2.3`.
 
+- ID: `BEDROCK-MAINTENANCE.2.4`
+  Status: `done`
+  Goal: port the **universal core** of the acceptance-evidence discipline — the highest-value
+  doctrine outstanding — after `.2.3` established that the question is *"does this objectively
+  benefit any project?"* rather than *"can the nouns be stripped?"*
+
+  **Maintainer's question, verbatim:** *"is there anything there that can benefit any projects
+  after stripping out any [project] specificities? Genuine question. If not, then drop it."*
+
+  **Answered by decomposing it rather than by judgement.** There is a substantial universal core:
+
+  | part | verdict |
+  |---|---|
+  | the checklist itself — ROOT CAUSE / ADDRESSED / NO REGRESSION present **and ticked** | ⭐ universal, zero project nouns |
+  | **box-scoped** evidence — the signature must sit in *that box's own bullet* | ⭐⭐ universal, and it is the **soundness** property |
+  | default evidence signatures | ⭐ universal *for this template*: standard Rust/Cargo/clippy/test output (this scaffold ships `Cargo.toml`, `rust-toolchain.toml`, `crates/`) + build-flow forensics available in ANY project (`git log -S`, `shellcheck`, `bash -n`, `make -n`, `ENOSPC`…) |
+  | the originating project's ~14 tool tokens | ⛔ must not cross — replaced by a **project-declared seam** |
+  | the code-change path globs | ⛔ must not cross — seam, with a Rust-workspace default |
+
+  ⇒ the earlier call (*"needs a design, not a copy"*) was right that it is not a copy, and
+  **understated** how much is portable. `.doctrine/code_paths.txt` and
+  `.doctrine/evidence_tokens.txt` are the seams; both optional, both defaulted.
+
+  ⭐⭐ **The seam is proven load-bearing, not decorative**: `CTRL-4` shows a leaf evidenced ONLY
+  by a project-declared token PASSING, and `CTRL-4b` shows the byte-identical leaf FAILING in a
+  repo without the declaration. Neutrality that cannot be demonstrated is a claim.
+
+  ⛔ **A PORTABILITY DEFECT WAS FOUND BY THE PROBES, and it would have been invisible in review.**
+  The box extractor used `IGNORECASE=1` — a **gawk extension**. BSD awk (the default on several
+  platforms) *silently ignores* it, so `root.?cause` never matched `ROOT CAUSE` and **every leaf
+  was reported as having no checklist at all**. Rewritten with POSIX `tolower()`. A template must
+  run on whatever `awk` the consumer has; this is exactly the class of bug a spine must not ship.
+
+  ⭐⭐⭐ **THE DOCTRINE BLOCKED ITS OWN COMMIT, TWICE, AND BOTH REFUSALS WERE CORRECT.**
+  1. **The port was incomplete and the check said so.** It demanded a checklist shape
+     `docs/tasks/TEMPLATE.md` never taught — **0** checklist boxes in the template — so a consumer
+     would have hit the same wall on their first code change. Fixed by shipping the checklist in
+     the template (which is in the NEUTRAL allow-list, so consumers re-sync it).
+  2. **The default signature set was too narrow, measured against a real corpus of one — this
+     leaf.** The boxes cited `awk version 20200816`, `probes: 3 pass / 6 fail` and `exit=0`: all
+     genuinely tool-emitted, none matched. That is precisely the *"a signature family that does not
+     fit the real corpus is a gate that teaches authors to waive it"* failure. Generic result
+     shapes (`exit=N`, `rc=N`, `N pass / N fail`, version banners) were added **because they are
+     what tools print**, not to make the gate easier — and the probes were re-run to prove the
+     widening did **not** make it vacuous: `RED-3`, `CTRL-1`, `CTRL-2` and `CTRL-4b` all still
+     REJECT (9/0).
+  3. ⚠️ **And the third refusal was the check being WRONG — a false positive, stated as such.**
+     It treated `docs/tasks/TEMPLATE.md` as a leaf; a template's boxes are *deliberately*
+     unticked, so every commit touching the blank form would have been blocked. Excluded (the
+     layer-C check in this repo already excludes `INDEX`/`TEMPLATE` — the precedent was one file
+     away), and pinned by `CTRL-5`.
+  ⇒ Two correct refusals and one false positive, all found by *using* the doctrine on itself
+  rather than reviewing it. ⛔ Worth stating plainly rather than presenting three self-blocks as
+  three successes: a gate that is only ever exercised on friendly input has not been tested.
+
+  ⭐ The seam is also dogfooded: this repository declares its own probe-driver and driver summary
+  lines in `.doctrine/evidence_tokens.txt`, so the template ships a worked example rather than an
+  empty extension point.
+
+  ⚠️ **Known overlap, recorded rather than resolved**: `TASK-TREE-OWNERSHIP` already requires a
+  staged code change to have an owning leaf, which is `TASK-ACCEPTANCE`'s first leg. The new check
+  is strictly stronger, so the older one may be redundant — but removing an existing green check
+  is its own decision with its own failure modes, and is not made in passing here.
+
+  Acceptance: 0 domain nouns in logic and 0 foreign tool tokens anywhere; RED/GREEN/CONTROL probes
+  green incl. both leakage arms and both seam arms; `make gate` green; in the NEUTRAL allow-list;
+  `DOCTRINE_VERSION` bumped.
+  Verification: see the Verification Log entry for `.2.4`.
+  Commit: see the Commit Log entry for `.2.4`.
+
+  ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — the box extractor silently matched nothing on this
+    platform: `awk --version` → `awk version 20200816` (BSD awk), which ignores the gawk-only
+    `IGNORECASE`, so `root.?cause` never matched `ROOT CAUSE` and the probe run reported
+    `has no 'ROOT CAUSE' box` for every leaf (9 probes, 6 failing identically).
+  - [x] **ADDRESSED (verified)** — rewritten with POSIX `tolower()`; before → after on the same
+    fixtures: `probes: 3 pass / 6 fail` → `probes: 9 pass / 0 fail`, `exit=0`.
+  - [x] **NO REGRESSION** — `bash -n` clean on all edited scripts; the full driver re-run reports
+    all doctrines green (8 checks) with `git ls-files` confirming the two new files staged; the
+    neutrality counts stayed at 0 domain nouns / 0 foreign tool tokens.
+  - [x] **FIX** — replace the gawk extension with `tolower()`, and ship the checklist shape in
+    `docs/tasks/TEMPLATE.md` so the doctrine enforces a form the template actually teaches.
+  - [x] **LOCKSTEP** — `DOCTRINE_ENFORCEMENT.md` registry mirror, `.doctrine/README.md`,
+    `update_scaffold.sh` NEUTRAL allow-list, `CHANGELOG.md`, `MEMORY.md`, `DOCTRINE_VERSION`.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
@@ -195,9 +281,9 @@ process.
 | — | `BEDROCK-MAINTENANCE.2.1` | `done` | README Stability Policy + the layer-A byte cap (0.2.0) |
 | — | `BEDROCK-MAINTENANCE.2.2` | `done` | `WAIVER-ROUTING` ported + the neutrality bar written down (0.3.0) |
 | — | `BEDROCK-MAINTENANCE.2.3` | `done` | applicability (Q1) put AHEAD of neutralizability (Q2); backlog re-ranked by benefit |
-| 2 | `.2.x` — port `ROUTING-EVIDENCE` | `todo` | ⭐ passes Q1 outright: presumes **only** the task-tree system this template ships (measured: 0 build-system references). Universal discipline — a finding routed elsewhere must record what was measured, above all whether it reproduces outside the area it is being sent to |
-| 3 | `.2.x` — design a neutral `TASK-ACCEPTANCE` | `todo` | ⭐⭐ highest VALUE of anything outstanding — a change lands with evidence of cause *and* effect. Passes Q1 as a principle; ⛔ NOT a copy: its evidence-signature families name one project's tools, so it needs a **project-declared token list** seam |
-| 4 | `.2.x` — `GATE-REACHABILITY`, principle only | `todo` | universal principle (*a check nothing invokes is indistinguishable from one that does not exist*) but the implementation is **37 lines bound to make + workflow files**. Needs an enumeration seam before it can pass Q1. ⚠️ Its instrument produced six different confident answers upstream before it was right — port the ground-truth controls with it or not at all |
+| — | `BEDROCK-MAINTENANCE.2.4` | `done` | `TASK-ACCEPTANCE` universal core ported behind `.doctrine/` seams (0.4.0) |
+| 1 | `.2.x` — port `ROUTING-EVIDENCE` | `todo` | ⭐ passes Q1 outright: presumes **only** the task-tree system this template ships (measured: 0 build-system references). Universal discipline — a finding routed elsewhere must record what was measured, above all whether it reproduces outside the area it is being sent to |
+| 2 | `.2.x` — `GATE-REACHABILITY`, principle only | `todo` | universal principle (*a check nothing invokes is indistinguishable from one that does not exist*) but the implementation is **37 lines bound to make + workflow files**. Needs an enumeration seam before it can pass Q1. ⚠️ Its instrument produced six different confident answers upstream before it was right — port the ground-truth controls with it or not at all |
 | — | ⛔ `DESTRUCTIVE-TARGET-GUARD` — **do NOT port as-is** | `rejected` | fails **Q1**: hardcodes a `Makefile` path and a `clean:` recipe, so it benefits *any project that builds with make* — a conditional, not an objective benefit. Scored well on Q2, which is exactly why Q2 must not run first. Revisit only with a project-declared target list |
 
 ## Improvement backlog (seed — for a future session to pick up)
@@ -235,6 +321,16 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 
 ## Verification Log
 
+- `2026-07-30` — `.2.4`: `make gate` → **8/8 green** (adds `TASK-ACCEPTANCE`).
+  Probes **9 pass / 0 fail** (`docs/tasks/artifacts/task_acceptance/run_task_acceptance_probes.sh`):
+  GREEN-1 compliant leaf · RED-1 code with no owning leaf · RED-2 unticked box · RED-3 ticked but
+  unevidenced · ⭐⭐ **CTRL-1 evidence present in the FILE but outside the box ⇒ a whole-file grep
+  PASSES while the box-scoped check REJECTS** · ⭐ CTRL-2 evidence in a co-staged unrelated leaf ⇒
+  rejected · CTRL-3 a pure-docs change is not governed · ⭐ **CTRL-4/4b the same leaf PASSES with a
+  project-declared token and FAILS without it** ⇒ the seam, not a hardcoded vocabulary, does the
+  work. Neutrality: 0 domain nouns in logic, 0 foreign tool tokens anywhere.
+  ⚠️ The probes caught a **gawk-only `IGNORECASE`** in the box extractor which BSD awk silently
+  ignores — every leaf read as having no checklist. Rewritten with POSIX `tolower()`.
 - `2026-07-30` — `.2.3`: `make gate` → **7/7 green** (docs/process only; no check changed).
   Q1 re-applied to every shipped port — **4/4 pass**, each presuming only files this template
   ships (`README.md`, `MEMORY.md`, `docs/decisions/INDEX.md`, `docs/tasks/`, the driver), all
@@ -280,6 +376,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 - `2026-07-30` — `.2.3` — `BEDROCK-MAINTENANCE-0005`: put applicability ahead of
   neutralizability in the admission test; re-rank the backlog by benefit; reject
   `DESTRUCTIVE-TARGET-GUARD` as-is.
+- `2026-07-30` — `.2.4` — `BEDROCK-MAINTENANCE-0006`: port the `TASK-ACCEPTANCE` universal core
+  behind `.doctrine/` seams; `DOCTRINE_VERSION` `0.3.0` → `0.4.0`.
 
 - `2026-07-30` — `.2.1` — `BEDROCK-MAINTENANCE-0002`: adopt the README Stability Policy and
   close the layer-A size-cap bypass; `DOCTRINE_VERSION` `0.1.0` → `0.2.0`.

@@ -24,7 +24,7 @@
   (see `docs/decisions/reference_bedrock_provenance.md`; PGEN = `../pgen`).
 - **Active tree:** `BEDROCK-MAINTENANCE` — `.1` **done**, `.2.1` (README policy + layer-A byte cap)
   **done**, `.2.2` (`WAIVER-ROUTING` + the neutrality bar) **done**, `.2.3` (admission test
-  re-ordered: applicability BEFORE neutralizability) **done**; frontier `.2` = the transfer loop,
+  re-ordered) **done**, `.2.4` (`TASK-ACCEPTANCE` universal core) **done**; frontier `.2` = the transfer loop,
   backlog now ranked by BENEFIT (next: `ROUTING-EVIDENCE` — presumes only what this template
   ships; `DESTRUCTIVE-TARGET-GUARD` **rejected as-is**, it is make-conditional).
 - **Next action:** pick a `.2.x` backlog item, or port a newly-landed **general** upstream
@@ -36,7 +36,7 @@
 - **Latest commit:** `.2.2` — ported `WAIVER-ROUTING` (fixing a fail-open in the origin rather
   than inheriting it) and wrote down the **neutrality bar**: every doctrine here must be
   objectively applicable to ANY project, with a measurable admission test.
-  `DOCTRINE_VERSION` → `0.3.0`. Doctrines here: **5** (+ knowledge-map + project slot) vs 15
+  `DOCTRINE_VERSION` → `0.4.0`. Doctrines here: **6** (+ knowledge-map + project slot) vs 15
   upstream — the ranked gap is the tree's frontier.
 - **Transfer runs BOTH WAYS** (maintainer-confirmed, now in `MAINTAINING.md`): this spine's
   layer-C check was stronger than upstream's; upstream adopted it, strengthened it (row-anchored

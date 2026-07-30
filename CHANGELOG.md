@@ -1,5 +1,30 @@
 # CHANGELOG.md
 
+## bedrock-scaffold 0.4.0 — TASK-ACCEPTANCE: a change lands with evidence, not with a claim
+
+`BEDROCK-MAINTENANCE.2.4`.
+
+- **Added the `TASK-ACCEPTANCE` doctrine**: a staged CODE change must be owned by a task-tree leaf
+  whose checklist has ROOT CAUSE / ADDRESSED / NO REGRESSION **ticked**, each backed by output from
+  a tool that was actually run — **inside that box's own bullet**.
+- ⭐⭐ **Box-scoping is the soundness property**, not a nicety. It closes two measured leakage
+  holes: a co-staged, unrelated leaf supplying the evidence, and a token matched anywhere in the
+  file rather than in the box it backs. `CTRL-1` demonstrates it directly — a whole-file grep
+  PASSES the fixture that the shipped check REJECTS.
+- **Neutral by seam, not by rename.** Default signatures are universal to any Rust project
+  (`error[E1234]`, `could not compile`, `clippy::…`, `test result: ok`, panics, profilers) plus any
+  project's build-flow forensics (`git log -S`, `shellcheck`, `bash -n`, `make -n`, `ENOSPC`…).
+  Project-specific tooling is declared in `.doctrine/evidence_tokens.txt`, and what counts as a
+  code change in `.doctrine/code_paths.txt` — both optional, both defaulted, both documented in
+  `.doctrine/README.md`. ⭐ `CTRL-4`/`CTRL-4b` prove the seam is load-bearing: the same leaf passes
+  WITH the declaration and fails WITHOUT it.
+- ⛔ **Fixed a portability defect the probes caught**: the box extractor used `IGNORECASE`, a gawk
+  extension that BSD awk silently ignores — every leaf would have been reported as having no
+  checklist. Rewritten with POSIX `tolower()`.
+- ⚠️ Honest limit, stated in the check itself: it proves the author cited something re-runnable,
+  never that the output is true. The un-fakeable leg is re-running the cited command in CI.
+- Probes 9/0; `make gate` 8/8.
+
 ## unreleased — the admission test asks about VALUE first, not vocabulary
 
 `BEDROCK-MAINTENANCE.2.3`. Process only; no check changed, so `DOCTRINE_VERSION` is unmoved
