@@ -403,6 +403,12 @@ process.
   yielded `0⏎0`, which split the ROOT CAUSE bullet at a flush-left line and hid its `rc=0` from the
   box-scoped extractor — exactly the `.2.4` soundness property doing its job on the template's own leaf.
 
+  **Follow-up (`-0011`, maintainer question *"where should I be to run make gate and make check?"*):**
+  everything after the clone runs INSIDE `<name>/` — and bootstrap itself no longer cares: it acted on
+  `git rev-parse --show-toplevel` of the CALLER's directory, so `<name>/scripts/bootstrap.sh <name>` run from
+  the parent directory would have failed outside a repository or, worse, de-templated the parent's
+  repository. It now resolves its own location and refuses if that is not a clone root. Proven by running it
+  from the parent directory: the project, not the parent, was bootstrapped.
   Acceptance: from a fresh clone, `bootstrap → first commit → make gate → make check` all green with no
   hand edits; the bootstrap re-run is idempotent (only `Cargo.lock`, created by `cargo test`, appears);
   `DOCTRINE_VERSION` bumped.
@@ -554,6 +560,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
   with an 8-arm self-test; backlog notes for the input-bound principles; `DOCTRINE_VERSION` `0.5.0` → `0.6.0`.
 - `2026-09-04` — `.2.6` — `BEDROCK-MAINTENANCE-0009`: CORRECTION — the neutrality census the `.2.6` leaf
   published (0 / 0 / 0 / 0) was 0 / 0 / 1 / 0 at `-0008`; the word is re-worded and the claim corrected in place.
+- `2026-09-04` — `.2.7` — `BEDROCK-MAINTENANCE-0011`: `bootstrap.sh` acts on the repository it lives in, not on
+  the caller's directory; proven from the parent directory.
 - `2026-09-04` — `.2.7` — `BEDROCK-MAINTENANCE-0010`: `bootstrap.sh` seeds `docs/tasks/BOOTSTRAP.md` (a done
   leaf owning the bootstrap, evidence from the run itself) and prints the first-commit command; proven on a
   fresh clone through the first commit. `DOCTRINE_VERSION` `0.6.0` → `0.6.1`.

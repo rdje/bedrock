@@ -40,7 +40,7 @@ cargo generate --git <this-repo-url> --name <project>
 
 **Option B — GitHub "Use this template"** (enable the *Template repository* setting).
 
-Then, either way, finalize with one command:
+Then, either way, `cd <project>` and finalize with one command:
 
 1. `./scripts/bootstrap.sh <project>` — installs the git hooks, sets the crate + roadmap name,
    generates the Knowledge Map, verifies the enforcer, and seeds the leaf that owns this step —

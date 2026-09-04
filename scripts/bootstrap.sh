@@ -11,7 +11,12 @@
 #
 # Idempotent. It does NOT invent a task-tree from your roadmap — that judgment is left to you.
 set -euo pipefail
-ROOT="$(git rev-parse --show-toplevel)"; cd "$ROOT"
+# ⛔ Act on the repository THIS SCRIPT LIVES IN, never on the caller's working directory
+# (BEDROCK-MAINTENANCE.2.7): `git rev-parse --show-toplevel` from the caller's cwd would fail
+# outside a repository and — worse — de-template the PARENT repository when a user runs
+# `<name>/scripts/bootstrap.sh <name>` from the directory they cloned into.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; cd "$ROOT"
+[ -d .git ] || { echo "bootstrap: $ROOT is not the root of a git clone" >&2; exit 2; }
 name="${1:-}"
 
 # 0) de-template (only when a project name is given AND this is still a pristine bedrock copy)
