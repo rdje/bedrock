@@ -38,6 +38,10 @@ NEUTRAL=(
   scripts/check_memory_architecture.sh
   scripts/check_live_doc_currency.sh
   scripts/check_no_background_jobs.sh
+  scripts/check_lesson_promotion.sh
+  scripts/check_routing_evidence.sh
+  scripts/check_gap_claims.sh
+  scripts/check_table_arity.sh
   scripts/check_readme_stability.sh
   scripts/check_waiver_routing.sh
   scripts/check_task_acceptance.sh

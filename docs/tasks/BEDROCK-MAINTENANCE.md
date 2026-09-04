@@ -319,6 +319,63 @@ process.
     checks) ===` … `=== all doctrines green ===`, `rc=0` (was 8 checks; `LIVE-DOC-CURRENCY` added,
     every prior check still ✅). `make gate` is that command.
 
+- ID: `BEDROCK-MAINTENANCE.2.6`
+  Status: `done`
+  Goal: part 2 of the 2026-09 upstream transfer, resumed after the maintainer's pause — the four
+  evidence / ratchet doctrines classified in `.2.5`, each admitted by **Q1** before **Q2**:
+
+  | doctrine | Q1 | Q2 | what landed |
+  |---|---|---|---|
+  | `LESSON-PROMOTION` | ⭐ any project with a notes file and a retrievable layer: a lesson written down but unreachable by question is the measured failure (1 592 upstream) | 0 nouns; `DEV_NOTES.md` heading shape (dated `##`), promotion = `docs/knowledge/` or a decisions record gaining `answers:`, decline token in the leaf | `scripts/check_lesson_promotion.sh` — pure verdict + 9 controls at import |
+  | `ROUTING-EVIDENCE` | ⭐ presumes only the task-tree system this template ships (frontier item 1 since `.2.3`) | 0 nouns; messages say component / family | `scripts/check_routing_evidence.sh` — semantic route-out predicate, 5-arm `--self-test` pinning the founding phrasing and the intra-tree / routed-in negatives |
+  | `GAP-CLAIM-CENSUS` | ⭐ any project whose leaves make "nothing checks X" claims — a universally quantified sentence over the tree | 0 nouns in logic; the 10 self-test fixtures re-worded (the founding active and passive sentences keep their SHAPE) | `scripts/check_gap_claims.sh` — staged-diff-scoped, section-scoped discharge, `--all` advisory backlog, 10-arm `--self-test` |
+  | `TABLE-ARITY-RATCHET` | ⭐ any project with markdown tables: GFM drops extra cells and pads missing ones silently | a REWRITE, not a copy — the upstream self-test is bound to a shipped contract file | `scripts/check_table_arity.sh` — per-file ratchet against HEAD, code spans and escaped pipes respected, 8-arm `--self-test` |
+
+  ⛔ **Two defects found by the ports' own controls, both invisible in review.** (1) The table-arity
+  detector was written as `python3 - <<'PY'` and read its markdown from stdin — which the heredoc
+  had already consumed — so every RED arm reported 0 and only the GREEN arms "passed"; caught
+  because the self-test has RED arms, rewritten as `python3 -c "$PY_SRC"`. (2) A lesson-promotion
+  control used `grep -c … | grep -qx 0` under `pipefail`: `grep -c` prints `0` and exits 1, so the
+  pipeline failed while the predicate was right; rewritten to capture the count. ⇒ Both are the
+  class a template must not ship: a green gate that judges nothing.
+
+  Census of the reserved and domain vocabulary in the four scripts: `grep -ciE 'grammar|parser|ebnf|systemverilog|corpus|regex|pgen' scripts/check_lesson_promotion.sh scripts/check_routing_evidence.sh scripts/check_gap_claims.sh scripts/check_table_arity.sh` → 0 / 0 / 0 / 0. Backlog census for the new claim doctrine on this tree: `bash scripts/check_gap_claims.sh --all` → 1 claim line across 1 file, 0 unbacked. Table backlog: `bash scripts/check_table_arity.sh --all` → 0 defective rows.
+
+  promotion: declined (the lessons of this batch ARE the four doctrine texts and their controls; the notes entry names them and the enforcer carries them)
+
+  Backlog notes (principles admitted by Q1, implementations NOT ported — each needs project-bound
+  inputs): `BASELINE-IDENTITY` (a tracked baseline that holds a value derived from the tree says
+  WHICH tree — it re-hashes its declared inputs on every run; upstream 1 148 lines bound to that
+  project's contracts and build products), `IDENTITY-CARRIER-CURRENCY` (an artifact that tells its
+  reader to re-hash its inputs IS re-hashed by a gate over a derived population), `SCRATCH-SLOT-HEADER`
+  (a scratch directory carries a header naming its producer and its leaf), the full `LIVE-DOC-CURRENCY`
+  instrument (distinct dates per live surface against a declared charter). `GATE-REACHABILITY` stays
+  frontier item 2 as a principle. `DESTRUCTIVE-TARGET-GUARD` stays rejected as-is (`.2.3`).
+
+  Acceptance: 0 domain nouns in every ported logic path; every self-test observed green with its
+  RED arms; `make gate` green with the four doctrines registered (13 checks); all four scripts in
+  the NEUTRAL allow-list; `DOCTRINE_VERSION` bumped.
+  Verification: see the Verification Log entry for `.2.6`.
+  Commit: see the Commit Log entry for `.2.6`.
+
+  ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — four universal doctrines hardened upstream after the port
+    (`.2.5`'s classification) and absent here: `grep -c '^  "' scripts/check_doctrines.sh` → 7
+    registered before this leaf, 11 after; the two implementation defects above were located by the
+    scripts' own RED arms (`TABLE-ARITY self-test: MISS … want=1 got=0` ×3, then `rc=0`;
+    `lesson-promotion: CONTROL MISSED: an undated heading matched`, then `rc=0`).
+  - [x] **ADDRESSED (verified)** — `bash scripts/check_lesson_promotion.sh --self-test` →
+    `LESSON-PROMOTION --self-test: 9/9 controls`, `rc=0`; `bash scripts/check_routing_evidence.sh
+    --self-test` → `ROUTING-EVIDENCE --self-test: 5/5 arms`, `rc=0`; `bash scripts/check_gap_claims.sh
+    --self-test` → `GAP-CLAIM-CENSUS: --self-test: arms=10/10`, `rc=0`; `bash scripts/check_table_arity.sh
+    --self-test` → `TABLE-ARITY-RATCHET --self-test: 8/8 arms`, `rc=0`; on the staged tree of this
+    commit each ordinary run → `ok` / `NOT EVALUATED`, `rc=0`; `probes: 32 pass / 0 fail` across the
+    four self-tests.
+  - [x] **NO REGRESSION** — `bash scripts/check_doctrines.sh` → `=== doctrine enforcement (13
+    checks) ===` … `=== all doctrines green ===`, `rc=0` (was 9 checks; every prior check still ✅).
+    `make gate` is that command.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
@@ -329,8 +386,8 @@ process.
 | — | `BEDROCK-MAINTENANCE.2.3` | `done` | applicability (Q1) put AHEAD of neutralizability (Q2); backlog re-ranked by benefit |
 | — | `BEDROCK-MAINTENANCE.2.4` | `done` | `TASK-ACCEPTANCE` universal core ported behind `.doctrine/` seams (0.4.0) |
 | — | `BEDROCK-MAINTENANCE.2.5` | `done` | day-one batch: NO AGENT TRAILERS + hook, the handoff census, `LIVE-DOC-CURRENCY` principle (0.5.0) |
-| 1 | `BEDROCK-MAINTENANCE.2.6` | `todo` | ⏸ part 2 of the 2026-09 transfer, paused by the maintainer: `LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS`, a fresh `TABLE-ARITY-RATCHET`, backlog notes |
-| 1 | `.2.x` — port `ROUTING-EVIDENCE` | `todo` | ⭐ passes Q1 outright: presumes **only** the task-tree system this template ships (measured: 0 build-system references). Universal discipline — a finding routed elsewhere must record what was measured, above all whether it reproduces outside the area it is being sent to |
+| — | `BEDROCK-MAINTENANCE.2.6` | `done` | part 2 of the 2026-09 transfer: `LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS`, a fresh `TABLE-ARITY-RATCHET` (0.6.0) |
+| — | `.2.x` — port `ROUTING-EVIDENCE` | `done` (as `.2.6`) | ⭐ passes Q1 outright: presumes **only** the task-tree system this template ships (measured: 0 build-system references). Universal discipline — a finding routed elsewhere must record what was measured, above all whether it reproduces outside the area it is being sent to |
 | 2 | `.2.x` — `GATE-REACHABILITY`, principle only | `todo` | universal principle (*a check nothing invokes is indistinguishable from one that does not exist*) but the implementation is **37 lines bound to make + workflow files**. Needs an enumeration seam before it can pass Q1. ⚠️ Its instrument produced six different confident answers upstream before it was right — port the ground-truth controls with it or not at all |
 | — | ⛔ `DESTRUCTIVE-TARGET-GUARD` — **do NOT port as-is** | `rejected` | fails **Q1**: hardcodes a `Makefile` path and a `clean:` recipe, so it benefits *any project that builds with make* — a conditional, not an objective benefit. Scored well on Q2, which is exactly why Q2 must not run first. Revisit only with a project-declared target list |
 
@@ -369,6 +426,11 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 
 ## Verification Log
 
+- `2026-09-04` — `.2.6`: `make gate` → **13/13 green** (adds `LESSON-PROMOTION`, `ROUTING-EVIDENCE`,
+  `GAP-CLAIM-CENSUS`, `TABLE-ARITY-RATCHET`). Self-tests 9/9 · 5/5 · 10/10 · 8/8, every RED arm
+  observed; two implementation defects caught by those arms (a heredoc that ate the detector's
+  stdin; a `pipefail` control) before the gate ever ran green on friendly input. Neutrality: 0 domain
+  nouns in all four scripts. `--all` backlogs: 1 claim line / 0 unbacked; 0 defective table rows.
 - `2026-09-04` — `.2.5`: `make gate` → **9/9 green** (adds `LIVE-DOC-CURRENCY`). Hook arms:
   agent trailer `rc=1` · human co-author `rc=0` · `🤖 Generated with` `rc=1`. `check_live_doc_currency.sh
   --self-test` **3/3**; ordinary run `ok (26 tracked .md files …)`. `check_no_background_jobs.sh` →
@@ -434,6 +496,9 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
   NO AGENT TRAILERS (rule + `commit-msg` hook), the handoff background-job census, the
   `LIVE-DOC-CURRENCY` principle (fields deleted, check registered); `DOCTRINE_VERSION` `0.4.0` → `0.5.0`.
   Paused by the maintainer before part 2 (`.2.6`).
+- `2026-09-04` — `.2.6` — `BEDROCK-MAINTENANCE-0008`: part 2 — `LESSON-PROMOTION`, `ROUTING-EVIDENCE`,
+  `GAP-CLAIM-CENSUS` ported (neutralized, fixtures re-worded), `TABLE-ARITY-RATCHET` rewritten minimal
+  with an 8-arm self-test; backlog notes for the input-bound principles; `DOCTRINE_VERSION` `0.5.0` → `0.6.0`.
 
 - `2026-07-30` — `.2.1` — `BEDROCK-MAINTENANCE-0002`: adopt the README Stability Policy and
   close the layer-A size-cap bypass; `DOCTRINE_VERSION` `0.1.0` → `0.2.0`.

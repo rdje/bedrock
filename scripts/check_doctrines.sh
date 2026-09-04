@@ -27,6 +27,10 @@ DOCTRINES=(
   "WAIVER-ROUTING|a task leaf saying a gate does not apply names the leaf that owns fixing it|scripts/check_waiver_routing.sh"
   "TASK-ACCEPTANCE|a staged code change is owned by a leaf whose ticked checklist carries tool output IN each box|scripts/check_task_acceptance.sh"
   "LIVE-DOC-CURRENCY|no tracked document reports its own currency (Last updated: …) — git carries it, a hand-kept date is false the day after|scripts/check_live_doc_currency.sh"
+  "LESSON-PROMOTION|a new dated lesson in DEV_NOTES.md is PROMOTED to the retrievable layer (docs/knowledge or a decisions record gaining answers:) or EXPLICITLY DECLINED in its leaf — never silently dropped|scripts/check_lesson_promotion.sh"
+  "ROUTING-EVIDENCE|a task leaf that routes a finding OUT to another tree records a ROUTING EVIDENCE section — what was measured, and whether the finding reproduces outside the family it is sent to|scripts/check_routing_evidence.sh"
+  "GAP-CLAIM-CENSUS|a task leaf that ADDS a nothing-checks-X claim records the census it rests on, in the same section — such a sentence quantifies over the whole tree and is false the moment one reader exists|scripts/check_gap_claims.sh"
+  "TABLE-ARITY-RATCHET|a staged markdown file may not RAISE the number of table rows whose cell count disagrees with their header — GFM silently drops the extra cells or pads the missing ones|scripts/check_table_arity.sh"
 )
 # Optional derived-artifact sync check (present only when the subsystem exists).
 [ -x "knowledge-map/scripts/check_knowledge_map.sh" ] && \

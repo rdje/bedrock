@@ -1,5 +1,26 @@
 # CHANGELOG.md
 
+## bedrock-scaffold 0.6.0 — four evidence and ratchet doctrines: lessons reach the retrievable layer, routings carry evidence, gap claims carry their census, tables keep their columns
+
+`BEDROCK-MAINTENANCE.2.6`.
+
+- **Added `LESSON-PROMOTION`**: a new dated lesson heading staged in `DEV_NOTES.md` must be promoted (a
+  `docs/knowledge/` change or a `docs/decisions/` record gaining `answers:`) or explicitly declined
+  (`promotion: declined (<reason>)` in the owning leaf). Pure verdict with 9 controls at import.
+- **Added `ROUTING-EVIDENCE`**: a leaf that routes a finding out to another tree carries a `ROUTING EVIDENCE`
+  section. Keyed on the semantics of leaving the tree; 5-arm `--self-test`.
+- **Added `GAP-CLAIM-CENSUS`**: a leaf that ADDS a "nothing checks X" claim records the census it rests on in
+  the same section (or `census: not run (<why>)`). Staged-diff-scoped; `--all` reports the backlog; 10-arm
+  `--self-test` pinning the founding active and passive sentences.
+- **Added `TABLE-ARITY-RATCHET`** (a fresh minimal implementation): a staged `.md` may not raise the number of
+  table rows whose cell count disagrees with their header; code spans and escaped pipes respected; 8-arm
+  `--self-test`.
+- ⛔ Two defects in the ports were caught by their own RED arms before the gate ran: a heredoc that consumed
+  the table detector's stdin (every arm read 0), and a `pipefail` control in lesson promotion.
+- All four scripts join the `NEUTRAL` allow-list of `scripts/update_scaffold.sh`. Backlog notes record the
+  input-bound principles (`BASELINE-IDENTITY`, `IDENTITY-CARRIER-CURRENCY`, `SCRATCH-SLOT-HEADER`, the full
+  `LIVE-DOC-CURRENCY` instrument) for a future seam.
+
 ## bedrock-scaffold 0.5.0 — the day-one batch: no agent trailers, a handoff census, no self-reported dates
 
 `BEDROCK-MAINTENANCE.2.5`.
