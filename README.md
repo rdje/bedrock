@@ -42,9 +42,10 @@ cargo generate --git <this-repo-url> --name <project>
 
 Then, either way, finalize with one command:
 
-1. `./scripts/bootstrap.sh <project>` — installs the git hooks (`git config core.hooksPath
-   .githooks`), sets the crate + roadmap name, generates the Knowledge Map, and verifies the
-   enforcer. This is the canonical post-copy step for both paths.
+1. `./scripts/bootstrap.sh <project>` — installs the git hooks, sets the crate + roadmap name,
+   generates the Knowledge Map, verifies the enforcer, and seeds the leaf that owns this step —
+   then **commit with the command it prints**. The canonical post-copy step for both paths
+   (option A needs `cargo install cargo-generate`).
 2. Replace `ROADMAP.md` with your project's roadmap, then create your first task-tree
    (`cp docs/tasks/TEMPLATE.md docs/tasks/<TREE-ID>.md`) and register it in `docs/TASK_TREE.md`.
 3. Grow the project one task-tree leaf at a time, committed via `COMMIT.md`.

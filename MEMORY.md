@@ -26,7 +26,8 @@
   **done**, `.2.2` (`WAIVER-ROUTING` + the neutrality bar) **done**, `.2.3` (admission test
   re-ordered) **done**, `.2.4` (`TASK-ACCEPTANCE` universal core) **done**, `.2.5` (the 2026-09 day-one
   batch: NO AGENT TRAILERS + hook, the handoff census, `LIVE-DOC-CURRENCY`) **done**, `.2.6` (part 2:
-  `LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS`, a fresh `TABLE-ARITY-RATCHET`) **done**; frontier
+  `LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS`, a fresh `TABLE-ARITY-RATCHET`) **done**, `.2.7` (foolproof project creation:
+  the bootstrap leaf owns the first commit) **done**; frontier
   `.2` = the transfer loop (`GATE-REACHABILITY` principle next; `DESTRUCTIVE-TARGET-GUARD` stays **rejected as-is**).
 - **Next action:** a `.2.x` backlog item — `GATE-REACHABILITY` as a principle, or one of the input-bound
   principles noted in `.2.6` (`BASELINE-IDENTITY`, `IDENTITY-CARRIER-CURRENCY`) behind a project-declared
@@ -35,11 +36,10 @@
   objectively benefit any present and any future project?* — and only then Q2, *can it be said
   without domain nouns?* ⛔ A 0-noun score does NOT imply portability: neutral vocabulary can
   still encode one project's workflow. See `MAINTAINING.md`.
-- **Latest commit:** `.2.6` (`BEDROCK-MAINTENANCE-0008`) — four evidence / ratchet doctrines ported:
-  `LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS` (neutralized, fixtures re-worded) and a
-  fresh minimal `TABLE-ARITY-RATCHET`; every self-test has RED arms, and two of them caught real
-  defects in the ports before the gate ran. `DOCTRINE_VERSION` → `0.6.0`. Doctrines here: **11**
-  (+ knowledge-map + project slot) vs 38 upstream, the rest domain-bound or input-bound (noted).
+- **Latest commit:** `.2.7` (`BEDROCK-MAINTENANCE-0010`) — creating a project is now proven foolproof from a
+  fresh clone through the FIRST COMMIT: `bootstrap.sh <name>` seeds `docs/tasks/BOOTSTRAP.md`, a done leaf
+  that owns its own crate rename with the enforcer's evidence, and prints the commit command. Before it,
+  the first commit was refused by two doctrines. `DOCTRINE_VERSION` → `0.6.1`.
 - **Transfer runs BOTH WAYS** (maintainer-confirmed, now in `MAINTAINING.md`): this spine's
   layer-C check was stronger than upstream's; upstream adopted it, strengthened it (row-anchored
   + bidirectional) and sent it back. Owed upstream: the `WAIVER-ROUTING` fail-open fix.

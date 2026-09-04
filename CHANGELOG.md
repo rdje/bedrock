@@ -1,5 +1,20 @@
 # CHANGELOG.md
 
+## bedrock-scaffold 0.6.1 — creating a project is foolproof through its first commit
+
+`BEDROCK-MAINTENANCE.2.7`.
+
+- ⛔ **Measured on a fresh clone of 0.6.0:** `bootstrap.sh` left the crate rename — a CODE change — with no owning
+  leaf, so the new project's FIRST commit was refused by `TASK-TREE-OWNERSHIP` and `TASK-ACCEPTANCE`. A new user's
+  first contact with the discipline was a refusal about a rename the tool made.
+- **`bootstrap.sh` now seeds `docs/tasks/BOOTSTRAP.md`** on a fresh de-template: a done leaf that owns the bootstrap,
+  its ticked checklist carrying the evidence of that very run (crate-name count before/after, hooks path, the
+  enforcer's summary and verdict with `rc=0`), registered in `docs/TASK_TREE.md`, pointed to by `MEMORY.md`; and it
+  prints the exact first-commit command as step 0. Idempotent.
+- Proven: clone → `bootstrap.sh <name>` → the printed commit → hooks green → `make gate` green → `make check` green,
+  with no hand edits. Two defects in the fix were caught by the trial itself (an enforcer run before the map
+  existed; a `grep -c` fallback that split a checklist bullet).
+
 ## bedrock-scaffold 0.6.0 — four evidence and ratchet doctrines: lessons reach the retrievable layer, routings carry evidence, gap claims carry their census, tables keep their columns
 
 `BEDROCK-MAINTENANCE.2.6`.

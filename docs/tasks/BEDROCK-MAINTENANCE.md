@@ -376,6 +376,55 @@ process.
     checks) ===` … `=== all doctrines green ===`, `rc=0` (was 9 checks; every prior check still ✅).
     `make gate` is that command.
 
+- ID: `BEDROCK-MAINTENANCE.2.7`
+  Status: `done`
+  Goal: make creating a project from bedrock **dead simple and foolproof** — proven by generating one
+  from the PUSHED template and driving it through its FIRST COMMIT, which no earlier trial had done.
+
+  **What the trial found (maintainer question 2026-09-04, *"creating a brand new project from bedrock
+  shall be dead simple, fool proof. do you confirm that?"* — answered by doing it):** clone, `bootstrap`,
+  `make gate` (13/13) and `make check` all passed on the fresh project, and then the user's very first
+  commit — the one that records the bootstrap — was REFUSED by `TASK-TREE-OWNERSHIP` and
+  `TASK-ACCEPTANCE`: the crate rename bootstrap made is a CODE change with no owning leaf. A new user's
+  first contact with the discipline would have been a wall of doctrine text about a rename the tool
+  itself performed. The discipline is right; the template had to ship the leaf.
+
+  **The fix (`scripts/bootstrap.sh`):** on a fresh de-template it seeds `docs/tasks/BOOTSTRAP.md` — a
+  done leaf that OWNS the bootstrap, whose ticked checklist carries the evidence that run produced (the
+  crate-name count before/after, the hooks path, the enforcer's own summary and verdict lines with
+  `rc=0`) — registers it in `docs/TASK_TREE.md`, points `MEMORY.md` at it, and prints the exact
+  first-commit command as step 0 of "Next:". The enforcer lines are placeholders filled in step 5,
+  because running the enforcer before the Knowledge Map is regenerated fails on `KNOWLEDGE-MAP`
+  (measured). Idempotent: the leaf is seeded once.
+
+  ⛔ **Two defects in the fix itself, found by the trial, not by review:** (1) the first cut ran the
+  enforcer inside the seeding step (before the map) and its empty `grep | tail` under `pipefail` ended
+  the script silently at `rc=1`; (2) `grep -c` prints `0` AND exits 1, so `$(grep -c … || echo 0)`
+  yielded `0⏎0`, which split the ROOT CAUSE bullet at a flush-left line and hid its `rc=0` from the
+  box-scoped extractor — exactly the `.2.4` soundness property doing its job on the template's own leaf.
+
+  Acceptance: from a fresh clone, `bootstrap → first commit → make gate → make check` all green with no
+  hand edits; the bootstrap re-run is idempotent (only `Cargo.lock`, created by `cargo test`, appears);
+  `DOCTRINE_VERSION` bumped.
+  Verification: see the Verification Log entry for `.2.7`.
+  Commit: see the Commit Log entry for `.2.7`.
+
+  ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — on a fresh clone of `c769113` + `bootstrap.sh myproj`, the
+    first commit's hook run: `❌ TASK-TREE-OWNERSHIP` / `❌ TASK-ACCEPTANCE: a CODE change is staged
+    but NO owning task-tree leaf (docs/tasks/*.md) is. staged code: crates/app/Cargo.toml`, commit
+    `rc=1`; `git diff --cached --name-only | grep -E '(crates|src|scripts)/'` → 1 path.
+  - [x] **ADDRESSED (verified)** — fresh clone + patched `bootstrap.sh newproj` → `rc=0`, `13 ✅`,
+    `✓ docs/tasks/BOOTSTRAP.md seeded with this run's evidence`; the printed step-0 commit →
+    `=== all doctrines green ===`, commit `rc=0`, `f3ae296 NEWPROJ-BOOTSTRAP-0001 (leaf BOOTSTRAP.1)`,
+    `dirty=0`; `make gate` → `=== all doctrines green ===`; `make check` → `rc=0`
+    (`test result: ok. 1 passed; 0 failed`); re-run of `bootstrap.sh newproj` → `rc=0`.
+  - [x] **NO REGRESSION** — in this repository `bash scripts/check_doctrines.sh` → `=== all doctrines
+    green ===`, `rc=0` (13 checks); `bash scripts/bootstrap.sh` without a name (the source-repo mode)
+    does not seed the leaf (guarded on the de-template branch) — `ls docs/tasks/BOOTSTRAP.md` → absent,
+    `rc=2`.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
@@ -387,6 +436,7 @@ process.
 | — | `BEDROCK-MAINTENANCE.2.4` | `done` | `TASK-ACCEPTANCE` universal core ported behind `.doctrine/` seams (0.4.0) |
 | — | `BEDROCK-MAINTENANCE.2.5` | `done` | day-one batch: NO AGENT TRAILERS + hook, the handoff census, `LIVE-DOC-CURRENCY` principle (0.5.0) |
 | — | `BEDROCK-MAINTENANCE.2.6` | `done` | part 2 of the 2026-09 transfer: `LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS`, a fresh `TABLE-ARITY-RATCHET` (0.6.0) |
+| — | `BEDROCK-MAINTENANCE.2.7` | `done` | foolproof project creation: `bootstrap.sh` seeds the leaf that owns its own crate rename, so the FIRST commit passes the hooks (0.6.1) |
 | — | `.2.x` — port `ROUTING-EVIDENCE` | `done` (as `.2.6`) | ⭐ passes Q1 outright: presumes **only** the task-tree system this template ships (measured: 0 build-system references). Universal discipline — a finding routed elsewhere must record what was measured, above all whether it reproduces outside the area it is being sent to |
 | 2 | `.2.x` — `GATE-REACHABILITY`, principle only | `todo` | universal principle (*a check nothing invokes is indistinguishable from one that does not exist*) but the implementation is **37 lines bound to make + workflow files**. Needs an enumeration seam before it can pass Q1. ⚠️ Its instrument produced six different confident answers upstream before it was right — port the ground-truth controls with it or not at all |
 | — | ⛔ `DESTRUCTIVE-TARGET-GUARD` — **do NOT port as-is** | `rejected` | fails **Q1**: hardcodes a `Makefile` path and a `clean:` recipe, so it benefits *any project that builds with make* — a conditional, not an objective benefit. Scored well on Q2, which is exactly why Q2 must not run first. Revisit only with a project-declared target list |
@@ -426,6 +476,9 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 
 ## Verification Log
 
+- `2026-09-04` — `.2.7`: trial from a fresh clone — `bootstrap.sh newproj` **13/13**, first commit through
+  the hooks **green** (`f3ae296`), `make gate` green, `make check` green, bootstrap re-run idempotent. Before
+  the fix the same first commit was refused by two doctrines (measured on `c769113`).
 - `2026-09-04` — `.2.6`: `make gate` → **13/13 green** (adds `LESSON-PROMOTION`, `ROUTING-EVIDENCE`,
   `GAP-CLAIM-CENSUS`, `TABLE-ARITY-RATCHET`). Self-tests 9/9 · 5/5 · 10/10 · 8/8, every RED arm
   observed; two implementation defects caught by those arms (a heredoc that ate the detector's
@@ -501,6 +554,9 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
   with an 8-arm self-test; backlog notes for the input-bound principles; `DOCTRINE_VERSION` `0.5.0` → `0.6.0`.
 - `2026-09-04` — `.2.6` — `BEDROCK-MAINTENANCE-0009`: CORRECTION — the neutrality census the `.2.6` leaf
   published (0 / 0 / 0 / 0) was 0 / 0 / 1 / 0 at `-0008`; the word is re-worded and the claim corrected in place.
+- `2026-09-04` — `.2.7` — `BEDROCK-MAINTENANCE-0010`: `bootstrap.sh` seeds `docs/tasks/BOOTSTRAP.md` (a done
+  leaf owning the bootstrap, evidence from the run itself) and prints the first-commit command; proven on a
+  fresh clone through the first commit. `DOCTRINE_VERSION` `0.6.0` → `0.6.1`.
 
 - `2026-07-30` — `.2.1` — `BEDROCK-MAINTENANCE-0002`: adopt the README Stability Policy and
   close the layer-A size-cap bypass; `DOCTRINE_VERSION` `0.1.0` → `0.2.0`.
