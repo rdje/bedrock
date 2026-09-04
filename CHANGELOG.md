@@ -1,5 +1,25 @@
 # CHANGELOG.md
 
+## bedrock-scaffold 0.5.0 — the day-one batch: no agent trailers, a handoff census, no self-reported dates
+
+`BEDROCK-MAINTENANCE.2.5`.
+
+- ⛔ **`COMMIT.md` had the trailer rule backwards.** It told every generated project to *end commit
+  messages with the project's co-authorship trailer*; the upstream maintainer ruled the opposite on
+  2026-08-22 (a commit message ends with its own last line — no agent/tool attribution trailers,
+  harness-agnostic). The rule is rewritten and `.githooks/commit-msg` now refuses the known
+  agent-attribution shapes mechanically; a human co-author's `Co-Authored-By:` still passes.
+- **Added `scripts/check_no_background_jobs.sh`**, the handoff census: pattern-free (`lsof` over the
+  caller's uid — an open handle under the repo, or a command line naming the checkout), run before
+  a session ends; deliberately not a commit gate. Named in `CLAUDE.md`'s non-negotiables.
+- **Added the `LIVE-DOC-CURRENCY` doctrine** (principle): no tracked `.md` reports its own currency
+  (`Last updated:` and kin) — git carries it, a hand-kept date is false the day after. The field is
+  deleted from `docs/tasks/TEMPLATE.md` and the maintenance tree; `scripts/check_live_doc_currency.sh`
+  is structural over `git ls-files '*.md'` with a 3-arm `--self-test`.
+- Both scripts join the `NEUTRAL` allow-list of `scripts/update_scaffold.sh`.
+- Part 2 of the same transfer (`LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS`, a fresh
+  `TABLE-ARITY-RATCHET`) is classified in the `.2.5` leaf and queued as `.2.6`, paused by the maintainer.
+
 ## bedrock-scaffold 0.4.0 — TASK-ACCEPTANCE: a change lands with evidence, not with a claim
 
 `BEDROCK-MAINTENANCE.2.4`.

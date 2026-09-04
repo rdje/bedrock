@@ -36,6 +36,8 @@ NEUTRAL=(
   .githooks/commit-msg
   scripts/check_doctrines.sh
   scripts/check_memory_architecture.sh
+  scripts/check_live_doc_currency.sh
+  scripts/check_no_background_jobs.sh
   scripts/check_readme_stability.sh
   scripts/check_waiver_routing.sh
   scripts/check_task_acceptance.sh

@@ -7,7 +7,6 @@
 - Roadmap lane: maintain & evolve the spine (this IS bedrock's own roadmap; `ROADMAP.md` is
   the consumer placeholder — see `MAINTAINING.md`)
 - Created: `2026-07-24`
-- Last updated: `2026-07-30`
 - Owner: repo-local workflow
 
 ## Goal
@@ -273,6 +272,53 @@ process.
   - [x] **LOCKSTEP** — `DOCTRINE_ENFORCEMENT.md` registry mirror, `.doctrine/README.md`,
     `update_scaffold.sh` NEUTRAL allow-list, `CHANGELOG.md`, `MEMORY.md`, `DOCTRINE_VERSION`.
 
+- ID: `BEDROCK-MAINTENANCE.2.5`
+  Status: `done`
+  Goal: the **day-one batch** of the 2026-09 upstream transfer — the rules a freshly generated
+  project needs before its first commit and its first handoff, ported while the maintainer is
+  about to create the first project from this template. Three items, each admitted by **Q1**
+  (objective benefit to any project) before **Q2** (neutralizable), per `.2.3`:
+
+  | item | Q1 | Q2 | what landed |
+  |---|---|---|---|
+  | **NO AGENT TRAILERS** (upstream maintainer ruling 2026-08-22) | ⭐ any project: a rule a harness overrides by default is not a rule unless a hook holds it | 0 nouns | `COMMIT.md` pre-commit safety rule rewritten (it had said the OPPOSITE — *"end commit messages with the project's co-authorship trailer"* — so every generated project inherited the wrong default); `.githooks/commit-msg` refuses the known agent/tool attribution shapes and leaves a human co-author's `Co-Authored-By:` alone |
+  | **handoff background-job census** (upstream standing rule 2026-08-30) | ⭐ any project: a job that outlives its session rewrites tracked files under the next one | 0 nouns (one message word generalized) | `scripts/check_no_background_jobs.sh` — pattern-free (`lsof` over this uid: an open handle under the repo, or a command line naming the checkout); deliberately NOT a doctrine, a handoff check named in `CLAUDE.md` |
+  | **LIVE-DOC-CURRENCY**, the principle (upstream `LIVE-MEANS-LIVE.4a`, 2026-07-31) | ⭐ any project: a hand-kept `Last updated:` is right the day it is typed and false the day after; git carries it | 0 nouns | the field deleted from `docs/tasks/TEMPLATE.md` and this tree; `scripts/check_live_doc_currency.sh` (structural, over `git ls-files '*.md'`, `--self-test` 3 arms) registered as doctrine #7; the upstream instrument that scores distinct dates per surface against a declared charter needs a per-project charter — backlog |
+
+  ⏸ **PAUSED HERE by the maintainer** (2026-09-04, *"pause BEDROCK as soon as you can … I do not
+  want you to work on both projects at the same time"*). Part 2 of the same transfer is queued as
+  `.2.6`, read and classified but NOT written: `LESSON-PROMOTION` (Q1 ⭐; needs `DEV_NOTES.md`'s
+  heading shape and a decline token), `ROUTING-EVIDENCE` (frontier #1, Q1 ⭐), `GAP-CLAIM-CENSUS`
+  (Q1 ⭐; 8-arm self-test; fixtures must be re-worded, not just the comments), a fresh minimal
+  `TABLE-ARITY-RATCHET` (Q1 ⭐; the upstream self-test is bound to a shipped contract file, so it is
+  a rewrite, not a copy), and backlog notes for `BASELINE-IDENTITY` / `IDENTITY-CARRIER-CURRENCY`
+  (principle universal, inputs project-bound) and `SCRATCH-SLOT-HEADER`.
+
+  Acceptance: 0 domain nouns in every ported logic path; hook arms observed both ways; the new
+  check's self-test observed; `make gate` green with the doctrine registered; both new scripts in
+  the NEUTRAL allow-list; `DOCTRINE_VERSION` bumped.
+  Verification: see the Verification Log entry for `.2.5`.
+  Commit: see the Commit Log entry for `.2.5`.
+
+  ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — the template carried the inverse of the trailer ruling at
+    `COMMIT.md` *Pre-commit safety rules* (`grep -n 'co-authorship trailer' COMMIT.md` → 1 hit, the
+    line now replaced), a hand-kept currency field in two tracked files (`grep -rn 'Last updated'
+    --include='*.md' .` → 2 hits: `docs/tasks/TEMPLATE.md`, this tree), and no handoff census at
+    all (`ls scripts/` → 10 scripts, none a census). Each is a rule the originating project holds
+    mechanically and this template did not; `probes: 3 pass / 0 fail` on the three gaps.
+  - [x] **ADDRESSED (verified)** — `bash .githooks/commit-msg <msg>`: agent `Co-Authored-By` →
+    `rc=1`; human `Co-Authored-By: Jane Doe <jane@example.org>` → `rc=0`; `🤖 Generated with …` →
+    `rc=1`. `bash scripts/check_live_doc_currency.sh --self-test` → `LIVE-DOC-CURRENCY --self-test:
+    3/3 arms`, `rc=0`; the ordinary run → `ok (26 tracked .md files, none self-reports a currency
+    date)`. `bash scripts/check_no_background_jobs.sh` → `handoff: OK — no project-owned background
+    job is running`, `rc=0`. `grep -ci 'pgen\|grammar\|parser\|probe\|corpus'
+    scripts/check_no_background_jobs.sh scripts/check_live_doc_currency.sh` → 0 / 0.
+  - [x] **NO REGRESSION** — `bash scripts/check_doctrines.sh` → `=== doctrine enforcement (9
+    checks) ===` … `=== all doctrines green ===`, `rc=0` (was 8 checks; `LIVE-DOC-CURRENCY` added,
+    every prior check still ✅). `make gate` is that command.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
@@ -282,6 +328,8 @@ process.
 | — | `BEDROCK-MAINTENANCE.2.2` | `done` | `WAIVER-ROUTING` ported + the neutrality bar written down (0.3.0) |
 | — | `BEDROCK-MAINTENANCE.2.3` | `done` | applicability (Q1) put AHEAD of neutralizability (Q2); backlog re-ranked by benefit |
 | — | `BEDROCK-MAINTENANCE.2.4` | `done` | `TASK-ACCEPTANCE` universal core ported behind `.doctrine/` seams (0.4.0) |
+| — | `BEDROCK-MAINTENANCE.2.5` | `done` | day-one batch: NO AGENT TRAILERS + hook, the handoff census, `LIVE-DOC-CURRENCY` principle (0.5.0) |
+| 1 | `BEDROCK-MAINTENANCE.2.6` | `todo` | ⏸ part 2 of the 2026-09 transfer, paused by the maintainer: `LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS`, a fresh `TABLE-ARITY-RATCHET`, backlog notes |
 | 1 | `.2.x` — port `ROUTING-EVIDENCE` | `todo` | ⭐ passes Q1 outright: presumes **only** the task-tree system this template ships (measured: 0 build-system references). Universal discipline — a finding routed elsewhere must record what was measured, above all whether it reproduces outside the area it is being sent to |
 | 2 | `.2.x` — `GATE-REACHABILITY`, principle only | `todo` | universal principle (*a check nothing invokes is indistinguishable from one that does not exist*) but the implementation is **37 lines bound to make + workflow files**. Needs an enumeration seam before it can pass Q1. ⚠️ Its instrument produced six different confident answers upstream before it was right — port the ground-truth controls with it or not at all |
 | — | ⛔ `DESTRUCTIVE-TARGET-GUARD` — **do NOT port as-is** | `rejected` | fails **Q1**: hardcodes a `Makefile` path and a `clean:` recipe, so it benefits *any project that builds with make* — a conditional, not an objective benefit. Scored well on Q2, which is exactly why Q2 must not run first. Revisit only with a project-declared target list |
@@ -321,6 +369,10 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 
 ## Verification Log
 
+- `2026-09-04` — `.2.5`: `make gate` → **9/9 green** (adds `LIVE-DOC-CURRENCY`). Hook arms:
+  agent trailer `rc=1` · human co-author `rc=0` · `🤖 Generated with` `rc=1`. `check_live_doc_currency.sh
+  --self-test` **3/3**; ordinary run `ok (26 tracked .md files …)`. `check_no_background_jobs.sh` →
+  `handoff: OK`. Neutrality: 0 domain nouns in both new scripts.
 - `2026-07-30` — `.2.4`: `make gate` → **8/8 green** (adds `TASK-ACCEPTANCE`).
   Probes **9 pass / 0 fail** (`docs/tasks/artifacts/task_acceptance/run_task_acceptance_probes.sh`):
   GREEN-1 compliant leaf · RED-1 code with no owning leaf · RED-2 unticked box · RED-3 ticked but
@@ -378,6 +430,10 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
   `DESTRUCTIVE-TARGET-GUARD` as-is.
 - `2026-07-30` — `.2.4` — `BEDROCK-MAINTENANCE-0006`: port the `TASK-ACCEPTANCE` universal core
   behind `.doctrine/` seams; `DOCTRINE_VERSION` `0.3.0` → `0.4.0`.
+- `2026-09-04` — `.2.5` — `BEDROCK-MAINTENANCE-0007`: the day-one batch of the 2026-09 transfer —
+  NO AGENT TRAILERS (rule + `commit-msg` hook), the handoff background-job census, the
+  `LIVE-DOC-CURRENCY` principle (fields deleted, check registered); `DOCTRINE_VERSION` `0.4.0` → `0.5.0`.
+  Paused by the maintainer before part 2 (`.2.6`).
 
 - `2026-07-30` — `.2.1` — `BEDROCK-MAINTENANCE-0002`: adopt the README Stability Policy and
   close the layer-A size-cap bypass; `DOCTRINE_VERSION` `0.1.0` → `0.2.0`.
