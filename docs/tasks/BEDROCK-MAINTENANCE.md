@@ -339,7 +339,7 @@ process.
   pipeline failed while the predicate was right; rewritten to capture the count. ⇒ Both are the
   class a template must not ship: a green gate that judges nothing.
 
-  Census of the reserved and domain vocabulary in the four scripts: `grep -ciE 'grammar|parser|ebnf|systemverilog|corpus|regex|pgen' scripts/check_lesson_promotion.sh scripts/check_routing_evidence.sh scripts/check_gap_claims.sh scripts/check_table_arity.sh` → 0 / 0 / 0 / 0. Backlog census for the new claim doctrine on this tree: `bash scripts/check_gap_claims.sh --all` → 1 claim line across 1 file, 0 unbacked. Table backlog: `bash scripts/check_table_arity.sh --all` → 0 defective rows.
+  Census of the reserved and domain vocabulary in the four scripts: `grep -ciE 'grammar|parser|ebnf|systemverilog|corpus|regex|pgen' scripts/check_lesson_promotion.sh scripts/check_routing_evidence.sh scripts/check_gap_claims.sh scripts/check_table_arity.sh` → 0 / 0 / 0 / 0 **as corrected by `BEDROCK-MAINTENANCE-0009`**: at `-0008` the same census read 0 / 0 / **1** / 0 — one occurrence of a domain word on a comment continuation line (`# grammar and cannot mis-parse one.`) escaped a re-wording keyed on the one-line phrase, and the leaf published the 0 before re-running the census on the final bytes. ⛔ A census is quoted from its last run on the bytes being committed, not from the run before the last edit. Backlog census for the new claim doctrine on this tree: `bash scripts/check_gap_claims.sh --all` → 1 claim line across 1 file, 0 unbacked. Table backlog: `bash scripts/check_table_arity.sh --all` → 0 defective rows.
 
   promotion: declined (the lessons of this batch ARE the four doctrine texts and their controls; the notes entry names them and the enforcer carries them)
 
@@ -499,6 +499,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 - `2026-09-04` — `.2.6` — `BEDROCK-MAINTENANCE-0008`: part 2 — `LESSON-PROMOTION`, `ROUTING-EVIDENCE`,
   `GAP-CLAIM-CENSUS` ported (neutralized, fixtures re-worded), `TABLE-ARITY-RATCHET` rewritten minimal
   with an 8-arm self-test; backlog notes for the input-bound principles; `DOCTRINE_VERSION` `0.5.0` → `0.6.0`.
+- `2026-09-04` — `.2.6` — `BEDROCK-MAINTENANCE-0009`: CORRECTION — the neutrality census the `.2.6` leaf
+  published (0 / 0 / 0 / 0) was 0 / 0 / 1 / 0 at `-0008`; the word is re-worded and the claim corrected in place.
 
 - `2026-07-30` — `.2.1` — `BEDROCK-MAINTENANCE-0002`: adopt the README Stability Policy and
   close the layer-A size-cap bypass; `DOCTRINE_VERSION` `0.1.0` → `0.2.0`.

@@ -60,7 +60,7 @@ CLAIM_RE='nothing (checks|checked|reads|compares|measures|measured|watches|enfor
 CENSUS_RE='git grep|grep -r|grep -c|grep -l|grep -o|grep -n|grep -w|git ls-files|git log -s|git log --grep|git log --oneline|rg -|--dump-|--report-|--self-test|--lint|scripts/check_|make |comm -|wc -l|sort -u|uniq -c|sed -n|git show|git diff|cargo |a search of|searched (the|all|every)|census:'
 
 # Section boundaries are ANY ATX heading, deliberately: "nearest heading above" needs no leaf-id
-# grammar and cannot mis-parse one.
+# syntax and cannot mis-parse one.
 CLASSIFY_AWK='
   FNR==NR { added[$1+0]=1; next }
   { line[FNR]=$0; low[FNR]=tolower($0) }
