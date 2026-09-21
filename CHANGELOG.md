@@ -1,5 +1,31 @@
 # CHANGELOG.md
 
+## 0.9.0 — 2026-09-21 — update_scaffold.sh never overwrites anything
+
+`BEDROCK-MAINTENANCE-0015` (leaf `.2.10`). **Maintainer instruction:** *"`update_scaffold.sh` shall
+absolutely not touch files that were modified, that's way too dangerous."*
+
+- 🔴 **It happened.** A run in a project created from this template wiped `docs/TASK_TREE.md`'s index of
+  **11 registered task trees**, `DOCTRINE_ENFORCEMENT.md`'s **four project doctrine rows**, `TOOLBOX.md`'s
+  **entire tool registry** (replaced by `<your-probe>` placeholders) and `COMMIT.md`'s **tiered workflow**.
+  Recoverable only because nothing had been committed.
+- 🔴 **And `make gate` passed on the wreck** — which the tool itself advises running. It cannot see this
+  class: the files written are the TEMPLATE's, and template files satisfy template checks.
+- **The premise was measurably false.** `NEUTRAL` was documented as *"safe to overwrite because it never
+  carries project content"*. Divergence from the template across the three projects created from it:
+  `docs/TASK_TREE.md` 25/30/20 lines, `TOOLBOX.md` 27/48/**616**, `COMMIT.md` 16/27/61,
+  `check_task_acceptance.sh` 0/79/**447**, `check_readme_stability.sh` 0/0/**217**,
+  `check_gap_claims.sh` 0/0/**212**. ⛔ The most mature project would have lost the most — its hardened
+  checks are exactly what this template exists to receive.
+- ✅ **The tool now has no overwrite path at all.** Identical → counted, untouched. Absent → seeded.
+  Different → the template's version is copied into `.bedrock-incoming/<path>` and reported by name,
+  while **yours is not modified, renamed or deleted**. One directory to review, one `rm -rf` to clean,
+  and it cannot be committed beside the original by a careless `git add -A`.
+- ✅ **A dirty tree is REFUSED** (`--force` overrides, having read why): recovery is
+  `git checkout -- <file>`, and that is only simple when the tree was clean to begin with.
+- Verified against a clean clone of the affected project: **23 already current, 1 seeded, 6 differ**;
+  all four previously-destroyed files **SHA-256 unchanged** and its 11 trees intact.
+
 ## 0.8.1 — 2026-09-21 — a spine file that carries a project decision can now reach an existing project
 
 `BEDROCK-MAINTENANCE-0014` (leaf `.2.9`, follow-up). 0.8.0 added `VISIBILITY.md` and it could reach only

@@ -590,6 +590,83 @@ process.
   ⛔ `MEMORY_ARCHITECTURE.md` needed no such handling — it IS in `NEUTRAL`, so `.2.8`'s §6 rule already
   reaches every project that runs the updater.
 
+- ID: `BEDROCK-MAINTENANCE.2.10`
+  Status: `done`
+  Goal: stop `update_scaffold.sh` destroying project content. It overwrote, the premise behind that
+  was measurably false, and a real project lost four files to it.
+
+  🔴 **THE INCIDENT, 2026-09-21.** The maintainer ran `scripts/update_scaffold.sh ../bedrock` in a
+  project created from this template and asked whether it had overwritten anything modified since
+  creation. It had: `docs/TASK_TREE.md` lost its index of **11 registered task trees** with their
+  statuses and frontiers, `DOCTRINE_ENFORCEMENT.md` lost the project's **four own doctrine rows**,
+  `TOOLBOX.md` lost its **whole tool registry** (replaced by `<your-probe>` placeholders), and
+  `COMMIT.md` lost its **tiered workflow** including the exit-20 *incomplete* semantics. Recoverable
+  only because nothing had been committed. Restored from `HEAD`; the project's own in-progress work in
+  seven other files was never touched, and the one genuinely additive change (`MEMORY_ARCHITECTURE.md`,
+  **+23 −0**) was kept.
+
+  🔴 **AND `make gate` PASSED ON THE WRECKED TREE.** The tool's own advice is *"review `git diff`, run
+  `make gate`, then commit"*, and the gate cannot see this class at all: the files it wrote are the
+  TEMPLATE's, and template files satisfy template checks. The advertised safety net is structurally
+  blind to the damage the tool does.
+
+  **THE PREMISE WAS FALSE, AND IT IS MEASURED RATHER THAN ARGUED.** `NEUTRAL` was documented as *"safe
+  to overwrite because it never carries project content"*. Across the three projects created from this
+  template, divergence from the template version, in lines:
+
+  | file | proj A | proj B | proj C |
+  | --- | --- | --- | --- |
+  | `docs/TASK_TREE.md` | 25 | 30 | 20 |
+  | `TOOLBOX.md` | 27 | 48 | **616** |
+  | `COMMIT.md` | 16 | 27 | 61 |
+  | `DOCTRINE_ENFORCEMENT.md` | 12 | 31 | 58 |
+  | `README_POLICY.md` | 0 | 161 | 156 |
+  | `scripts/check_task_acceptance.sh` | 0 | 79 | **447** |
+  | `scripts/check_readme_stability.sh` | 0 | 0 | **217** |
+  | `scripts/check_gap_claims.sh` | 0 | 0 | **212** |
+
+  ⛔ **The most mature project would have lost the most.** Its hardened checks — 447 lines on one, 217
+  on another, 212 on a third — are exactly the work this template exists to receive, and a "pull the
+  latest spine" run would have replaced every one of them with the simpler original.
+
+  ⭐ **AND THE DIRECTION IS OFTEN PROJECT → TEMPLATE.** `MAINTAINING.md` already records that transfer
+  runs both ways: a mature project hardens a check and sends it back here. A tool that overwrites the
+  project from here is backwards for precisely the projects worth syncing.
+
+  **The repair: the tool never overwrites.** Identical → nothing. Absent → seeded. Different → the
+  incoming version is written BESIDE yours as `<file>.bedrock-new`, reported by name, and you merge
+  deliberately. Plus a refusal on a dirty tree, because recovery is `git checkout -- <file>` and that
+  is only simple when the tree was clean; `--force` overrides for someone who has read why.
+
+  Acceptance: no path in the tool replaces an existing file; a run against a real customised project
+  leaves every customised file byte-identical; a genuinely new file still arrives; the dirty-tree
+  refusal fires and `--force` overrides it; the summary tells the reader exactly which files to look at.
+  Verification: see the Verification Log entry for `.2.10`.
+  Commit: see the Commit Log entry for `.2.10`.
+
+  ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — `update_scaffold.sh` had one apply path, `cp "$tmp/bedrock/$f" "$f"`,
+    over a `NEUTRAL` list documented as never carrying project content. That premise is false for most of
+    the list, measured across all three spawned projects (table above), and the failure is silent
+    because the tool's advertised check — `make gate` — passes on template files by construction.
+  - [x] **THE FIX** — one `apply_one` path with three outcomes and no overwrite among them: identical →
+    counted and untouched; absent → seeded; different → `<file>.bedrock-new` written beside the original
+    and reported by name. `SEED_ONCE` entries additionally never get a sidecar, since they carry a
+    project decision rather than a spine improvement. A dirty tree is REFUSED, with `--force` available.
+  - [x] **ADDRESSED (verified) — against a REAL customised project, not a fixture** — a clone of the
+    affected project, clean, run with the new tool: **23 already current, 1 seeded (`VISIBILITY.md`),
+    6 differ** with sidecars written. `docs/TASK_TREE.md` and `TOOLBOX.md` **SHA-256 unchanged**, and its
+    **11 registered trees still present**. The dirty-tree arm refuses with the override named; `--force`
+    proceeds.
+  - [x] **THE FIRST TRIAL NEARLY PASSED FOR THE WRONG REASON** — it copied the new tool into the clone
+    and then ran `git checkout -- .`, which restored the project's OLD tool, so the "successful" run was
+    the old code. Caught by reading the output — the summary said *synced*, a word the new tool no longer
+    prints. The trial was re-run with the new tool committed in the clone first.
+  - [x] **NO REGRESSION** — no check, doctrine, cap or registry entry changed; `bash -n` clean;
+    `make gate` green. The affected project was restored from `HEAD` with its in-progress work in seven
+    other files untouched, and the one additive change kept.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
@@ -601,6 +678,7 @@ process.
 | — | `BEDROCK-MAINTENANCE.2.4` | `done` | `TASK-ACCEPTANCE` universal core ported behind `.doctrine/` seams (0.4.0) |
 | — | `BEDROCK-MAINTENANCE.2.5` | `done` | day-one batch: NO AGENT TRAILERS + hook, the handoff census, `LIVE-DOC-CURRENCY` principle (0.5.0) |
 | — | `BEDROCK-MAINTENANCE.2.6` | `done` | part 2 of the 2026-09 transfer: `LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS`, a fresh `TABLE-ARITY-RATCHET` (0.6.0) |
+| — | `BEDROCK-MAINTENANCE.2.10` | `done` | `update_scaffold.sh` NEVER overwrites — a real project lost its task-tree index, doctrine rows, tool registry and commit workflow to it, and `make gate` passed on the wreck (0.9.0) |
 | — | `BEDROCK-MAINTENANCE.2.9` | `done` | `VISIBILITY.md`: the declared posture is PUBLIC and spawned projects carry nothing confidential; bootstrap puts the decision before the first push (0.8.0) |
 | — | `BEDROCK-MAINTENANCE.2.8` | `done` | `MEMORY_ARCHITECTURE.md` §6 made upright w.r.t. `MEMORY.md`: it answers ONE question and shall not grow; this repo's own pointer 3,263 → 672 B and the bootstrap seed brought in line, trial-proven (0.7.0) |
 | — | `BEDROCK-MAINTENANCE.2.7` | `done` | foolproof project creation: `bootstrap.sh` seeds the leaf that owns its own crate rename, so the FIRST commit passes the hooks (0.6.1) |
@@ -644,6 +722,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 - None.
 
 ## Verification Log
+
+- `2026-09-21` — `.2.10`: new tool against a clean clone of the affected project — **23 already current, 1 seeded, 6 differ** (sidecars); `docs/TASK_TREE.md` and `TOOLBOX.md` SHA-256 unchanged; 11 registered trees intact. Dirty-tree arm refuses and names `--force`; `--force` proceeds. `bash -n scripts/update_scaffold.sh` clean; `make gate` green. ⚠️ The first trial was invalid — `git checkout -- .` had restored the project's old tool — and was caught by the summary printing a word the new tool does not use.
 
 - `2026-09-21` — `.2.9` follow-up: trial clone, both directions — absent → `seeded VISIBILITY.md`, file present; edited to `Declared posture: PRIVATE` → `kept VISIBILITY.md`, SHA-256 unchanged and the posture line intact. `bash -n scripts/update_scaffold.sh` clean; `make gate` green.
 
@@ -711,6 +791,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 | `2026-07-24` | `.1` | enforcer (5 checks) · cargo metadata · commit-msg hook · KM gen | all green |
 
 ## Commit Log
+
+- `2026-09-21` — `.2.10` — `BEDROCK-MAINTENANCE-0015`: `update_scaffold.sh` never overwrites — identical/seed/sidecar, plus a dirty-tree refusal; the `NEUTRAL` premise was measurably false and one project lost four files to it; `DOCTRINE_VERSION` 0.8.1 → 0.9.0
 
 - `2026-09-21` — `.2.9` follow-up — `BEDROCK-MAINTENANCE-0014`: `update_scaffold.sh` gains a `SEED_ONCE` category — copied when absent, never overwritten when present — because a spine file carrying a project decision could not otherwise reach a project that predates it; `VISIBILITY.md` is its first member; `DOCTRINE_VERSION` 0.8.0 → 0.8.1
 

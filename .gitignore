@@ -14,3 +14,4 @@ git_message_brief.txt
 
 # Note: Cargo.lock is intentionally NOT ignored — binary/application projects should
 # commit it for reproducible builds. If this becomes a library-only workspace, add it.
+.bedrock-incoming/
