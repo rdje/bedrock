@@ -431,6 +431,80 @@ process.
     does not seed the leaf (guarded on the de-template branch) — `ls docs/tasks/BOOTSTRAP.md` → absent,
     `rc=2`.
 
+- ID: `BEDROCK-MAINTENANCE.2.8`
+  Status: `done`
+  Goal: make `MEMORY_ARCHITECTURE.md` UPRIGHT with respect to `MEMORY.md` — state the one rule the
+  layer-A contract was missing, and make this template PRACTISE it in both the file it ships and the
+  seed it writes into every project spawned from it.
+
+  **Maintainer instruction, 2026-09-21:** *"`MEMORY.md` should just be a pointer to the next action,
+  task, slice, lane … It is used to answer the question: 'What's next?', that's it"*, and *"its current
+  size limit shall be enough to describe the next action … the idea is that `MEMORY.md` shall not grow.
+  If it ever does, it means you are writing stuff that are not supposed to be there."*
+
+  **What was missing, and it is a gap in the DOCTRINE rather than in one project.** §6 already said
+  *overwrite, don't append*, *no history*, and *if it exceeds either cap, information is in the wrong
+  layer*. What it did not say is the thing that makes those operational: **what the file is FOR**, and
+  that **growth is itself the defect signal** rather than evidence of a tight cap. Without that, a
+  reader who finds the pointer near its cap concludes the cap is small — which is what happened
+  downstream, where a resume pointer reached **81% standing warnings** and its guard was green
+  throughout, because every individual addition looked defensible.
+
+  **Q1 (the admission test, asked first and without any project's nouns):** *does stating that the
+  resume pointer answers exactly one question, and that its growth is the signal of misplaced content,
+  objectively benefit any present and any future project?* **Yes, unconditionally.** It is a property
+  of the layer-A contract this template already ships to every project; it names the failure mode that
+  contract exists to prevent; and a brand-new project is better off with it on day one, because the
+  accumulation it prevents is cheapest to stop before the first warning is written. No qualifier is
+  needed — it is not *"any project that …"*. **Q2:** no domain nouns; the rule is stated in the
+  vocabulary of the architecture itself.
+
+  **The three parts, because a doctrine a template does not practise is a doctrine it does not teach:**
+  (a) `MEMORY_ARCHITECTURE.md` §6 gains the rule; (b) this repository's OWN `MEMORY.md` is brought in
+  line — it was **3,263 bytes / 46 lines against a ~50-line cap**, with a Current state block carrying a
+  completed-leaf history, the neutrality bar restated from `MAINTAINING.md`, and a two-way-transfer
+  note; (c) `scripts/bootstrap.sh`'s SEED is brought in line, because that is the shape every spawned
+  project inherits and starts appending to.
+
+  Acceptance: §6 states what the file is for and that growth is the signal; this repository's own
+  pointer and the bootstrap seed both satisfy the rule they ship; nothing else in the pointer's
+  content is lost — each evicted item is shown to exist in a durable layer first; no cap is raised;
+  `make gate` green; `DOCTRINE_VERSION` bumped.
+  Verification: see the Verification Log entry for `.2.8`.
+  Commit: see the Commit Log entry for `.2.8`.
+
+  ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — `MEMORY_ARCHITECTURE.md` §6 defined the layer-A contract by its
+    MECHANICS (overwrite, no history, two caps, demote on breach) and never by its PURPOSE. A rule
+    about how to write a file does not tell a reader what does not belong in it, so each addition is
+    judged on its own merit and the file accumulates while every step looks correct. Measured
+    downstream on a project running this spine: **26 standing warnings weighing 5,184 of 6,412 bytes —
+    81% — with the pointer proper at 19%**, the file sitting on its byte cap exactly twice.
+  - [x] **THE FIX** — §6 gains a first hard rule: the pointer **answers one question, *what is next?*,
+    and nothing else**, and **it shall not grow** — *"if it grows, that is the signal that something is
+    being written into it that does not belong, not a signal that the cap is tight"*. Raising the cap
+    stays available for a genuinely larger next action and is explicitly not the answer to
+    accumulation. The measurement above ships as its worked instance.
+  - [x] **THE TEMPLATE NOW PRACTISES WHAT IT SHIPS** — this repository's `MEMORY.md` goes
+    **3,263 → 672 bytes, 46 → 13 lines**. ⛔ Nothing was lost: the completed-leaf history is in this
+    tree's own Current Frontier and Commit Log, the neutrality bar is `MAINTAINING.md`'s §"The
+    neutrality bar" verbatim, the provenance is `docs/decisions/reference_bedrock_provenance.md`, and
+    the two-way-transfer note is in `MAINTAINING.md`. Each was checked in its durable home BEFORE
+    removal, not after.
+  - [x] **AND THE SEED, WHICH IS THE PART THAT PROPAGATES** — `scripts/bootstrap.sh` writes the first
+    `MEMORY.md` of every project spawned from this template. It shipped a "How to resume" block that
+    duplicates `CLAUDE.md`'s bootstrap list and a framing note that invites prose. Both are gone; the
+    seed is now the five pointer fields under the one-question heading, so a new project starts from
+    the shape rather than converging on it later. ⭐ **Proven by a real trial, not by reading the script**:
+    clone → `bootstrap.sh trialproj` → the seeded pointer is **713 bytes / 13 lines** and `make gate` is green
+    in the new project. 🔴 The trial earned its keep — renaming the seed's fields silently broke the two
+    `sed -i` lines that fill `active_work_unit` and `latest_commit` after bootstrap: they matched the OLD
+    field names, and a `sed` that matches nothing exits 0. Both retargeted; the trial shows both values landing.
+  - [x] **NO REGRESSION** — no check, registry entry or cap changed; `MEMORY-ARCH`'s line and byte caps
+    are untouched and both files sit far below them. `make gate` green (13/13). The bootstrap seed was
+    re-generated and inspected rather than assumed.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
@@ -442,6 +516,7 @@ process.
 | — | `BEDROCK-MAINTENANCE.2.4` | `done` | `TASK-ACCEPTANCE` universal core ported behind `.doctrine/` seams (0.4.0) |
 | — | `BEDROCK-MAINTENANCE.2.5` | `done` | day-one batch: NO AGENT TRAILERS + hook, the handoff census, `LIVE-DOC-CURRENCY` principle (0.5.0) |
 | — | `BEDROCK-MAINTENANCE.2.6` | `done` | part 2 of the 2026-09 transfer: `LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS`, a fresh `TABLE-ARITY-RATCHET` (0.6.0) |
+| — | `BEDROCK-MAINTENANCE.2.8` | `done` | `MEMORY_ARCHITECTURE.md` §6 made upright w.r.t. `MEMORY.md`: it answers ONE question and shall not grow; this repo's own pointer 3,263 → 672 B and the bootstrap seed brought in line, trial-proven (0.7.0) |
 | — | `BEDROCK-MAINTENANCE.2.7` | `done` | foolproof project creation: `bootstrap.sh` seeds the leaf that owns its own crate rename, so the FIRST commit passes the hooks (0.6.1) |
 | — | `.2.x` — port `ROUTING-EVIDENCE` | `done` (as `.2.6`) | ⭐ passes Q1 outright: presumes **only** the task-tree system this template ships (measured: 0 build-system references). Universal discipline — a finding routed elsewhere must record what was measured, above all whether it reproduces outside the area it is being sent to |
 | 2 | `.2.x` — `GATE-REACHABILITY`, principle only | `todo` | universal principle (*a check nothing invokes is indistinguishable from one that does not exist*) but the implementation is **37 lines bound to make + workflow files**. Needs an enumeration seam before it can pass Q1. ⚠️ Its instrument produced six different confident answers upstream before it was right — port the ground-truth controls with it or not at all |
@@ -481,6 +556,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 - None.
 
 ## Verification Log
+
+- `2026-09-21` — `.2.8`: trial from a fresh clone — `bootstrap.sh trialproj`, seeded `MEMORY.md` **713 bytes / 13 lines** with both post-bootstrap `sed` substitutions landing, `make gate` **green** in the new project. This repo's own `MEMORY.md` 3,263 → 672 B / 46 → 13 lines; `make gate` green here. No cap changed; `MEMORY-ARCH`'s line and byte caps untouched and both files far below them.
 
 - `2026-09-04` — `.2.7`: trial from a fresh clone — `bootstrap.sh newproj` **13/13**, first commit through
   the hooks **green** (`f3ae296`), `make gate` green, `make check` green, bootstrap re-run idempotent. Before
@@ -542,6 +619,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 | `2026-07-24` | `.1` | enforcer (5 checks) · cargo metadata · commit-msg hook · KM gen | all green |
 
 ## Commit Log
+
+- `2026-09-21` — `.2.8` — `BEDROCK-MAINTENANCE-0012`: `MEMORY_ARCHITECTURE.md` §6 gains the rule the layer-A contract was missing — the resume pointer answers ONE question, *what is next?*, and its growth is the signal that something belongs in another layer rather than that the cap is tight; the template now practises it in its own pointer and in the seed every spawned project starts from; `DOCTRINE_VERSION` 0.6.1 → 0.7.0
 
 - `2026-07-30` — `.2.2` — `BEDROCK-MAINTENANCE-0004`: port `WAIVER-ROUTING` (fixing its
   fail-open), write down the neutrality bar and the both-ways transfer rule;

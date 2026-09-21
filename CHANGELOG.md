@@ -1,5 +1,34 @@
 # CHANGELOG.md
 
+## 0.7.0 — 2026-09-21 — the resume pointer answers one question, and its growth is the signal
+
+`BEDROCK-MAINTENANCE-0012` (leaf `.2.8`). `MEMORY_ARCHITECTURE.md` §6 defined the layer-A contract by its
+MECHANICS — overwrite, no history, two caps, demote on breach — and never by its PURPOSE. A rule about how
+to write a file does not tell a reader what does not belong in it, so every addition gets judged on its own
+merit and the file accumulates while each step looks correct.
+
+- **§6 gains a first hard rule:** the pointer **answers one question, *what is next?*, and nothing else**,
+  and **it shall not grow** — *"if it grows, that is the signal that something is being written into it that
+  does not belong, not a signal that the cap is tight"*. Raising the cap stays available for a genuinely
+  larger next action and is explicitly not the answer to accumulation.
+- **The worked instance ships with it**, measured on a project running this spine: the pointer reached
+  **26 standing warnings weighing 5,184 of 6,412 bytes — 81%** — with the pointer proper at 19%, its guard
+  green throughout. Eviction took it to 425 bytes and no cap changed.
+- **The template now practises what it ships.** This repository's own `MEMORY.md`: **3,263 → 672 bytes,
+  46 → 13 lines**, with every evicted item checked in its durable home first — the completed-leaf history is
+  this tree's Current Frontier and Commit Log, the neutrality bar is `MAINTAINING.md`, the provenance is its
+  decision record.
+- **And the seed, which is the part that propagates.** `scripts/bootstrap.sh` wrote a first `MEMORY.md`
+  carrying a "How to resume" block duplicating `CLAUDE.md` and a framing note that invites prose. The seed is
+  now the five pointer fields under the one-question heading.
+- **Trial-proven, not read:** clone → `bootstrap.sh trialproj` → seeded pointer **713 bytes / 13 lines**,
+  `make gate` green in the new project. 🔴 The trial earned its keep: renaming the seed's fields silently
+  broke the two `sed -i` lines that fill them after bootstrap, because they matched the old names and a
+  `sed` that matches nothing exits 0.
+- Admission test: **Q1 passes unconditionally** — the rule is a property of the layer-A contract this
+  template already ships, needs no *"any project that …"* qualifier, and a brand-new project is better off
+  with it on day one. **Q2:** no domain nouns.
+
 ## bedrock-scaffold 0.6.1 — creating a project is foolproof through its first commit
 
 `BEDROCK-MAINTENANCE.2.7`.

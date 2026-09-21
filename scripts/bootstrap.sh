@@ -25,24 +25,19 @@ if [ -n "$name" ] && [ -f MAINTAINING.md ]; then
   rm -f MAINTAINING.md docs/tasks/BEDROCK-MAINTENANCE.md docs/decisions/reference_bedrock_provenance.md
 
   cat > MEMORY.md <<SEED
-# MEMORY — resume pointer (layer A; overwrite-only, keep ≤ ~50 lines)
+# MEMORY — resume pointer (layer A; overwrite-only)
 
-> The bounded layer-A resume pointer (see \`MEMORY_ARCHITECTURE.md\`). OVERWRITE the
-> "Current state" block each update — never append history here.
+> Answers ONE question: **what is next?** Nothing else belongs in it — see
+> \`MEMORY_ARCHITECTURE.md\` §6. If this file grows, something is being written into it
+> that belongs in another layer.
 
-## How to resume
+## Current state (OVERWRITE this block each update — do not append)
 
-1. Read \`README.md\`, \`MEMORY_ARCHITECTURE.md\`, \`TOOLBOX.md\`, \`DOCTRINE_ENFORCEMENT.md\`.
-2. Open the active task-tree below → its Current Frontier → continue from the next action.
-
-## Current state
-
-- **Project:** $name — fresh from the bedrock template.
-- **Active tree:** _none yet_
-- **Next action:** replace \`ROADMAP.md\`; create your first task-tree
-  (\`cp docs/tasks/TEMPLATE.md docs/tasks/<TREE-ID>.md\`), register it in \`docs/TASK_TREE.md\`.
-- **Latest commit:** _none yet_
-- **In-flight uncommitted work:** none.
+- next_action: replace \`ROADMAP.md\`; create your first task-tree (\`cp docs/tasks/TEMPLATE.md docs/tasks/<TREE-ID>.md\`) and register it in \`docs/TASK_TREE.md\`.
+- active_work_unit: _none yet_
+- latest_commit: _none yet_
+- in_flight_uncommitted: none.
+- blockers: none.
 SEED
 
   cat > docs/decisions/INDEX.md <<'SEED'
@@ -152,8 +147,8 @@ so the first commit of this project passes the same gates every later commit wil
 LEAF
   # register it: the placeholder row becomes the BOOTSTRAP row; the seeding hint stays as a note
   sed -i "s/^| _none yet — seed your first tree from \`ROADMAP.md\`_ | | | |\$/| [\`BOOTSTRAP\`](tasks\/BOOTSTRAP.md) | \`done\` | \`.1\` — bootstrapped from bedrock; seed your first real tree from \`ROADMAP.md\` | repo-local |/" docs/TASK_TREE.md
-  sed -i "s/^- \*\*Active tree:\*\* _none yet_\$/- **Active tree:** \`BOOTSTRAP\` (done) — seed your first real tree from \`ROADMAP.md\`/" MEMORY.md
-  sed -i "s/^- \*\*Latest commit:\*\* _none yet_\$/- **Latest commit:** _none yet — commit the bootstrap first (bootstrap.sh printed the command)_/" MEMORY.md
+  sed -i "s|^- active_work_unit: _none yet_\$|- active_work_unit: \`BOOTSTRAP\` (done) — seed your first real tree from \`ROADMAP.md\`|" MEMORY.md
+  sed -i "s|^- latest_commit: _none yet_\$|- latest_commit: _none yet — commit the bootstrap first (bootstrap.sh printed the command)_|" MEMORY.md
   echo "✓ docs/tasks/BOOTSTRAP.md seeded with this run's evidence (owns the crate rename for the first commit)"
 fi
 
