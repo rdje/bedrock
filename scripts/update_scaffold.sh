@@ -88,9 +88,11 @@ SEED_ONCE=(
   VISIBILITY.md
 )
 
-# ⛔ Refuse on a dirty tree. Recovery from any surprise is `git checkout -- <file>`, and
-# that is only simple when the tree was clean to begin with. `--force` is available for
-# someone who has read this and wants it anyway.
+# ⛔ Refuse on a dirty tree, and this is the load-bearing guard rather than a courtesy.
+# Committed content survives anything this tool could do. UNCOMMITTED content survives
+# nothing: it is in no object, no reflog, no stash — only in the working file, so a single
+# write ends it. That is not hypothetical (`BEDROCK-MAINTENANCE.2.10`). `--force` exists for
+# someone who has read this sentence and accepts it.
 MERGE=0; FORCE=0
 for a in "$@"; do
   case "$a" in
@@ -101,8 +103,12 @@ done
 
 if [ "$FORCE" != "1" ] && [ -n "$(git status --porcelain)" ]; then
   echo "REFUSED: the working tree is dirty." >&2
-  echo "  This tool writes files. Commit or stash first, so that reviewing what it did is a" >&2
-  echo "  clean 'git diff' and undoing it is 'git checkout -- <file>'." >&2
+  echo "  Commit or stash first." >&2
+  echo "  ⛔ WHY THIS REFUSES RATHER THAN WARNS: committed content is always recoverable." >&2
+  echo "     UNCOMMITTED content is recoverable by NOTHING — not git checkout, not the" >&2
+  echo "     reflog, not a dangling blob, not fsck. It exists only in the working file." >&2
+  echo "     This tool writes files. Meeting your uncommitted work is the one failure it" >&2
+  echo "     cannot let you undo, so it declines to be in the room with it." >&2
   echo "  Deliberate override: scripts/update_scaffold.sh <url> --force" >&2
   echo "  (--force skips THIS check only. Nothing can make this tool overwrite a file.)" >&2
   exit 2

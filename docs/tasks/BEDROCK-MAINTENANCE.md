@@ -725,6 +725,16 @@ process.
   - [x] **NO REGRESSION** — no check, doctrine, cap or registry entry changed. `bash -n` clean;
     `make gate` green. Default behaviour without `--merge` is unchanged from `.2.10`.
 
+  **FOLLOW-UP (`BEDROCK-MAINTENANCE-0017`) — the refusal named the wrong reason.** It said
+  *"undoing it is `git checkout -- <file>`"*. That is true for COMMITTED content and silently wrong
+  for the case that actually cost work: the incident's real loss was uncommitted, and `git checkout`
+  restores HEAD — it does not recover an uncommitted edit, it discards it. Confirmed by exhausting the
+  alternatives on the affected project afterwards: no dangling blob held the file, no stash, no
+  `fsck` object, and `tmutil` reported **no local snapshots on either volume**. Uncommitted content
+  lives in the working file and nowhere else, so a single write ends it. The refusal now says that,
+  and says it is why it refuses rather than warns — the sentence a reader needs BEFORE reaching for
+  `--force`.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
@@ -852,6 +862,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 | `2026-07-24` | `.1` | enforcer (5 checks) · cargo metadata · commit-msg hook · KM gen | all green |
 
 ## Commit Log
+
+- `2026-09-21` — `.2.11` follow-up — `BEDROCK-MAINTENANCE-0017`: the dirty-tree refusal named `git checkout` as the undo, which is true for committed content and silently wrong for the uncommitted content that is the actual risk; it now states that uncommitted work is recoverable by nothing and that this is why it refuses rather than warns
 
 - `2026-09-21` — `.2.11` — `BEDROCK-MAINTENANCE-0016`: the blanket `chmod` is scoped to seeded files (a mode change is a change), and `--merge` asks per file then writes a three-way merge to `.bedrock-incoming/<path>.merged` with the base resolved from the project's recorded `DOCTRINE_VERSION`; proven by content AND mode over 310 tracked files; `DOCTRINE_VERSION` 0.9.0 → 0.10.0
 
