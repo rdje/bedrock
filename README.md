@@ -23,6 +23,7 @@ Cursor, a custom runner — or a human, identically.
 | `COMMIT.md` | the strict, repeatable commit workflow |
 | `DOCTRINE_ENFORCEMENT.md` + `scripts/check_doctrines.sh` | the mechanical enforcer (registry + universal checks + a project slot) |
 | `TOOLBOX.md` | the tools-first diagnostic doctrine |
+| `VISIBILITY.md` | the repository's declared visibility posture — **public**, and what that means for confidential material |
 | `KNOWLEDGE_MAP.md` + `knowledge-map/` | a derived, drift-proof orientation map |
 | `docs/book/` | an mdBook skeleton — the public docs surface |
 | `.githooks/` + `.github/workflows/` | the E3 (hook) + E4 (CI) enforcement layers |

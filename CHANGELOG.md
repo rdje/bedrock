@@ -1,5 +1,31 @@
 # CHANGELOG.md
 
+## 0.8.0 — 2026-09-21 — the template states its visibility posture, and what it means for confidential material
+
+`BEDROCK-MAINTENANCE-0013` (leaf `.2.9`). **Maintainer instruction:** *"make sure BEDROCK explicitly states
+that GH projects created or spawned out of it are public and not confidential."* Nothing in this template
+said anything about visibility — no statement, no file, no check.
+
+- **`VISIBILITY.md`** at the root: a **declared posture** line (**PUBLIC**), the rule that nothing
+  confidential enters the repository through any mechanism — source, docs, commits, trees, fixtures,
+  issues, CI logs, history, or a branch that is never merged — where confidential material goes instead,
+  and the procedure for a project that must be private.
+- **Why a file and not the remote setting:** visibility is a property of the hosting platform and is
+  invisible from inside a clone, so every contributor infers it. The two wrong inferences are not
+  symmetric — treating a private repository as public costs inconvenience; confidential material in a
+  public one **cannot be un-published**, because no later git operation retracts what was already
+  fetched, forked, mirrored, cached or indexed.
+- ⛔ **It states what the posture does NOT establish**: name/crate/domain clearance, licence selection,
+  release qualification and deployment security each keep their own gate — in both directions.
+- **It reaches a new project before its first push:** `bootstrap.sh` prints reading `VISIBILITY.md` and
+  deciding as step **0**, ahead of the roadmap, with *"do it before the first push, not after"*.
+- ⛔ **The upstream mechanical checker is deliberately NOT ported.** It refuses tracked sentences
+  instructing private visibility — right for a public project, backwards for a private one, therefore
+  conditional and failing Q1 as-is. The neutral form (*no document contradicts the DECLARED posture,
+  whichever it is*) is on the backlog with the census it owes, rather than half-built here.
+- Admission test: **Q1 passes unconditionally** for *state your posture explicitly*; the value *public* is
+  this template's declared default, editable in place with a recorded reason. **Q2:** no domain nouns.
+
 ## 0.7.0 — 2026-09-21 — the resume pointer answers one question, and its growth is the signal
 
 `BEDROCK-MAINTENANCE-0012` (leaf `.2.8`). `MEMORY_ARCHITECTURE.md` §6 defined the layer-A contract by its

@@ -505,6 +505,73 @@ process.
     are untouched and both files sit far below them. `make gate` green (13/13). The bootstrap seed was
     re-generated and inspected rather than assumed.
 
+- ID: `BEDROCK-MAINTENANCE.2.9`
+  Status: `done`
+  Goal: make this template state its VISIBILITY POSTURE explicitly, and say what that means for
+  confidential material, so a project spawned from it inherits the statement rather than an inference.
+
+  **Maintainer instruction, 2026-09-21:** *"make sure BEDROCK explicitly states that GH projects created
+  or spawned out of it are public and not confidential."*
+
+  **What was missing:** nothing in this template said anything about visibility. No statement, no file,
+  no check — `git grep -li "must remain public\|private repositor"` over tracked Markdown returned
+  nothing relevant. A project's visibility is a property of the hosting platform and is **invisible from
+  inside a clone**, so every contributor infers it, and the two possible wrong inferences are not
+  symmetric: treating a private repository as public costs inconvenience, while confidential material
+  placed in a public one **cannot be un-published** — deleting a file, amending a commit or force-pushing
+  does not retract what was already fetched, forked, mirrored, cached or indexed.
+
+  **Q1 (asked first, in no project's nouns):** *does stating a repository's visibility posture
+  explicitly, in one named file, before content is written, objectively benefit any present and any
+  future project?* **Yes, unconditionally** — every project has a visibility, every project has
+  contributors who will otherwise infer it, and the failure it prevents is irreversible. It needs no
+  *"any project that …"* qualifier. **Q2:** the file is written about *this repository*, with no domain
+  nouns at all.
+
+  ⛔ **The DEFAULT is bedrock's declared choice; the RULE is the neutral part.** *State your posture
+  explicitly* is what belongs in a neutral spine. *That posture is public* is the maintainer's decision
+  for this template and its descendants, and `VISIBILITY.md` carries it as an editable declared line
+  with the procedure for changing it. A doctrine asserting *"must be public"* would be conditional and
+  would fail Q1; a template that ships a stated default and the means to change it does not.
+
+  ⛔ **NOT ported: the upstream mechanical check.** A project running this spine enforces its public
+  posture with a checker that refuses any tracked sentence instructing private visibility. That check
+  is correct **for a project whose posture is public** and backwards for one that is private, so it is
+  conditional and fails Q1 as-is. The neutral form — verify no tracked document contradicts the
+  DECLARED posture, whichever it is — is a real candidate and is left on the backlog rather than
+  half-built here.
+
+  Acceptance: the posture is stated in one named root file with the consequence for confidential
+  material and the procedure for changing it; the spine catalogue names it; `bootstrap.sh` puts the
+  decision in front of a new project BEFORE its first push; a spawned project inherits the file; nothing
+  claims a clearance that visibility does not grant; `make gate` green.
+  Verification: see the Verification Log entry for `.2.9`.
+  Commit: see the Commit Log entry for `.2.9`.
+
+  ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — the template shipped no visibility statement of any kind, and
+    visibility is not observable from inside a clone. Every contributor therefore infers it, and the
+    wrong inference in one direction is unrecoverable: content pushed to a public repository is
+    published at that moment, and no later git operation retracts it.
+  - [x] **THE FIX** — `VISIBILITY.md` at the root: a **declared posture** line (PUBLIC), the rule that
+    nothing confidential enters the repository through any mechanism including branches and history,
+    where confidential material goes instead, and the procedure for a project that must be private —
+    change the declared line, state reason and authority, add a decision record. ⛔ It also states what
+    the posture does **not** establish: name/crate/domain clearance, licence selection, release
+    qualification and deployment security each keep their own gate, in both directions.
+  - [x] **IT REACHES A NEW PROJECT BEFORE ITS FIRST PUSH** — `bootstrap.sh` now prints reading
+    `VISIBILITY.md` and deciding as step **0**, ahead of replacing the roadmap, with *"do it before the
+    first push, not after"*. The file is not a maintainer file, so the de-template step keeps it.
+  - [x] **THE NEUTRALITY BOUNDARY IS DRAWN AND STATED** — the neutral rule is *state your posture
+    explicitly*; the value *public* is this template's declared default, editable in place. The upstream
+    mechanical checker is deliberately NOT ported: it refuses sentences instructing private visibility,
+    which is right only for a public project and backwards for a private one, so it is conditional and
+    fails Q1 as-is. The neutral form is recorded on the backlog instead of half-built.
+  - [x] **NO REGRESSION** — no check, registry entry, cap or existing doctrine changed. `README.md`
+    gains one row in the spine catalogue, which is that table's purpose: 75/300 lines, 3,805/16,384
+    bytes, `README-STABILITY` OK. `bash -n scripts/bootstrap.sh` clean; `make gate` green.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
@@ -516,6 +583,7 @@ process.
 | — | `BEDROCK-MAINTENANCE.2.4` | `done` | `TASK-ACCEPTANCE` universal core ported behind `.doctrine/` seams (0.4.0) |
 | — | `BEDROCK-MAINTENANCE.2.5` | `done` | day-one batch: NO AGENT TRAILERS + hook, the handoff census, `LIVE-DOC-CURRENCY` principle (0.5.0) |
 | — | `BEDROCK-MAINTENANCE.2.6` | `done` | part 2 of the 2026-09 transfer: `LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS`, a fresh `TABLE-ARITY-RATCHET` (0.6.0) |
+| — | `BEDROCK-MAINTENANCE.2.9` | `done` | `VISIBILITY.md`: the declared posture is PUBLIC and spawned projects carry nothing confidential; bootstrap puts the decision before the first push (0.8.0) |
 | — | `BEDROCK-MAINTENANCE.2.8` | `done` | `MEMORY_ARCHITECTURE.md` §6 made upright w.r.t. `MEMORY.md`: it answers ONE question and shall not grow; this repo's own pointer 3,263 → 672 B and the bootstrap seed brought in line, trial-proven (0.7.0) |
 | — | `BEDROCK-MAINTENANCE.2.7` | `done` | foolproof project creation: `bootstrap.sh` seeds the leaf that owns its own crate rename, so the FIRST commit passes the hooks (0.6.1) |
 | — | `.2.x` — port `ROUTING-EVIDENCE` | `done` (as `.2.6`) | ⭐ passes Q1 outright: presumes **only** the task-tree system this template ships (measured: 0 build-system references). Universal discipline — a finding routed elsewhere must record what was measured, above all whether it reproduces outside the area it is being sent to |
@@ -523,6 +591,8 @@ process.
 | — | ⛔ `DESTRUCTIVE-TARGET-GUARD` — **do NOT port as-is** | `rejected` | fails **Q1**: hardcodes a `Makefile` path and a `clean:` recipe, so it benefits *any project that builds with make* — a conditional, not an objective benefit. Scored well on Q2, which is exactly why Q2 must not run first. Revisit only with a project-declared target list |
 
 ## Improvement backlog (seed — for a future session to pick up)
+
+- **`VISIBILITY-CONSISTENCY` (neutral form of an upstream check) — candidate, not built.** A project running this spine enforces its public posture with a checker that refuses any tracked sentence instructing PRIVATE visibility. ⛔ That is conditional — right for a public project, backwards for a private one — so it fails Q1 as-is and `.2.9` declined to port it. The neutral form is *no tracked document contradicts the posture DECLARED in `VISIBILITY.md`, whichever that posture is*, which works in both directions and would catch the real failure: a declared line and a document that disagree. ⚠️ Needs the census first (`.11.6`-style): how many tracked sentences state a visibility at all, and can the two directions be told apart mechanically without a prose matcher?
 
 Concrete candidates, each to become a `.2.x` leaf when worked:
 
@@ -556,6 +626,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 - None.
 
 ## Verification Log
+
+- `2026-09-21` — `.2.9`: `bash -n scripts/bootstrap.sh` clean; `bash scripts/check_readme_stability.sh` OK at 75/300 lines and 3,805/16,384 bytes; `make gate` green. `git grep -li "must remain public" -- '*.md'` returned nothing before this leaf — the template had no visibility statement at all.
 
 - `2026-09-21` — `.2.8`: trial from a fresh clone — `bootstrap.sh trialproj`, seeded `MEMORY.md` **713 bytes / 13 lines** with both post-bootstrap `sed` substitutions landing, `make gate` **green** in the new project. This repo's own `MEMORY.md` 3,263 → 672 B / 46 → 13 lines; `make gate` green here. No cap changed; `MEMORY-ARCH`'s line and byte caps untouched and both files far below them.
 
@@ -619,6 +691,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 | `2026-07-24` | `.1` | enforcer (5 checks) · cargo metadata · commit-msg hook · KM gen | all green |
 
 ## Commit Log
+
+- `2026-09-21` — `.2.9` — `BEDROCK-MAINTENANCE-0013`: `VISIBILITY.md` states the declared posture (PUBLIC) and what it means for confidential material; the spine catalogue names it and `bootstrap.sh` puts the decision in front of a new project before its first push; the upstream mechanical checker is deliberately not ported, with the reason recorded; `DOCTRINE_VERSION` 0.7.0 → 0.8.0
 
 - `2026-09-21` — `.2.8` — `BEDROCK-MAINTENANCE-0012`: `MEMORY_ARCHITECTURE.md` §6 gains the rule the layer-A contract was missing — the resume pointer answers ONE question, *what is next?*, and its growth is the signal that something belongs in another layer rather than that the cap is tight; the template now practises it in its own pointer and in the seed every spawned project starts from; `DOCTRINE_VERSION` 0.6.1 → 0.7.0
 

@@ -179,6 +179,9 @@ Next:
        printf '%s\n' '<NAME>-BOOTSTRAP-0001 (leaf BOOTSTRAP.1): bootstrapped from bedrock' > git_message_brief.txt
        git commit -F git_message_brief.txt && : > git_message_brief.txt
      (the hooks run the enforcer; <NAME> = your project name in CAPITALS)
+  0) Read VISIBILITY.md and decide deliberately. This project is PUBLIC by default and
+     carries nothing confidential; if it must be private, change the declared posture
+     there and record why. Do it before the first push, not after.
   1) Replace ROADMAP.md with your project's real roadmap.
   2) Create your first task-tree:
        cp docs/tasks/TEMPLATE.md docs/tasks/<TREE-ID>.md    # then fill it in
