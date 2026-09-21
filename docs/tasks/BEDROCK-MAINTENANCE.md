@@ -667,6 +667,64 @@ process.
     `make gate` green. The affected project was restored from `HEAD` with its in-progress work in seven
     other files untouched, and the one additive change kept.
 
+- ID: `BEDROCK-MAINTENANCE.2.11`
+  Status: `done`
+  Goal: make *never overwrite* a property of the tool that can be AUDITED, and give the differing-file
+  case the only safe answer there is — ask, and merge into a side file.
+
+  **Maintainer instruction, 2026-09-21:** *"`update_scaffold.sh` shall not update files that are
+  different. Worst case it shall ask to merge, never overwrite, never."*
+
+  `.2.10` removed the overwrite path. This closes the two ways the tool could still MODIFY something the
+  maintainer had changed, and adds the merge the instruction allows as its ceiling.
+
+  🔴 **THE BLANKET `chmod` WAS STILL A MUTATION.** The run ended with
+  `chmod +x scripts/*.sh knowledge-map/scripts/*.sh .githooks/…` over every matching file in the project,
+  including files the run never looked at. A mode change is a change: it appears in `git status`, it
+  lands in a commit, and it is precisely *"touched a file I did not ask you to touch"*. It now applies
+  ONLY to paths this run seeded, tracked in a `SEEDED` array.
+
+  ✅ **ASK TO MERGE, INTO A COPY, NEVER INTO YOURS.** `--merge` is interactive and per file: it asks,
+  and on an explicit yes computes a **three-way** merge and writes the result to
+  `.bedrock-incoming/<path>.merged`. Your file is not read-modified-written, not renamed, not deleted;
+  taking the result is a `cp` YOU run after reading it. A conflicted merge is reported with its count
+  and keeps the `<<<<<<<` markers in the side file.
+
+  ⭐ **The merge is a REAL three-way, and that is what makes offering it honest.** The common ancestor is
+  the template version this project last synced from, resolved from the project's own
+  `DOCTRINE_VERSION` through the upstream commit that introduced it
+  (`git log -S"<version>" -- DOCTRINE_VERSION`). ⛔ **Without a base, two files cannot be merged — only
+  diffed with opinions** — so when the version is absent or unresolvable the tool says exactly that and
+  offers the diff instead, rather than producing a plausible-looking result.
+
+  Acceptance: no code path writes to, renames, deletes or changes the mode of an existing project file;
+  proven by checksum AND mode over every tracked file of a real project; the merge offer never writes
+  outside `.bedrock-incoming/`; an unresolvable base is reported rather than guessed.
+  Verification: see the Verification Log entry for `.2.11`.
+  Commit: see the Commit Log entry for `.2.11`.
+
+  ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — after `.2.10` two writes could still reach an existing file: the
+    seed `cp` (guarded by `[ ! -f "$f" ]`, so correct) and a blanket `chmod +x` over glob patterns, which
+    was NOT guarded and modified files the run never considered. The instruction's word is *touch*, and a
+    mode change is a touch.
+  - [x] **THE FIX** — `SEEDED` collects what was actually created, and the `chmod` iterates only that.
+    `--merge` adds an interactive, per-file, explicitly-confirmed three-way merge whose output goes to
+    `.bedrock-incoming/<path>.merged`. `--force` is documented as skipping the dirty-tree check ONLY:
+    *"nothing can make this tool overwrite a file."*
+  - [x] **ADDRESSED (verified) — BY AUDIT AND BY MEASUREMENT, not by reading the code once.** Every write
+    in the script was enumerated: all but two land in `$tmp` or `.bedrock-incoming/`; the seed `cp` is
+    inside an absence guard; the `chmod` is scoped to `SEEDED`. Then a clean clone of a real project,
+    310 tracked files, run against this template: **CONTENT changed 0, MODE changed 0**, with only
+    `.bedrock-incoming/` and the genuinely-new `VISIBILITY.md` appearing as untracked.
+  - [x] **THE DIRTY-TREE GUARD FIRED ON MY OWN TEST, which is the control working** — the first proof run
+    wrote its checksum baselines inside the repository, the tool refused, and no comparison happened. The
+    baselines moved outside the tree and the run proceeded. A guard that inconveniences its author is a
+    guard that would have stopped the incident.
+  - [x] **NO REGRESSION** — no check, doctrine, cap or registry entry changed. `bash -n` clean;
+    `make gate` green. Default behaviour without `--merge` is unchanged from `.2.10`.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
@@ -678,6 +736,7 @@ process.
 | — | `BEDROCK-MAINTENANCE.2.4` | `done` | `TASK-ACCEPTANCE` universal core ported behind `.doctrine/` seams (0.4.0) |
 | — | `BEDROCK-MAINTENANCE.2.5` | `done` | day-one batch: NO AGENT TRAILERS + hook, the handoff census, `LIVE-DOC-CURRENCY` principle (0.5.0) |
 | — | `BEDROCK-MAINTENANCE.2.6` | `done` | part 2 of the 2026-09 transfer: `LESSON-PROMOTION`, `ROUTING-EVIDENCE`, `GAP-CLAIM-CENSUS`, a fresh `TABLE-ARITY-RATCHET` (0.6.0) |
+| — | `BEDROCK-MAINTENANCE.2.11` | `done` | *never overwrite* is now auditable — the blanket `chmod` scoped to seeded files, and `--merge` asks then merges 3-way into a side file; 0 content and 0 mode changes over 310 tracked files (0.10.0) |
 | — | `BEDROCK-MAINTENANCE.2.10` | `done` | `update_scaffold.sh` NEVER overwrites — a real project lost its task-tree index, doctrine rows, tool registry and commit workflow to it, and `make gate` passed on the wreck (0.9.0) |
 | — | `BEDROCK-MAINTENANCE.2.9` | `done` | `VISIBILITY.md`: the declared posture is PUBLIC and spawned projects carry nothing confidential; bootstrap puts the decision before the first push (0.8.0) |
 | — | `BEDROCK-MAINTENANCE.2.8` | `done` | `MEMORY_ARCHITECTURE.md` §6 made upright w.r.t. `MEMORY.md`: it answers ONE question and shall not grow; this repo's own pointer 3,263 → 672 B and the bootstrap seed brought in line, trial-proven (0.7.0) |
@@ -722,6 +781,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 - None.
 
 ## Verification Log
+
+- `2026-09-21` — `.2.11`: write audit — every write lands in `$tmp` or `.bedrock-incoming/`, except the seed `cp` (inside `[ ! -f ]`) and the `chmod` (scoped to `SEEDED`). Clean clone of a real project, **310 tracked files: CONTENT changed 0, MODE changed 0**; only `.bedrock-incoming/` and the new `VISIBILITY.md` appear. ⚠️ The first proof run was REFUSED by the dirty-tree guard because its own baselines were written inside the repo — the control working on its author. `bash -n` clean; `make gate` green.
 
 - `2026-09-21` — `.2.10`: new tool against a clean clone of the affected project — **23 already current, 1 seeded, 6 differ** (sidecars); `docs/TASK_TREE.md` and `TOOLBOX.md` SHA-256 unchanged; 11 registered trees intact. Dirty-tree arm refuses and names `--force`; `--force` proceeds. `bash -n scripts/update_scaffold.sh` clean; `make gate` green. ⚠️ The first trial was invalid — `git checkout -- .` had restored the project's old tool — and was caught by the summary printing a word the new tool does not use.
 
@@ -791,6 +852,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 | `2026-07-24` | `.1` | enforcer (5 checks) · cargo metadata · commit-msg hook · KM gen | all green |
 
 ## Commit Log
+
+- `2026-09-21` — `.2.11` — `BEDROCK-MAINTENANCE-0016`: the blanket `chmod` is scoped to seeded files (a mode change is a change), and `--merge` asks per file then writes a three-way merge to `.bedrock-incoming/<path>.merged` with the base resolved from the project's recorded `DOCTRINE_VERSION`; proven by content AND mode over 310 tracked files; `DOCTRINE_VERSION` 0.9.0 → 0.10.0
 
 - `2026-09-21` — `.2.10` — `BEDROCK-MAINTENANCE-0015`: `update_scaffold.sh` never overwrites — identical/seed/sidecar, plus a dirty-tree refusal; the `NEUTRAL` premise was measurably false and one project lost four files to it; `DOCTRINE_VERSION` 0.8.1 → 0.9.0
 

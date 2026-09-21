@@ -1,5 +1,30 @@
 # CHANGELOG.md
 
+## 0.10.0 — 2026-09-21 — never overwrite is now auditable, and the merge is asked for and never applied
+
+`BEDROCK-MAINTENANCE-0016` (leaf `.2.11`). **Maintainer instruction:** *"shall not update files that are
+different. Worst case it shall ask to merge, never overwrite, never."*
+
+- 🔴 **A blanket `chmod +x` was still a mutation.** `0.9.0` removed the overwrite path, but the run still
+  ended with `chmod +x scripts/*.sh knowledge-map/scripts/*.sh .githooks/…` over every matching file —
+  including files it never looked at. A mode change is a change: it shows in `git status` and lands in a
+  commit. It is now scoped to the paths this run actually seeded.
+- ✅ **`--merge`: ask, then merge into a COPY.** Interactive and per file. On an explicit yes it computes a
+  **three-way** merge and writes the result to `.bedrock-incoming/<path>.merged`. Your file is not
+  read-modified-written, renamed or deleted; taking the result is a `cp` you run after reading it. A
+  conflicted merge is reported with its count and keeps its `<<<<<<<` markers in the side file.
+- ⭐ **The merge is a real three-way, which is what makes offering it honest.** The base is the template
+  version the project last synced from, resolved from its own `DOCTRINE_VERSION` through the upstream
+  commit that introduced it. ⛔ Without a base, two files cannot be merged — only diffed with opinions —
+  so an unresolvable version is reported and the diff offered instead.
+- ✅ **Proven, not asserted:** every write in the script enumerated (all land in `$tmp` or
+  `.bedrock-incoming/`, except a seed `cp` inside an absence guard and the now-scoped `chmod`), then a
+  clean clone of a real project run against this template — **310 tracked files, CONTENT changed 0,
+  MODE changed 0**. Only `.bedrock-incoming/` and a genuinely new file appear.
+- ⚠️ The first proof run was refused by the dirty-tree guard, because its own baselines were written
+  inside the repository. The control working on its author.
+- `--force` is documented as skipping the dirty-tree check **only**: nothing can make this tool overwrite.
+
 ## 0.9.0 — 2026-09-21 — update_scaffold.sh never overwrites anything
 
 `BEDROCK-MAINTENANCE-0015` (leaf `.2.10`). **Maintainer instruction:** *"`update_scaffold.sh` shall

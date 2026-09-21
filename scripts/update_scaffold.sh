@@ -31,7 +31,7 @@
 # alone. After syncing: review `git diff`, run `make gate`, and commit.
 set -euo pipefail
 URL="${1:-}"
-[ -n "$URL" ] || { echo "usage: scripts/update_scaffold.sh <bedrock-repo-url-or-local-path>" >&2; exit 2; }
+[ -n "$URL" ] || { echo "usage: scripts/update_scaffold.sh <bedrock-repo-url-or-local-path> [--merge] [--force]" >&2; exit 2; }
 ROOT="$(git rev-parse --show-toplevel)"; cd "$ROOT"
 
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
@@ -91,21 +91,80 @@ SEED_ONCE=(
 # ⛔ Refuse on a dirty tree. Recovery from any surprise is `git checkout -- <file>`, and
 # that is only simple when the tree was clean to begin with. `--force` is available for
 # someone who has read this and wants it anyway.
-if [ "${2:-}" != "--force" ] && [ -n "$(git status --porcelain)" ]; then
+MERGE=0; FORCE=0
+for a in "$@"; do
+  case "$a" in
+    --merge) MERGE=1 ;;
+    --force) FORCE=1 ;;
+  esac
+done
+
+if [ "$FORCE" != "1" ] && [ -n "$(git status --porcelain)" ]; then
   echo "REFUSED: the working tree is dirty." >&2
   echo "  This tool writes files. Commit or stash first, so that reviewing what it did is a" >&2
   echo "  clean 'git diff' and undoing it is 'git checkout -- <file>'." >&2
   echo "  Deliberate override: scripts/update_scaffold.sh <url> --force" >&2
+  echo "  (--force skips THIS check only. Nothing can make this tool overwrite a file.)" >&2
   exit 2
 fi
 
-n=0; s=0; d=0
+n=0; s=0; d=0; m=0
+SEEDED=()
+
+# ⛔⛔ ASK, MERGE INTO A SIDE FILE, NEVER INTO YOURS.
+#
+# Maintainer instruction, 2026-09-21: *"shall not update files that are different. Worst
+# case it shall ask to merge, never overwrite, never."* So this is the most this tool will
+# ever do to a file you have changed: ask, compute a THREE-WAY merge, and write the result
+# to `.bedrock-incoming/<path>.merged`. Your file is not read-modified-written, not renamed,
+# not deleted. Taking the merge is a copy YOU run, after reading it.
+#
+# ⭐ The merge is a real three-way, not a guess: the common ancestor is the template version
+# this project last synced from, resolved from its own recorded DOCTRINE_VERSION via the
+# commit that introduced that version upstream. Without a base, a "merge" of two files is
+# just a diff with opinions, so when the base cannot be resolved this says so and offers the
+# diff instead.
+offer_merge() {
+  local f="$1" theirs="$2" ver base_rev bt ot rc
+  ver="$(cat DOCTRINE_VERSION 2>/dev/null || true)"
+  base_rev="$(cd "$tmp/bedrock" && git log --format=%h -S"$ver" -- DOCTRINE_VERSION 2>/dev/null | tail -1)"
+
+  if [ -z "$ver" ] || [ -z "$base_rev" ]; then
+    echo "           no common ancestor resolvable (recorded version: ${ver:-none}) — a two-way"
+    echo "           merge would be guesswork. Compare instead:  diff $f .bedrock-incoming/$f"
+    return 0
+  fi
+
+  printf '           merge theirs into a COPY of yours, 3-way from %s? [y/N] ' "$base_rev"
+  local reply=""
+  read -r reply </dev/tty 2>/dev/null || reply=""
+  case "$reply" in [yY]*) ;; *) echo "           skipped — nothing written"; return 0 ;; esac
+
+  bt="$tmp/base.$$"; ot="$tmp/ours.$$"
+  if ! (cd "$tmp/bedrock" && git show "$base_rev:$f" 2>/dev/null) > "$bt" || [ ! -s "$bt" ]; then
+    echo "           $f did not exist at $base_rev — no base, so no merge. Compare instead."
+    rm -f "$bt"; return 0
+  fi
+  cp "$f" "$ot"
+  git merge-file -p --diff3 "$ot" "$bt" "$theirs" > ".bedrock-incoming/$f.merged"; rc=$?
+  rm -f "$bt" "$ot"
+  if [ "$rc" -eq 0 ]; then
+    echo "           ✓ merged cleanly → .bedrock-incoming/$f.merged (yours is still untouched)"
+  else
+    echo "           ⚠ merged with $rc conflict(s) → .bedrock-incoming/$f.merged — resolve the"
+    echo "             <<<<<<< markers there. Yours is still untouched."
+  fi
+  echo "             Take it only after reading it:  cp .bedrock-incoming/$f.merged $f"
+  m=$((m+1))
+}
+
 apply_one() { # $1 = path, $2 = "seed-only" | "offer"
   local f="$1" mode="$2" src="$tmp/bedrock/$1"
   [ -f "$src" ] || return 0
   if [ ! -f "$f" ]; then
     mkdir -p "$(dirname "$f")"
     cp "$src" "$f"
+    SEEDED+=("$f")
     echo "  seeded   $f (new)"
     s=$((s+1))
     return 0
@@ -122,18 +181,27 @@ apply_one() { # $1 = path, $2 = "seed-only" | "offer"
   #    `<file>.bedrock-new` sitting next to `<file>` is one `git add -A` away from being
   #    committed as if it were project content, and one careless glance away from being
   #    mistaken for the real file. `.bedrock-incoming/` is a single thing to read and a
-  #    single thing to delete, and it is obvious in `git status`.
+  #    single thing to delete.
   mkdir -p ".bedrock-incoming/$(dirname "$f")"
   cp "$src" ".bedrock-incoming/$f"
   echo "  DIFFERS  $f — yours is UNTOUCHED; theirs is .bedrock-incoming/$f"
   d=$((d+1))
+  [ "$MERGE" = "1" ] && offer_merge "$f" "$src"
+  return 0
 }
 
 for f in "${SEED_ONCE[@]}"; do apply_one "$f" "seed-only"; done
 for f in "${NEUTRAL[@]}"; do apply_one "$f" "offer"; done
-chmod +x scripts/*.sh knowledge-map/scripts/*.sh .githooks/pre-commit .githooks/commit-msg 2>/dev/null || true
+# ⛔ chmod ONLY what was seeded. This used to be a blanket
+#    `chmod +x scripts/*.sh knowledge-map/scripts/*.sh .githooks/*`, which changes the mode of
+#    every script in the project including ones this run never looked at. A mode change is a
+#    change: it shows up in `git status`, it lands in a commit, and it is exactly the class of
+#    "touched a file I did not ask you to touch" this tool exists to not do.
+for f in "${SEEDED[@]}"; do
+  case "$f" in *.sh|.githooks/*) chmod +x "$f" 2>/dev/null || true ;; esac
+done
 
-echo "✓ $n already current, $s seeded, $d differ — nothing of yours was modified."
+echo "✓ $n already current, $s seeded, $d differ, $m merged to a side file — nothing of yours was modified."
 if [ "$d" -gt 0 ]; then
   echo "  ⚠️  NOTHING of yours was touched. The template's versions are in .bedrock-incoming/."
   echo "      Review them, take only what you want, then:  rm -rf .bedrock-incoming"
