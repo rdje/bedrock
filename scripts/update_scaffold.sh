@@ -4,7 +4,10 @@
 #
 #   scripts/update_scaffold.sh <bedrock-repo-url-or-local-path>
 #
-# Only the files listed in NEUTRAL below are re-synced. Everything project-owned
+# Two categories: NEUTRAL is re-synced (overwritten) because it never carries project
+# content; SEED_ONCE is copied only when ABSENT, because it carries a decision the
+# project owns and must reach a project that predates it without reverting it.
+# Everything else project-owned
 # (CLAUDE.md, README.md, ROADMAP.md, the live-docs, the project doctrine slot, the curated
 # subsystems.md, and all of docs/tasks/ + docs/decisions/ records) is deliberately left
 # alone. After syncing: review `git diff`, run `make gate`, and commit.
@@ -53,7 +56,33 @@ NEUTRAL=(
   DOCTRINE_VERSION
 )
 
+# ⛔ SEEDED ONCE, NEVER OVERWRITTEN — a spine file that carries a PROJECT DECISION.
+#
+# `NEUTRAL` above is blind-overwrite, which is correct for a file that never holds project
+# content. A file that a project is MEANT to edit cannot be in it: re-syncing would silently
+# revert that project's decision, and the more deliberate the decision, the worse the loss.
+#
+# But such a file still has to REACH a project that predates it, or a new spine rule lands
+# only in projects created afterwards — which is exactly the gap this category was added to
+# close (`BEDROCK-MAINTENANCE.2.9` follow-up): `VISIBILITY.md` carries a declared posture a
+# project may change, so it is copied when ABSENT and left alone when present.
+SEED_ONCE=(
+  VISIBILITY.md
+)
+
 n=0
+s=0
+for f in "${SEED_ONCE[@]}"; do
+  if [ -f "$tmp/bedrock/$f" ] && [ ! -f "$f" ]; then
+    mkdir -p "$(dirname "$f")"
+    cp "$tmp/bedrock/$f" "$f"
+    echo "  seeded $f (new — review it; it carries a decision this project owns)"
+    s=$((s+1))
+  elif [ -f "$f" ]; then
+    echo "  kept   $f (already present — a project decision is never overwritten)"
+  fi
+done
+
 for f in "${NEUTRAL[@]}"; do
   if [ -f "$tmp/bedrock/$f" ]; then
     mkdir -p "$(dirname "$f")"
@@ -64,5 +93,5 @@ for f in "${NEUTRAL[@]}"; do
 done
 chmod +x scripts/*.sh knowledge-map/scripts/*.sh .githooks/pre-commit .githooks/commit-msg 2>/dev/null || true
 
-echo "✓ $n scaffold file(s) synced to $(cat DOCTRINE_VERSION 2>/dev/null || echo '?')."
+echo "✓ $n scaffold file(s) synced, $s seeded, to $(cat DOCTRINE_VERSION 2>/dev/null || echo '?')."
 echo "  Review 'git diff', run 'make gate', then commit."

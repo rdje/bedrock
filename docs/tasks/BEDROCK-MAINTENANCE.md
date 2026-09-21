@@ -572,6 +572,24 @@ process.
     gains one row in the spine catalogue, which is that table's purpose: 75/300 lines, 3,805/16,384
     bytes, `README-STABILITY` OK. `bash -n scripts/bootstrap.sh` clean; `make gate` green.
 
+  **FOLLOW-UP (`BEDROCK-MAINTENANCE-0014`) — the statement reached NEW projects and no existing one,
+  and the maintainer's correction is what exposed it.** I had reported the survey as *"ten projects
+  descend from this spine"*; the maintainer corrected it: only **REASONBRAID, SEMULITH and ARCHOGEN**
+  were created from bedrock, and the others predate it and were brought to the same baseline by hand —
+  which is the manual work bedrock exists to end. That correction makes the reach question concrete:
+  🔴 **`VISIBILITY.md` could not arrive in any of the three.** `update_scaffold.sh` had ONE category,
+  `NEUTRAL`, which blind-overwrites, and `VISIBILITY.md` must never be in it — a project is MEANT to
+  edit the declared posture, so re-syncing would silently revert a deliberate decision. With no other
+  category, a spine file carrying a project decision had no route to a project that predates it, and
+  the instruction would have reached only projects created after today.
+  ✅ **`SEED_ONCE` closes it**: copied when ABSENT, left alone when PRESENT, reported separately in the
+  run summary. Both directions proven on a trial clone — absent → `seeded VISIBILITY.md`; present and
+  edited to `Declared posture: PRIVATE` → `kept VISIBILITY.md`, **byte-identical**, posture intact.
+  ⭐ The general rule is the part worth keeping: **a spine file that carries a project decision needs a
+  reach mechanism that is not an overwrite**, and the category is now there for the next one.
+  ⛔ `MEMORY_ARCHITECTURE.md` needed no such handling — it IS in `NEUTRAL`, so `.2.8`'s §6 rule already
+  reaches every project that runs the updater.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
@@ -626,6 +644,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 - None.
 
 ## Verification Log
+
+- `2026-09-21` — `.2.9` follow-up: trial clone, both directions — absent → `seeded VISIBILITY.md`, file present; edited to `Declared posture: PRIVATE` → `kept VISIBILITY.md`, SHA-256 unchanged and the posture line intact. `bash -n scripts/update_scaffold.sh` clean; `make gate` green.
 
 - `2026-09-21` — `.2.9`: `bash -n scripts/bootstrap.sh` clean; `bash scripts/check_readme_stability.sh` OK at 75/300 lines and 3,805/16,384 bytes; `make gate` green. `git grep -li "must remain public" -- '*.md'` returned nothing before this leaf — the template had no visibility statement at all.
 
@@ -691,6 +711,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 | `2026-07-24` | `.1` | enforcer (5 checks) · cargo metadata · commit-msg hook · KM gen | all green |
 
 ## Commit Log
+
+- `2026-09-21` — `.2.9` follow-up — `BEDROCK-MAINTENANCE-0014`: `update_scaffold.sh` gains a `SEED_ONCE` category — copied when absent, never overwritten when present — because a spine file carrying a project decision could not otherwise reach a project that predates it; `VISIBILITY.md` is its first member; `DOCTRINE_VERSION` 0.8.0 → 0.8.1
 
 - `2026-09-21` — `.2.9` — `BEDROCK-MAINTENANCE-0013`: `VISIBILITY.md` states the declared posture (PUBLIC) and what it means for confidential material; the spine catalogue names it and `bootstrap.sh` puts the decision in front of a new project before its first push; the upstream mechanical checker is deliberately not ported, with the reason recorded; `DOCTRINE_VERSION` 0.7.0 → 0.8.0
 

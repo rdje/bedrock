@@ -1,5 +1,22 @@
 # CHANGELOG.md
 
+## 0.8.1 — 2026-09-21 — a spine file that carries a project decision can now reach an existing project
+
+`BEDROCK-MAINTENANCE-0014` (leaf `.2.9`, follow-up). 0.8.0 added `VISIBILITY.md` and it could reach only
+projects created afterwards.
+
+- 🔴 **The gap:** `update_scaffold.sh` had ONE category — `NEUTRAL`, which blind-overwrites. That is right
+  for a file which never carries project content and **wrong** for `VISIBILITY.md`, which a project is
+  meant to edit: re-syncing would silently revert a deliberate decision. With no other category, the file
+  had no route into a project that predates it.
+- ✅ **`SEED_ONCE`:** copied when ABSENT, left alone when PRESENT, counted separately in the run summary.
+  Proven both ways on a trial clone — absent → seeded; present and edited to `Declared posture: PRIVATE`
+  → kept, **byte-identical**, posture intact.
+- ⭐ The general rule, which is the part worth keeping: **a spine file that carries a project decision
+  needs a reach mechanism that is not an overwrite.** The category is now there for the next one.
+- ⛔ `MEMORY_ARCHITECTURE.md` needed none — it is already in `NEUTRAL`, so 0.7.0's §6 rule reaches every
+  project that runs the updater.
+
 ## 0.8.0 — 2026-09-21 — the template states its visibility posture, and what it means for confidential material
 
 `BEDROCK-MAINTENANCE-0013` (leaf `.2.9`). **Maintainer instruction:** *"make sure BEDROCK explicitly states
