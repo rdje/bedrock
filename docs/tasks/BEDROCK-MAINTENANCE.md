@@ -959,6 +959,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 
 ## Verification Log
 
+- `2026-09-30` — `.4.2` observed on GitHub for `13bf595` (1.1.2): `doctrines` run `36768963131` → `enforce success`, `enforcer-selftest (ubuntu-latest) success`, `enforcer-selftest (macos-latest) success`; `book` run `36768963222` → `build success`, `deploy success`. Tagged `v1.1.2`.
+
 - `2026-09-30` — `.4.1.1` observed on GitHub for `521aa36` (1.1.1): `doctrines` run `36765134421` → `enforce success`, `enforcer-selftest (ubuntu-latest) success`, `enforcer-selftest (macos-latest) success`; `book` run `36765134195` → `build success`, `deploy success`; <https://rdje.github.io/bedrock/> → `200`. Tagged `v1.1.1`.
 
 - `2026-09-30` — `.4.1` observed on GitHub for `b3bdb5c` (1.1.0): `doctrines` run `36762088861` → `enforce success`, `enforcer-selftest (ubuntu-latest) success`, `enforcer-selftest (macos-latest) success`; `book` run `36762088748` → `build success`, `deploy success`; `curl -s -o /dev/null -w '%{http_code}' https://rdje.github.io/bedrock/` → `200`, the title `Introduction - The bedrock Guide`, and `updating.html`, `bootstrap.html`, `gates.html`, `reference.html` each `200`. Tagged `v1.1.0`. Leaf closed.
