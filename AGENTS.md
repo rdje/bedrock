@@ -43,10 +43,16 @@ human is working. Follow it exactly.
   same. These are git-level and harness-agnostic.
 - **Keep the roadmap, the code, and the docs (README + mdBook) aligned** — locked
   together, no drift, for past, present, and future changes.
-- **No background job at a handoff point.** Before you end a session (`/exit`, a pause, a
-  handover), run `bash scripts/check_no_background_jobs.sh` and make it print `handoff: OK`:
-  a job that outlives its session rewrites tracked files under the next one, with its log
-  gone. Kill stragglers AND their children — a parent's death does not propagate.
+- **End every session with `scripts/handoff`** and make it print `handoff: OK` — before `/exit`,
+  `/clear`, a pause or a handover. It refuses while a project-owned background job runs (a job
+  that outlives its session rewrites tracked files under the next one, with its log gone; kill
+  stragglers AND their children), while the tree holds uncommitted work (it survives nothing),
+  or while `MEMORY.md` is not true for `HEAD`. Green means any agent, in any harness, on any
+  machine, resumes from the repository alone (`docs/decisions/decision_context_continuity.md`).
+- **The resume pointer is true in every commit.** A governed commit names itself in `MEMORY.md`'s
+  `latest_commit` and points at an existing, open frontier leaf (`RESUME-POINTER` gate).
+- **The harness and the model are transparent to the project.** Nothing the project depends on
+  lives in a harness's own memory or settings; route every rule, fact and decision to a layer.
 - **A commit message ends with its own last line** — no agent/tool attribution trailers
   (`COMMIT.md`); the `commit-msg` hook and CI refuse them.
 

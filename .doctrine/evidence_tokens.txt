@@ -7,3 +7,5 @@ probes: [0-9]+ pass / [0-9]+ fail
 === all doctrines green ===
 # The conformance suite (scripts/tests/spine_tests.sh) prints this summary line:
 arms: [0-9]+ pass / [0-9]+ xfail
+# scripts/handoff prints this when the repository is resumable from itself alone:
+handoff: OK

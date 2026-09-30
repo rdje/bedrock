@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# scripts/handoff — THE LAST COMMAND OF EVERY SESSION: is this repository resumable from itself alone?
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+#   scripts/handoff [--all]        --all also lists advisory (inherited-cwd) processes
+#
+# Prints `handoff: OK` and exits 0 only when a fresh agent — any model, any harness, any machine —
+# can resume with full context from the repository (decision_context_continuity):
+#   1. no project-owned background job is running (scripts/check_no_background_jobs.sh) — a job
+#      that outlives its session rewrites tracked files under the next one, with its log gone;
+#   2. the working tree is CLEAN: uncommitted content survives nothing — not a crash, not /clear,
+#      not a harness switch — so it is refused, not warned about;
+#   3. the resume pointer is TRUE: MEMORY.md names the latest governed commit, an existing tree,
+#      and an open frontier leaf (the same rules as the RESUME-POINTER gate, applied to HEAD);
+#   4. advisory: commits not yet on the remote are listed — an unpushed commit does not survive a
+#      machine loss. Push before you leave.
+# Exit: 0 = handoff-ready · 1 = not ready (the reason is printed) · 2 = cannot evaluate
+set -uo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/lib/spine.sh"
+SPINE_AFTER="HEAD"; export SPINE_AFTER
+git rev-parse -q --verify HEAD >/dev/null 2>&1 || { echo "handoff: REFUSED — no commit yet; commit first" >&2; exit 2; }
+spine_init HANDOFF
+T="$(spine_tmp)"
+bad=0
+say() { printf 'handoff: %s\n' "$*"; }
+
+# 1. background jobs
+if ! bash "$ROOT/scripts/check_no_background_jobs.sh" ${1:-} > "$T/jobs" 2>&1; then
+  cat "$T/jobs"; bad=1
+else
+  tail -n +2 "$T/jobs" | sed 's/^/  /'
+fi
+
+# 2. a clean tree
+if [ -n "$(git status --porcelain --untracked-files=all 2>/dev/null)" ]; then
+  say "NOT READY — the working tree is not clean; uncommitted content survives nothing (not a crash, not a /clear, not a harness switch):"
+  git status --short | sed 's/^/    /'
+  say "  commit it through COMMIT.md (or stash it and say so in MEMORY.md's in_flight_uncommitted line — then it is a choice, not a loss)"
+  bad=1
+fi
+
+# 3. the pointer is true at HEAD
+if spine_read MEMORY.md > "$T/mem"; then
+  next="$(spine_pointer_field "$T/mem" next_action)"
+  { [ -n "$next" ] && ! printf '%s' "$next" | grep -qiE '_none yet_|^<'; } || { say "NOT READY — MEMORY.md 'next_action:' is empty or a placeholder"; bad=1; }
+  awu="$(spine_pointer_field "$T/mem" active_work_unit)"
+  spine_pointer_refs "$awu" > "$T/refs"
+  grep -q '^tree ' "$T/refs" || { say "NOT READY — MEMORY.md 'active_work_unit:' names no existing tree (got: $awu)"; bad=1; }
+  while read -r kind id st; do [ "$kind" = leaf ] && [ "$st" = missing ] && { say "NOT READY — MEMORY.md names leaf $id, which does not exist"; bad=1; }; done < "$T/refs"
+  last="$(grep '^leaf ' "$T/refs" | tail -1)"; if [ -n "$last" ]; then set -- $last; [ "$3" != done ] || { say "NOT READY — the frontier leaf $2 is done; point at the next open leaf"; bad=1; }; fi
+  # latest_commit names the latest GOVERNED commit (documentation-only commits after it are fine)
+  latest="$(spine_pointer_field "$T/mem" latest_commit)"
+  gov=""; n=0
+  for sha in $(git rev-list --max-count=25 HEAD); do
+    n=$((n+1))
+    if [ "$(spine_commit_governed "$sha")" = yes ]; then gov="$sha"; break; fi
+  done
+  if [ -n "$gov" ]; then
+    id="$(spine_subject_id "$(git log -1 --format=%s "$gov")")"
+    if [ -n "$id" ] && ! printf '%s' "$latest" | grep -qF "$id"; then
+      say "NOT READY — MEMORY.md 'latest_commit:' is stale: the latest governed commit is $id ($(git rev-parse --short "$gov")), the pointer says: ${latest:-<empty>}"; bad=1
+    fi
+  fi
+else
+  say "NOT READY — MEMORY.md is missing"; bad=1
+fi
+
+# 4. unpushed commits (advisory)
+if upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)"; then
+  ahead="$(git rev-list --count "$upstream..HEAD" 2>/dev/null || echo 0)"
+  [ "$ahead" = 0 ] || say "  advisory: $ahead commit(s) not on $upstream — push before you leave; an unpushed commit does not survive a machine loss"
+else
+  say "  advisory: no upstream configured — nothing here is off this machine"
+fi
+
+if [ "$bad" -ne 0 ]; then say "NOT READY (see above)"; exit 1; fi
+say "OK — resumable from the repository alone: HEAD $(git rev-parse --short HEAD) \"$(git log -1 --format=%s | cut -c1-70)\"; pointer → $(grep '^tree ' "$T/refs" | awk '{printf "%s ", $2}')frontier $(grep '^leaf ' "$T/refs" | tail -1 | awk '{print $2}')"
+exit 0

@@ -71,6 +71,8 @@ NEUTRAL=(
   scripts/check_task_tree_ownership.sh
   scripts/check_commit_message.sh
   scripts/evidence
+  scripts/handoff
+  scripts/check_resume_pointer.sh
   scripts/lib/spine.sh
   scripts/tests/spine_tests.sh
   .github/workflows/doctrines.yml

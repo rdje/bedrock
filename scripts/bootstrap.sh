@@ -155,7 +155,7 @@ LEAF
   # register it: the placeholder row becomes the BOOTSTRAP row; the seeding hint stays as a note
   sed -i "s/^| _none yet — seed your first tree from \`ROADMAP.md\`_ | | | |\$/| [\`BOOTSTRAP\`](tasks\/BOOTSTRAP.md) | \`done\` | \`.1\` — bootstrapped from bedrock; seed your first real tree from \`ROADMAP.md\` | repo-local |/" docs/TASK_TREE.md
   sed -i "s|^- active_work_unit: _none yet_\$|- active_work_unit: \`BOOTSTRAP\` (done) — seed your first real tree from \`ROADMAP.md\`|" MEMORY.md
-  sed -i "s|^- latest_commit: _none yet_\$|- latest_commit: _none yet — commit the bootstrap first (bootstrap.sh printed the command)_|" MEMORY.md
+  sed -i "s|^- latest_commit: _none yet_\$|- latest_commit: \`${upper}-BOOTSTRAP-0001\` — the bootstrap commit (bootstrap.sh printed the command; make it now)|" MEMORY.md
   echo "✓ docs/tasks/BOOTSTRAP.md seeded with this run's evidence (owns the crate rename for the first commit)"
 fi
 

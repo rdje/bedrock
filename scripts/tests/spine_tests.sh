@@ -85,6 +85,13 @@ spine_path_cannot_be_exempted           req    BK-05
 code_paths_txt_retired                  req    BK-07
 merge_commit_exempt_from_binding        req    BR-04
 exception_counted_in_ci                 req    BK-08
+resume_pointer_stale_refused            req    CONTINUITY
+resume_pointer_missing_leaf_refused     req    CONTINUITY
+docs_only_commit_keeps_pointer          req    CONTINUITY
+handoff_refuses_dirty_tree              req    CONTINUITY
+handoff_refuses_stale_pointer           req    CONTINUITY
+handoff_refuses_running_job             req    CONTINUITY
+handoff_ok_then_resume_from_fresh_clone req    CONTINUITY
 "
 
 if [ "$LIST" = 1 ]; then
@@ -141,6 +148,12 @@ edit_line() { # file · exact old line · new line (portable, no sed -i)
   awk -v o="$2" -v n="$3" '$0==o { $0=n } { print }' "$1" > "$1.tmp" && mv "$1.tmp" "$1"
 }
 code_change() { printf 'fn main() { println!("changed"); }\n' > crates/app/src/main.rs; }
+point_to() { # $1 = work-unit id [, $2 = active_work_unit text]: make MEMORY.md true for the commit about to be made
+  awk -v id="$1" -v awu="${2:-}" '
+    /^- latest_commit:/ { print "- latest_commit: `" id "`."; next }
+    /^- active_work_unit:/ && awu != "" { print "- active_work_unit: " awu; next }
+    { print }' MEMORY.md > "$T/.mem" && mv "$T/.mem" MEMORY.md && git add MEMORY.md
+}
 good_leaf() { # $1 = tree id (default FEAT); a correctly evidenced, new-shape leaf
   local t="${1:-FEAT}"
   cat <<LEAF
@@ -195,7 +208,7 @@ arm_docs_only_change_passes() {
   printf '\nA README line.\n' >> README.md; git add README.md; gate; green
 }
 arm_owned_change_with_fresh_evidence_passes() {
-  code_change; good_leaf > docs/tasks/FEAT.md; git add -A
+  code_change; good_leaf > docs/tasks/FEAT.md; point_to DEMO-APP-0002 '`FEAT` → frontier leaf `FEAT.1` (`active`)'; git add -A
   commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main'; green
 }
 arm_bootstrap_first_commit_as_printed() {
@@ -302,7 +315,7 @@ arm_stamped_evidence_line_accepted() {
   printf '%s\n' "$line" | grep -q '^evidence: rc=0 ' || return 1
   code_change
   printf '%s\n' "$line" "$line" "$line" | sed 's/^/`/; s/$/`/' | boxes_leaf FEAT > docs/tasks/FEAT.md
-  git add -A; commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): x'; green
+  point_to DEMO-APP-0002 '`FEAT` → frontier leaf `FEAT.1` (`active`)'; git add -A; commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): x'; green
 }
 arm_config_weakened_same_commit() {
   printf '^nothing-matches-this$\n' > .doctrine/code_paths.txt
@@ -315,7 +328,7 @@ arm_env_bypass_ignored() {
   [ "$RC" -ne 0 ]
 }
 arm_exception_trailer_honoured() {
-  code_change; git add -A
+  code_change; point_to DEMO-APP-0002; git add -A
   commit_hooks 'DEMO-APP-0002: vendored change
 
 Spine-Exception: vendored third-party sources, no leaf applies'
@@ -323,7 +336,7 @@ Spine-Exception: vendored third-party sources, no leaf applies'
 }
 arm_subdir_markdown_not_a_leaf() {
   mkdir -p docs/tasks/artifacts/perf; printf '# perf notes\n' > docs/tasks/artifacts/perf/README.md
-  code_change; good_leaf > docs/tasks/FEAT.md; git add -A
+  code_change; good_leaf > docs/tasks/FEAT.md; point_to DEMO-APP-0002 '`FEAT` → frontier leaf `FEAT.1` (`active`)'; git add -A
   commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main'; green
 }
 arm_spine_docs_deleted() {
@@ -408,7 +421,7 @@ arm_invalid_regex_refused() {
 arm_invalid_regex_repair_allowed() {
   mkdir -p .doctrine; printf '[\n' > .doctrine/docs_paths.txt; git add .doctrine/docs_paths.txt
   commit_nohooks 'DEMO-CFG-0003: broken docs paths' || return 1
-  printf '^docs/site/\n' > .doctrine/docs_paths.txt; good_leaf > docs/tasks/FEAT.md; git add -A
+  printf '^docs/site/\n' > .doctrine/docs_paths.txt; good_leaf > docs/tasks/FEAT.md; point_to DEMO-APP-0002 '`FEAT` → frontier leaf `FEAT.1` (`active`)'; git add -A
   gate 'DEMO-APP-0002 (leaf FEAT.1): repair'; green
 }
 arm_ci_message_judged() {
@@ -422,16 +435,16 @@ arm_subject_hello_refused() {
 }
 
 arm_second_commit_reusing_evidence_refused() {
-  code_change; good_leaf > docs/tasks/FEAT.md; git add -A
+  code_change; good_leaf > docs/tasks/FEAT.md; point_to DEMO-APP-0002 '`FEAT` → frontier leaf `FEAT.1` (`active`)'; git add -A
   commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main' || return 1
   printf 'fn main() { println!("again"); }\n' > crates/app/src/main.rs
   printf '\n- a note outside the leaf\n' >> docs/tasks/FEAT.md          # the file changes, the leaf section does not
-  git add -A; commit_hooks 'DEMO-APP-0003 (leaf FEAT.1): change again'; refused_by 'TASK-TREE-OWNERSHIP'
+  point_to DEMO-APP-0003; git add -A; commit_hooks 'DEMO-APP-0003 (leaf FEAT.1): change again'; refused_by 'TASK-TREE-OWNERSHIP'
 }
 arm_open_leaf_owns_two_commits() {
-  code_change; good_leaf > docs/tasks/FEAT.md; git add -A
+  code_change; good_leaf > docs/tasks/FEAT.md; point_to DEMO-APP-0002 '`FEAT` → frontier leaf `FEAT.1` (`active`)'; git add -A
   commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main' || return 1
-  printf 'fn main() { println!("again"); }\n' > crates/app/src/main.rs
+  printf 'fn main() { println!("again"); }\n' > crates/app/src/main.rs; point_to DEMO-APP-0003
   # the second commit adds NEW evidence lines to each box and a commit-log row
   awk '{ print } /\*\*ROOT CAUSE/ { print "    second pass: `cargo test` → `test result: FAILED. 0 passed; 1 failed` (`rc=101`)." }
        /\*\*ADDRESSED/ { print "    second pass: `cargo test` → `test result: ok. 1 passed; 0 failed` (`rc=0`)." }
@@ -453,6 +466,9 @@ arm_done_leaf_child_leaf_passes() {
   - [x] **ADDRESSED (verified)** — `cargo test` → `test result: ok. 1 passed; 0 failed` (`rc=0`).
   - [x] **NO REGRESSION** — `scripts/check_doctrines.sh` → `=== all doctrines green ===` (`rc=0`).
 L
+  point_to DEMO-APP-0002 '`BOOTSTRAP` → frontier leaf `BOOTSTRAP.1.1` (`done`) — then seed your first real tree'
+  awk '{ sub(/\(`done`\) — then/, "— then"); print }' MEMORY.md > "$T/.m" && mv "$T/.m" MEMORY.md
+  point_to DEMO-APP-0002 '`BOOTSTRAP` (its leaves are done) — seed your first real tree from `ROADMAP.md`'
   git add -A; commit_hooks 'DEMO-APP-0002 (leaf BOOTSTRAP.1.1): follow-up'; green
 }
 arm_duplicate_label_refused() {
@@ -481,7 +497,8 @@ arm_code_paths_txt_retired() {
 }
 arm_merge_commit_exempt_from_binding() {
   git checkout -q -b topic
-  code_change; good_leaf > docs/tasks/FEAT.md; git add -A; commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main' || return 1
+  code_change; good_leaf > docs/tasks/FEAT.md; point_to DEMO-APP-0002 '`FEAT` → frontier leaf `FEAT.1` (`active`)'; git add -A
+  commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main' || return 1
   git checkout -q main; printf '\nA README line.\n' >> README.md; git add README.md
   commit_hooks 'DEMO-DOC-0001: a docs line' || return 1
   git merge -q --no-ff -m 'Merge branch topic' topic >/dev/null 2>&1 || return 1
@@ -489,12 +506,52 @@ arm_merge_commit_exempt_from_binding() {
 }
 arm_exception_counted_in_ci() {
   base="$(git rev-parse HEAD)"
-  code_change; git add -A
+  code_change; point_to DEMO-APP-0002; git add -A
   commit_hooks 'DEMO-APP-0002: vendored change
 
 Spine-Exception: vendored third-party sources, no leaf applies' || return 1
   OUT="$(bash scripts/check_doctrines.sh --range "$base..HEAD" 2>&1)"; RC=$?
   green && has '1 with a Spine-Exception'
+}
+
+arm_resume_pointer_stale_refused() {
+  # a governed commit that leaves latest_commit pointing at the previous commit
+  code_change; good_leaf > docs/tasks/FEAT.md; git add -A
+  commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main'; refused_by 'RESUME-POINTER'
+}
+arm_resume_pointer_missing_leaf_refused() {
+  code_change; good_leaf > docs/tasks/FEAT.md; point_to DEMO-APP-0002 '`FEAT` → frontier leaf `FEAT.9` (`pending`)'; git add -A
+  commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main'; refused_by 'RESUME-POINTER'
+}
+arm_docs_only_commit_keeps_pointer() {
+  # documentation-only: the pointer may stay as it is
+  printf '\nA README line.\n' >> README.md; git add README.md; commit_hooks 'DEMO-DOC-0001: a docs line'; green
+}
+arm_handoff_refuses_dirty_tree() {
+  printf 'fn main() {}\n' > crates/app/src/main.rs
+  OUT="$(bash scripts/handoff 2>&1)"; RC=$?; [ "$RC" -ne 0 ] && has 'not clean'
+}
+arm_handoff_refuses_stale_pointer() {
+  # a governed commit made with the hooks bypassed and a stale pointer: handoff must catch it
+  code_change; good_leaf > docs/tasks/FEAT.md; git add -A; commit_nohooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main' || return 1
+  OUT="$(bash scripts/handoff 2>&1)"; RC=$?; [ "$RC" -ne 0 ] && has 'stale'
+}
+arm_handoff_refuses_running_job() {
+  ( exec 3< README.md; sleep 20 ) & job=$!
+  sleep 1; OUT="$(bash scripts/handoff 2>&1)"; RC=$?
+  kill "$job" 2>/dev/null; wait "$job" 2>/dev/null
+  [ "$RC" -ne 0 ] && has 'STILL RUNNING'
+}
+arm_handoff_ok_then_resume_from_fresh_clone() {
+  # the session ends: handoff is green on the base child; a NEW clone (a new session, any harness) resumes
+  OUT="$(bash scripts/handoff 2>&1)"; RC=$?; green && has 'handoff: OK' || return 1
+  rm -rf "$T/clone"; git clone -q . "$T/clone" || return 1
+  cd "$T/clone" && git config core.hooksPath .githooks
+  # resume by the read path: the pointer names a tree that exists, and the gate is green on the clone
+  tree="$(grep '^- active_work_unit:' MEMORY.md | grep -oE '`[A-Z][A-Z0-9-]*`' | head -1 | tr -d '`')"
+  [ -n "$tree" ] && [ -f "docs/tasks/$tree.md" ] || return 1
+  grep -q '^- next_action: .' MEMORY.md || return 1
+  gate; green
 }
 
 # ── the runner ────────────────────────────────────────────────────────────────────────────────

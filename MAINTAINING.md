@@ -191,7 +191,8 @@ starts fresh.
 - Enforcement: `DOCTRINE_ENFORCEMENT.md`, `scripts/lib/spine.sh` (the library every check reads
   the change through), `scripts/check_doctrines.sh` (+ universal `check_*.sh`),
   `scripts/check_doctrines.project.sh` (project slot), `scripts/tests/spine_tests.sh` (the
-  conformance suite), `.githooks/`, `.github/workflows/`, `.doctrine/` (project seams).
+  conformance suite), `scripts/handoff` (the session-end check), `.githooks/`, `.github/workflows/`,
+  `.doctrine/` (project seams).
 - Tools-first: `TOOLBOX.md`. Knowledge map: `KNOWLEDGE_MAP.md` (derived), `knowledge-map/`.
 - Docs surface: `docs/book/` (mdBook). Live-docs: `CHANGELOG.md`, `DEV_NOTES.md`,
   `LIVE_STATUS.md`. Rust: `Cargo.toml`, `crates/`, `Makefile`, `rust-toolchain.toml` — these

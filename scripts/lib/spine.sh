@@ -230,3 +230,45 @@ spine_leaf_bounds() { # $1 = file, $2 = leaf id → "start end" (1-based, inclus
 spine_leaf_status() { # $1 = file, $2 = start, $3 = end → the leaf's Status value (first `Status: \`…\`` line in range)
   sed -n "${2},${3}p" "$1" | grep -m1 -oE 'Status: `[^`]+`' | sed 's/Status: `//; s/`$//'
 }
+
+# ── the resume pointer (REVIEW-2026-09.10, decision_context_continuity) ──────────────────────
+spine_subject_id() { printf '%s' "$1" | grep -oE '^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*-[0-9]{4,}' | head -1; }
+spine_pointer_field() { # $1 = MEMORY.md content file, $2 = field → the field's text after "field:"
+  grep -m1 -E "^[[:space:]]*-[[:space:]]*$2:" "$1" | sed "s/^[[:space:]]*-[[:space:]]*$2:[[:space:]]*//"
+}
+spine_code_spans() { # stdin → each `code span` content on its own line
+  awk '{ s = $0; while (match(s, /`[^`]+`/)) { print substr(s, RSTART+1, RLENGTH-2); s = substr(s, RSTART+RLENGTH) } }'
+}
+# Resolve the trees and leaves a pointer line names. Prints "tree <ID>" / "leaf <TREE>.<n> <status|missing>"
+# in order of appearance; a bare `.n` attaches to the last tree named before it. $1 = the line text.
+spine_pointer_refs() {
+  local span tree="" t l b st
+  printf '%s\n' "$1" | spine_code_spans | while IFS= read -r span; do
+    if printf '%s' "$span" | grep -qE '^[A-Z][A-Z0-9-]*$'; then
+      if spine_after_has "docs/tasks/$span.md"; then tree="$span"; printf 'tree %s\n' "$span"; fi
+    elif printf '%s' "$span" | grep -qE '^[A-Z][A-Z0-9-]*\.[0-9]+(\.[0-9]+)*[a-z]?$'; then
+      t="${span%%.*}"; l="$span"; tree="$t"
+    elif printf '%s' "$span" | grep -qE '^\.[0-9]+(\.[0-9]+)*[a-z]?$'; then
+      [ -n "$tree" ] || continue; t="$tree"; l="$tree$span"
+    else continue; fi
+    if [ -n "${l:-}" ]; then
+      if spine_read "docs/tasks/$t.md" > "$SPINE_TMP/ptr_tree.md" 2>/dev/null; then
+        b="$(spine_leaf_bounds "$SPINE_TMP/ptr_tree.md" "$l")"
+        if [ -n "$b" ]; then st="$(spine_leaf_status "$SPINE_TMP/ptr_tree.md" "${b% *}" "${b#* }")"; printf 'leaf %s %s\n' "$l" "${st:-unknown}"
+        else printf 'leaf %s missing\n' "$l"; fi
+      else printf 'leaf %s missing\n' "$l"; fi
+      l=""
+    fi
+  done
+}
+# Was commit $1 governed (did it touch a governed path)? Prints yes / no; an evaluation failure is "yes".
+spine_commit_governed() {
+  local parent
+  parent="$(git rev-parse -q --verify "$1^{commit}^" 2>/dev/null || true)"
+  ( unset SPINE_TMP; trap - EXIT
+    export SPINE_BEFORE="${parent:-$SPINE_EMPTY_TREE}" SPINE_AFTER="$1"; unset SPINE_MERGE
+    spine_init "$SPINE_ID" >/dev/null 2>&1 || exit 2
+    spine_load_docs_re >/dev/null 2>&1 || exit 2
+    [ -n "$(spine_governed_paths)" ] ) >/dev/null 2>&1
+  case $? in 1) printf 'no\n' ;; *) printf 'yes\n' ;; esac
+}

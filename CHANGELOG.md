@@ -1,5 +1,27 @@
 # CHANGELOG.md
 
+## 0.15.0 — 2026-09-30 — context continuity as a guaranteed property: the pointer is true, and handoff proves it
+
+`BEDROCK-REVIEW-0005` (leaf `REVIEW-2026-09.10`), for the maintainer's requirement of 2026-09-30
+(`docs/decisions/decision_context_continuity.md`): a project spawned from bedrock can switch harness and
+model at any handoff-ready state, and resumes with full context after any `/exit`, `/clear` or crash.
+
+- ✅ **`RESUME-POINTER` gate**: in every governed commit `MEMORY.md` names that commit in `latest_commit`,
+  `active_work_unit` names an existing tree, the frontier leaf exists and is open, `next_action` is set.
+  A stale pointer, or a leaf that no longer exists, is refused at `commit-msg` time and per commit in CI.
+- ✅ **`scripts/handoff`**, the last command of every session: the background-job census, a clean working
+  tree (uncommitted content survives nothing, so it is refused, not warned about), the pointer true against
+  the latest governed commit, and unpushed commits listed. Green means any agent, in any harness, on any
+  machine, resumes from the repository alone.
+- ✅ **Proven by the suite**: seven continuity arms, including a hook-bypassed commit caught by handoff, a
+  process holding a repository file open, and a fresh clone that resumes by the read path with a green gate.
+- `AGENTS.md` non-negotiables updated: end every session with `scripts/handoff`; the pointer is true in
+  every commit; the harness and the model are transparent to the project. The bootstrap seeds a true
+  `latest_commit`.
+- Conformance suite: `arms: 47 pass / 6 xfail / 0 fail / 0 xpass (of 53)`.
+- ⚠️ **For every child:** governed commits must now update `MEMORY.md`'s `latest_commit`; run
+  `scripts/handoff` before ending a session.
+
 ## 0.14.0 — 2026-09-30 — the ownership contract as code: a leaf owns a commit only if that commit's evidence is in it
 
 `BEDROCK-REVIEW-0004` (leaf `REVIEW-2026-09.4`). The contract in `docs/decisions/decision_ownership_contract.md`,
