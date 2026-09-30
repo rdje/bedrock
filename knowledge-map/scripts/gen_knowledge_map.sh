@@ -10,6 +10,7 @@
 set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/spine.sh"; spine_init KNOWLEDGE-MAP
 MAP="$ROOT/KNOWLEDGE_MAP.md"
+spine_tmp >/dev/null
 if [ "${1:-}" = "--print-map-path" ]; then echo "$MAP"; exit 0; fi
 
 cat <<'HDR'
@@ -58,7 +59,10 @@ echo
 found=0
 for f in $(spine_after_ls 'docs/tasks/*.md' | grep -E '^docs/tasks/[^/]+\.md$' | LC_ALL=C sort); do
   b="$(basename "$f")"; [ "$b" = "TEMPLATE.md" ] && continue
-  st="$(spine_read "$f" | grep -m1 -oE '^- Status: `[^`]+`' | sed 's/^- Status: `//; s/`$//')"
+  # read the file WHOLE before `grep -m1`: piping spine_read into a reader that stops early made `git show`
+  # die of EPIPE past the pipe buffer, and spine_refuse inside the `$( )` printed a false REFUSED (.4.1.1)
+  spine_read "$f" > "$SPINE_TMP/src.md" || spine_refuse "cannot read $f"
+  st="$(grep -m1 -oE '^- Status: `[^`]+`' "$SPINE_TMP/src.md" | sed 's/^- Status: `//; s/`$//')"
   echo "- [\`$b\`](docs/tasks/$b) — \`${st:-unknown}\`"; found=1
 done
 if [ "$found" = 0 ]; then echo "- _none yet_"; fi
@@ -69,7 +73,8 @@ echo
 found=0
 for f in $(spine_after_ls 'docs/knowledge/*.md' | LC_ALL=C sort); do
   b="$(basename "$f")"
-  q="$(spine_read "$f" | grep -m1 -E '^answers:' | sed 's/^answers:[[:space:]]*//')"
+  spine_read "$f" > "$SPINE_TMP/src.md" || spine_refuse "cannot read $f"
+  q="$(grep -m1 -E '^answers:' "$SPINE_TMP/src.md" | sed 's/^answers:[[:space:]]*//')"
   echo "- [\`$b\`](docs/knowledge/$b)${q:+ — $q}"; found=1
 done
 if [ "$found" = 0 ]; then echo "- _none yet_"; fi

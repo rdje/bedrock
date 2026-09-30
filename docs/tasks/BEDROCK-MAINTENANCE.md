@@ -833,11 +833,46 @@ process.
     the architecture table and in the three recipes), `DOCTRINE_ENFORCEMENT.md` (the `BOOK-COVERAGE` row),
     `README.md` (one line to the Guide), `.gitignore` (`/docs/book/book`).
 
+- ID: `BEDROCK-MAINTENANCE.4.1.1`
+  Status: `done`
+  Goal: the Knowledge Map generator printed a false `KNOWLEDGE-MAP: REFUSED — git show :docs/tasks/BEDROCK-MAINTENANCE.md
+  failed` on every commit once that tree file outgrew a pipe buffer — noise that says REFUSED and is not, on the
+  hook a maintainer reads at every commit. Follow-up of `.4.1`, whose record pushed the file past the size.
+  Acceptance: the generator reads a tree file of any size without a message; a suite arm holds it.
+  Verification: see the checklist below.
+  Commit: `BEDROCK-MAINTENANCE-0020`
+
+  ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — `bash knowledge-map/scripts/gen_knowledge_map.sh > /dev/null` → stderr
+    `KNOWLEDGE-MAP: REFUSED — git show :docs/tasks/BEDROCK-MAINTENANCE.md failed` with `rc=0` (the map itself
+    correct). `wc -c docs/tasks/BEDROCK-MAINTENANCE.md` → `85264`, above the 65,536-byte pipe buffer.
+    `knowledge-map/scripts/gen_knowledge_map.sh:61`: `st="$(spine_read "$f" | grep -m1 …)"` — `grep -m1` closes
+    the pipe after the first match, `git show` dies of EPIPE with a nonzero status, and `spine_read` calls
+    `spine_refuse` INSIDE the `$( )`, which prints and ends only the subshell (the trap `MAINTAINING.md` and
+    `scripts/lib/spine.sh` both name). Line 72 (`answers:`) has the same shape. Census of the same pattern
+    elsewhere: `grep -n '\$(spine_read[^)]*| *\(grep\|head\|sed -n\)' scripts/check_*.sh scripts/*.sh
+    knowledge-map/scripts/*.sh scripts/lib/*.sh migrations/*.sh` → `7` hits, of which only the generator's two
+    pipe into a reader that stops early; the five in `check_docpaths.sh`, `check_neutrality.sh`,
+    `check_task_acceptance.sh` and `spine.sh` consume the whole stream (`grep -n`, `grep -v`, `sed`).
+  - [x] **ADDRESSED (verified)** — both reads go to a file first (`spine_read "$f" > "$SPINE_TMP/src.md" ||
+    spine_refuse …`), then `grep -m1` reads the file: `bash knowledge-map/scripts/gen_knowledge_map.sh > map.md` → no stderr line, `rc=0`, and
+    `cmp map.md KNOWLEDGE_MAP.md` → identical (`rc=0`), so the map is unchanged by the fix. New suite arm
+    `knowledge_map_large_tree_no_false_refusal` (a 135 KB tree file, the generator's stderr must carry no
+    `REFUSED`, the map must show the tree's status): `scripts/tests/spine_tests.sh --only knowledge_map_large_tree_no_false_refusal` →
+    `arms: 1 pass / 0 xfail / 0 fail / 0 xpass (of 1)` (`rc=0`); its first fixture wrote the status indented under
+    the ID, which the generator reads as `unknown` — corrected to the tree-level `- Status:` line the real trees use.
+  - [x] **NO REGRESSION** — `scripts/tests/spine_tests.sh` → `arms: 89 pass / 0 xfail / 0 fail / 0 xpass (of 89)` (`rc=0`) and the
+    same under stock bash 3.2 (`/bin/bash scripts/tests/spine_tests.sh`) → `89 pass … (of 89)` (`rc=0`); the full gate with this commit's subject → `=== all doctrines green ===`
+    (`rc=0`).
+  - [x] **LOCKSTEP** — `CHANGELOG.md` 1.1.1, `DOCTRINE_VERSION`, `MEMORY.md`.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
 | --- | --- | --- | --- |
 | 1 | `BEDROCK-MAINTENANCE.4` | `pending` | the enhancement loop after 1.0.0 — pick the next candidate from its list (evidence re-run in CI first) |
+| — | `BEDROCK-MAINTENANCE.4.1.1` | `done` | the Knowledge Map generator reads a tree file of any size without a false REFUSED (1.1.1) |
 | — | `BEDROCK-MAINTENANCE.4.1` | `done` | the bedrock Guide (mdBook) live at <https://rdje.github.io/bedrock/>, the `BOOK-COVERAGE` gate, the `book` workflow (1.1.0) |
 | — | `BEDROCK-MAINTENANCE.3` | `done` | the 2026-09-30 review closed in `docs/tasks/REVIEW-2026-09.md` (0.11.0 → 1.0.0) |
 | 2 | `BEDROCK-MAINTENANCE.2` | `active` | the ongoing transfer loop; pick a backlog item below |
@@ -967,6 +1002,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 | `2026-07-24` | `.1` | enforcer (5 checks) · cargo metadata · commit-msg hook · KM gen | all green |
 
 ## Commit Log
+
+- `2026-09-30` — `.4.1.1` — `BEDROCK-MAINTENANCE-0020`: the Knowledge Map generator reads each tree and knowledge file to a temp file before `grep -m1`, so a file above the pipe buffer no longer makes `git show` die of EPIPE and print a false `REFUSED`; a suite arm with a 135 KB tree; `DOCTRINE_VERSION` 1.1.0 → 1.1.1
 
 - `2026-09-30` — `.4.1` — `BEDROCK-MAINTENANCE-0018`: the bedrock Guide (`docs/book/`, 17 chapters, mdBook), the `BOOK-COVERAGE` gate, the `book` workflow publishing it on GitHub Pages, the bootstrap de-templating from the manifest, three transcript-found fixes; `DOCTRINE_VERSION` 1.0.3 → 1.1.0
 

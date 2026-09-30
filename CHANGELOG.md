@@ -1,5 +1,16 @@
 # CHANGELOG.md
 
+## 1.1.1 — 2026-09-30 — the Knowledge Map generator no longer prints a false REFUSED on a large tree file
+
+`BEDROCK-MAINTENANCE-0020` (leaf `BEDROCK-MAINTENANCE.4.1.1`). Once a task-tree file outgrew a pipe buffer
+(64 KiB), every commit printed `KNOWLEDGE-MAP: REFUSED — git show :docs/tasks/<tree>.md failed` while the map
+was correct: the generator read the file through `grep -m1` inside a substitution, `git show` died of EPIPE after
+the first match, and the refusal ended only the subshell. Each file is now read whole to a temp file first. A
+suite arm feeds the generator a 135 KB tree and requires a silent stderr.
+
+**For existing children:** `scripts/update_scaffold.sh <bedrock> --ref v1.1.1` brings the corrected generator
+(a spine file, fast-forwarded when unmodified). No migration.
+
 ## 1.1.0 — 2026-09-30 — the bedrock Guide: an mdBook for the person, and a gate that keeps it complete
 
 `BEDROCK-MAINTENANCE-0018` (leaf `BEDROCK-MAINTENANCE.4.1`). The root documents are rules and reference for

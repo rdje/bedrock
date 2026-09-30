@@ -112,6 +112,7 @@ waiver_historical_not_rejudged          req    BR-17
 lesson_decline_per_lesson               req    BR-18
 lesson_promoted_via_knowledge           req    BR-18
 knowledge_map_shows_tree_status         req    BK-12
+knowledge_map_large_tree_no_false_refusal req  KMAP
 child_no_packs_bootstraps_and_gates     req    NT-01
 unselected_packs_not_copied             req    NT-01
 rust_pack_child_runs_check              req    NT-05
@@ -744,6 +745,17 @@ arm_lesson_promoted_via_knowledge() {
 }
 arm_knowledge_map_shows_tree_status() {
   bash knowledge-map/scripts/gen_knowledge_map.sh > "$T/.map" && grep -qE 'BOOTSTRAP\.md\) — `done`' "$T/.map"
+}
+arm_knowledge_map_large_tree_no_false_refusal() {
+  # a tree file larger than a pipe buffer (64 KiB): the generator must read it whole. Reading it through
+  # `grep -m1` inside a substitution made `git show` die of EPIPE after the first match, and spine_refuse —
+  # inside the `$( )`, ending only the subshell — printed a false `REFUSED` on every commit of the project
+  { printf '# BIG: a large tree\n\n## Task Tree\n\n- ID: `BIG`\n- Status: `active`\n- Goal: size\n\n'
+    awk 'BEGIN { for (i = 0; i < 1500; i++) print "- filler line " i " ................................................................" }'; } > docs/tasks/BIG.md
+  [ "$(wc -c < docs/tasks/BIG.md | tr -d ' ')" -gt 70000 ] || return 1
+  git add docs/tasks/BIG.md
+  OUT="$(bash knowledge-map/scripts/gen_knowledge_map.sh 2>&1 > "$T/.map")"; RC=$?
+  green && ! has 'REFUSED' && grep -qE 'BIG\.md\) — `active`' "$T/.map"
 }
 
 # ── pack and setup arms (REVIEW-2026-09.8) ────────────────────────────────────────────────────
