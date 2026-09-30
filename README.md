@@ -33,6 +33,9 @@ Cursor, a custom runner — or a human, identically.
 
 ## Use it
 
+The guided read is **the bedrock Guide**, <https://rdje.github.io/bedrock/> (source: `docs/book/`): concepts,
+the bootstrap and the updater step by step, every gate and how to satisfy it, packs, CI, troubleshooting.
+
 **The stress-free way** — clone bedrock once, then let it ask you the questions:
 
 ```bash

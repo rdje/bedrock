@@ -10,9 +10,11 @@ if [ -f CLAUDE.md ] && ! grep -q 'AGENTS.md' CLAUDE.md; then
     # AGENTS.md is already the canonical text (the sync fast-forwarded it): keep the old CLAUDE.md
     # body beside the tree, never lost, and point CLAUDE.md at AGENTS.md
     mkdir -p .bedrock-incoming; cp -p CLAUDE.md .bedrock-incoming/CLAUDE.md.previous
-    echo "migration 0004: AGENTS.md is already canonical; the previous CLAUDE.md body is kept at .bedrock-incoming/CLAUDE.md.previous"
+    echo "migration 0004: AGENTS.md is already canonical; CLAUDE.md becomes the adapter, its previous body is kept at .bedrock-incoming/CLAUDE.md.previous"
+    moved=0
   else
     cp -p CLAUDE.md AGENTS.md
+    moved=1
   fi
   cat > CLAUDE.md <<'ADAPTER'
 # CLAUDE.md — Claude Code adapter
@@ -24,7 +26,7 @@ instructions are in [`AGENTS.md`](AGENTS.md): read that file and follow it exact
 here overrides it, and a project that does not use Claude Code may delete this file.
 ADAPTER
   grep -q 'MEMORY_ARCHITECTURE.md' AGENTS.md || printf '\nRead `MEMORY_ARCHITECTURE.md` and `README.md` first.\n' >> AGENTS.md
-  echo "migration 0004: the instruction body moved from CLAUDE.md to AGENTS.md; CLAUDE.md is now the adapter"
+  if [ "$moved" = 1 ]; then echo "migration 0004: the instruction body moved from CLAUDE.md to AGENTS.md; CLAUDE.md is now the adapter"; fi
 else
   echo "migration 0004: nothing to do"
 fi

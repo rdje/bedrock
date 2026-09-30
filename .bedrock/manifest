@@ -26,6 +26,7 @@
 .githooks/commit-msg                                                spine       0.1.0
 .githooks/pre-commit                                                spine       0.1.0
 .github/workflows/doctrines.yml                                     spine       0.1.0
+.github/workflows/book.yml                                          maintainer  1.1.0
 .gitignore                                                          seed        0.1.0
 AGENTS.md                                                           spine       0.1.0
 CHANGELOG.md                                                        project     0.1.0
@@ -46,6 +47,7 @@ README_POLICY.md                                                    seed        
 ROADMAP.md                                                          project     0.1.0
 TOOLBOX.md                                                          seed        0.1.0
 VISIBILITY.md                                                       seed        0.8.0
+docs/book/                                                          maintainer  1.1.0
 docs/REPOSITORY_SETTINGS.md                                           spine       1.0.0
 docs/TASK_TREE.md                                                   seed        0.1.0
 docs/TASK_TREE_README.md                                            spine       0.1.0
@@ -77,6 +79,7 @@ packs/harness/pi/                                                     pack      
 packs/harness/qwen/                                                   pack        0.19.0
 packs/lang/rust/                                                    pack        0.19.0
 scripts/bootstrap.sh                                                spine       0.1.0
+scripts/check_book_coverage.sh                                      spine       1.1.0
 scripts/check_commit_message.sh                                     spine       0.13.0
 scripts/check_docpaths.sh                                           spine       0.1.0
 scripts/check_doctrines.project.sh                                  project     0.1.0

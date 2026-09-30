@@ -149,8 +149,14 @@ truncate_from() { # FILE LINE-PREFIX — drop that line and everything after it
   cp -p "$f" "$tmp" && awk -v a="$2" '{ if (index($0,a)==1) exit; print }' "$f" > "$tmp" && mv "$tmp" "$f" || die "edit of $f failed"
 }
 
-# ── 0) de-template: everything bedrock-only goes ────────────────────────────────────────────
+# ── 0) de-template: everything bedrock-only goes — every `maintainer`-class path of the manifest, so a
+#       new bedrock-only file (its user guide, its workflow) cannot reach a child by being forgotten here
 echo "→ initialising project '$name' (title: $title, work-unit prefix: $prefix)"
+if [ -f .bedrock/manifest ]; then
+  grep -vE '^[[:space:]]*(#|$)' .bedrock/manifest | awk '$2=="maintainer" { print $1 }' | while IFS= read -r mp; do
+    case "$mp" in ""|/*|*..*) continue ;; */) rm -rf "${mp%/}" ;; *) rm -f "$mp" ;; esac
+  done
+fi
 rm -f MAINTAINING.md docs/tasks/BEDROCK-MAINTENANCE.md docs/tasks/REVIEW-2026-09.md
 rm -rf docs/reviews
 for f in docs/decisions/*.md; do case "$(basename "$f")" in INDEX.md|TEMPLATE.md) ;; *) rm -f "$f" ;; esac; done
@@ -330,8 +336,8 @@ commit will.
     (\`rc=0\`); hooks installed: \`git config core.hooksPath\` → \`$hooks_path\` (\`rc=0\`); the Knowledge Map
     regenerated; the enforcer over the STAGED index with this commit's subject: __GATE__
   - [x] **NO REGRESSION** — the same enforcer is the pre-commit and commit-msg hook, so the first commit is
-    judged again by \`scripts/check_doctrines.sh\` exactly as measured here (\`rc=0\` expected; \`scripts/gate\` /
-    \`make gate\` re-run it anytime); __STAGED__ path(s) staged, all written by this run.
+    judged again by \`scripts/check_doctrines.sh\` exactly as measured here (\`rc=0\` expected; \`scripts/gate\`
+    re-runs it anytime); __STAGED__ path(s) staged, all written by this run.
 
 ## Current Frontier
 
@@ -387,5 +393,5 @@ Next:
      in docs/TASK_TREE.md's Active Task Trees table, and point MEMORY.md at it).
   4) Work its first leaf, commit via COMMIT.md, and end every session with:  scripts/handoff
 
-Anyone who clones this project later runs only:  scripts/bootstrap.sh --contributor   (or: make hooks)
+Anyone who clones this project later runs only:  scripts/bootstrap.sh --contributor
 EOT

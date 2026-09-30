@@ -1,5 +1,29 @@
 # CHANGELOG.md
 
+## 1.1.0 — 2026-09-30 — the bedrock Guide: an mdBook for the person, and a gate that keeps it complete
+
+`BEDROCK-MAINTENANCE-0018` (leaf `BEDROCK-MAINTENANCE.4.1`). The root documents are rules and reference for
+agents and maintainers; a person creating a project had nothing to read in order. **The bedrock Guide**,
+<https://rdje.github.io/bedrock/> (source `docs/book/`, 17 chapters), walks through the concepts, creating a
+project, the bootstrap step by step, the daily loop, commits and evidence, memory, hand-off, every gate and
+how to satisfy it, configuration, packs, the updater step by step on a real 0.6.1 → 1.0.3 upgrade, CI and
+repository settings, extending, troubleshooting and a reference — with transcripts captured from the scripts.
+
+- ✅ **`BOOK-COVERAGE`** (`scripts/check_book_coverage.sh`), in bedrock itself only: the guide must name every
+  registered doctrine, every entry-point script, every `.doctrine/` seam, every pack and every migration, so a
+  new one cannot land undocumented. Two suite arms: a child carries neither the book nor its workflow (and
+  gets the docs pack's skeleton when it selects it); the gate refuses the guide with one doctrine's name gone.
+- ✅ **`.github/workflows/book.yml`** (maintainer-class) builds the book with a pinned mdBook on every push and
+  pull request and publishes it on GitHub Pages from `main`.
+- ✅ **`scripts/bootstrap.sh` de-templates from the manifest**: every `maintainer`-class path is removed, so a
+  new bedrock-only file (the book, its workflow) cannot reach a child by being forgotten in a hand-kept list.
+- 🔧 Three small things the captured transcripts showed: the updater printed a migration's `since` version
+  with its trailing comment; migration 0004 announced a move it had not made when `AGENTS.md` was already
+  canonical; the bootstrap still mentioned `make` targets the spine no longer ships.
+
+**For existing children:** nothing to run. `scripts/update_scaffold.sh <bedrock> --ref v1.1.0` brings the
+corrected scripts and the new gate, which reports `OK — not the template itself` in a project. No migration.
+
 ## 1.0.3 — 2026-09-30 — the macOS self-test leg runs in the template only
 
 `BEDROCK-REVIEW-0013` (leaf `REVIEW-2026-09.9.3`). A project created from bedrock inherited the Linux + macOS

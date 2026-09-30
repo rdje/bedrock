@@ -32,6 +32,7 @@ with full context after any session end ([`decision_context_continuity`](docs/de
 | **The packs** | `packs/<kind>/<name>/` | `pack` manifest (`key = value`: `order`, `default`, `seed`, `sync`, fragments, `install`), `files/`, fragments, an install hook that prints measured evidence. See `packs/README.md`. |
 | **The setup** | `scripts/bootstrap.sh`, `scripts/new_project.sh`, `scripts/lib/setup_questions.sh` | the guided questions (choices listed, defaults on Enter, re-ask, summary, confirmation), flags as the non-interactive path, validation before any write, literal edits, evidence measured over the staged first commit. |
 | **The conformance suite** | `scripts/tests/spine_tests.sh` | THE regression harness: builds children from the working tree (no pack, packs, old bedrock versions), runs every scenario as a `req` or `xfail` arm; an `xfail` that starts passing fails the run. Run it before every commit that touches a script; CI runs it on Linux and macOS. |
+| **The user guide** | `docs/book/` (`BOOK-COVERAGE` gate), `.github/workflows/book.yml` | the guided read for a person — <https://rdje.github.io/bedrock/>, built with mdBook and published by the workflow on every push to `main`. Maintainer-class: a child never inherits it. The gate refuses a doctrine, entry point, `.doctrine/` seam, pack or migration the book does not name, so a new one cannot land undocumented. |
 | **The session end** | `scripts/handoff` | census of background jobs, a clean tree, the pointer true against the latest governed commit, unpushed commits listed. |
 
 The three decisions above, plus [`decision_licence`](docs/decisions/decision_licence.md), are the
@@ -52,7 +53,9 @@ green, the leaf's checklist carrying the measured evidence, `DOCTRINE_VERSION` b
    change through `spine_changed_paths` / `spine_read` / `spine_added_lines`, honour the exit
    contract, put a `--self-test` in it (RED and GREEN arms, the founding case pinned verbatim).
    Header: what it prevents, the measured incident behind it, the honest limit.
-3. Register it in the driver's `DOCTRINES` array and mirror the row in `DOCTRINE_ENFORCEMENT.md`.
+3. Register it in the driver's `DOCTRINES` array, mirror the row in `DOCTRINE_ENFORCEMENT.md`, and
+   document it in the user guide (`docs/book/src/gates.md`: what it holds, how to satisfy it) — the
+   `BOOK-COVERAGE` gate refuses a registered doctrine the book does not name.
 4. Add `req` arms to `scripts/tests/spine_tests.sh` (the RED case refused **by the named check**,
    the GREEN control passing); wire the `--self-test` into the CI job's list.
 5. Classify the script in `.bedrock/manifest` (`spine`). If it needs project data, add a
@@ -76,12 +79,15 @@ green, the leaf's checklist carrying the measured evidence, `DOCTRINE_VERSION` b
    refused; add its toolchain to the CI self-test job if the arm needs it.
 5. Migration 0006 detects packs older children already carry — extend it if the pack has a
    recognisable footprint.
+6. Add its row to the user guide's pack table (`docs/book/src/packs.md`); `BOOK-COVERAGE` refuses a
+   pack the book does not name.
 
 ### Add a migration
 
 `migrations/NNNN-<slug>.sh` with `# since: <version>` (the version whose change it accompanies),
 idempotent, printing what it changed, exiting nonzero on failure. Test it in a suite arm built
-from the last bedrock commit that did not have the change (`old_child <rev>`).
+from the last bedrock commit that did not have the change (`old_child <rev>`), and add its row to
+the migrations table in `docs/book/src/updating.md`.
 
 ### Cut a release
 
@@ -274,7 +280,8 @@ So this repo's own layer-A/B/C memory describes the maintenance work:
 - `ROADMAP.md` — kept as the **consumer** placeholder (the canonical "replace me" file).
 
 `scripts/bootstrap.sh` de-templates for a consumer: it removes every `maintainer`-class path
-(this guide, both maintainer trees, the reviews, every decision record) and resets the live docs.
+(this guide, both maintainer trees, the reviews, every decision record, the user guide and its
+workflow — read from the manifest, so a new maintainer file needs no edit there) and resets the live docs.
 
 ## File inventory (the spine)
 

@@ -15,3 +15,6 @@ git_message_brief.txt
 /target
 /build
 /dist
+
+# the built user guide (mdbook build docs/book)
+/docs/book/book

@@ -1,0 +1,11 @@
+[book]
+title = "The bedrock Guide"
+description = "Everything worth knowing about bedrock: the discipline spine for projects in any language, under any AI harness."
+authors = ["Richard DJE and the bedrock contributors"]
+language = "en"
+src = "src"
+
+[output.html]
+git-repository-url = "https://github.com/rdje/bedrock"
+edit-url-template = "https://github.com/rdje/bedrock/edit/main/docs/book/{path}"
+site-url = "/bedrock/"

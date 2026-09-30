@@ -124,6 +124,8 @@ wizard_decline_writes_nothing           req    SETUP
 new_project_local                       req    SETUP
 add_pack_later                          req    NT-01
 bedrock_itself_green_in_ci_mode         req    NT-14
+child_carries_no_book                   req    BOOK
+book_coverage_refuses_dropped_doctrine  req    BOOK
 ci_range_respects_contract_epoch        req    BR-04
 "
 
@@ -772,6 +774,8 @@ arm_mdbook_pack_child() {
   fresh_copy >/dev/null 2>&1 || return 1
   ./scripts/bootstrap.sh booky --title "Booky Docs" --docs mdbook --yes > "$T/.boot.log" 2>&1 || return 1
   grep -q '^title = "Booky Docs"' docs/book/book.toml && grep -q '^docs = mdbook' .doctrine/commands && grep -q '^\^docs/book/' .doctrine/docs_paths.txt || return 1
+  # the pack's skeleton, not bedrock's own guide (maintainer-class) nor the workflow that publishes it
+  [ ! -f docs/book/src/updating.md ] && [ ! -f .github/workflows/book.yml ] || return 1
   command -v mdbook >/dev/null 2>&1 || return 0
   OUT="$(bash scripts/run docs 2>&1)"; RC=$?; green
 }
@@ -812,9 +816,29 @@ arm_bedrock_itself_green_in_ci_mode() {
   # the template practises what it preaches: the tree under test (the suite's synthetic tip) passes its own
   # tree invariants — NEUTRALITY (no language or harness in spine logic), MANIFEST (every path classified,
   # every spine path present) and MEMORY-ARCH (the inventory) — judged as CI judges a commit
-  ( cd "$SRC_REPO" && for c in scripts/check_neutrality.sh scripts/check_manifest.sh scripts/check_memory_architecture.sh; do
+  ( cd "$SRC_REPO" && for c in scripts/check_neutrality.sh scripts/check_manifest.sh scripts/check_memory_architecture.sh scripts/check_book_coverage.sh; do
       SPINE_AFTER=HEAD SPINE_BEFORE=HEAD^ bash "$c" || exit 1; done ) > "$T/.self.log" 2>&1; rc=$?
-  [ "$rc" -eq 0 ] && grep -q 'NEUTRALITY: OK' "$T/.self.log" && grep -q 'MANIFEST: OK' "$T/.self.log"
+  [ "$rc" -eq 0 ] && grep -q 'NEUTRALITY: OK' "$T/.self.log" && grep -q 'MANIFEST: OK' "$T/.self.log" && grep -q 'BOOK-COVERAGE: OK' "$T/.self.log"
+}
+
+arm_child_carries_no_book() {
+  # bedrock's user guide and the workflow that publishes it are maintainer-class: bootstrap removes every
+  # such path FROM THE MANIFEST, so a child never inherits a book about the template (the base child has
+  # no docs pack); the coverage gate it does inherit says it does not apply there
+  [ ! -e docs/book ] && [ ! -f .github/workflows/book.yml ] && [ ! -f MAINTAINING.md ] && [ -f scripts/check_book_coverage.sh ] || return 1
+  OUT="$(bash scripts/check_book_coverage.sh 2>&1)"; RC=$?
+  green && has 'not the template itself'
+}
+arm_book_coverage_refuses_dropped_doctrine() {
+  # in the template: the guide intact is green; the same guide with one doctrine's name gone is a breach
+  rm -rf "$T/src"; git clone -q "$SRC_REPO" "$T/src" 2>/dev/null || return 1
+  cd "$T/src" || return 1
+  OUT="$(SPINE_AFTER=HEAD SPINE_BEFORE=HEAD^ bash scripts/check_book_coverage.sh 2>&1)"; RC=$?
+  green && has 'BOOK-COVERAGE: OK' || return 1
+  for c in docs/book/src/*.md; do sed 's/TABLE-ARITY-RATCHET/TABLE-ARITY/g' "$c" > "$c.tmp" && mv "$c.tmp" "$c"; done
+  git add docs/book/src
+  OUT="$(bash scripts/check_book_coverage.sh 2>&1)"; RC=$?
+  [ "$RC" -eq 1 ] && has 'never names the doctrine `TABLE-ARITY-RATCHET`'
 }
 
 arm_ci_range_respects_contract_epoch() {

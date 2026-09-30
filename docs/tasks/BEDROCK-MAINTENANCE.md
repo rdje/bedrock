@@ -779,11 +779,66 @@ process.
   Verification: pending
   Commit: pending
 
+- ID: `BEDROCK-MAINTENANCE.4.1`
+  Status: `active`
+  Goal: a user guide for bedrock, as an mdBook (maintainer request 2026-09-30: *"document every aspect of
+  BEDROCK for the user to read … walk the user into how bootstrap.sh and update_scaffold.sh work in detail,
+  explain everything worth knowing"*). The root documents are rules and reference for agents and maintainers;
+  the book is the guided read for a person: concepts, creating a project, the bootstrap step by step, the
+  daily loop, commits and evidence, memory, hand-off, every gate and how to satisfy it, configuration, packs,
+  upgrading step by step, CI and repository settings, extending, troubleshooting, reference. Real transcripts,
+  captured from the scripts at 1.0.3. bedrock-only (class `maintainer`): a child never inherits a book about
+  the template. A `BOOK-COVERAGE` gate keeps it complete — every doctrine, entry point, `.doctrine/` file, pack
+  and migration must be named in it — and CI builds it and publishes it on GitHub Pages.
+  Acceptance: `mdbook build docs/book` succeeds; `BOOK-COVERAGE` green and refuses when a doctrine is
+  dropped from the book; a child carries neither the book nor its workflow (and gets the pack's skeleton when
+  it selects the mdBook pack); the suite stays green; the book is served from GitHub Pages.
+  Verification: see the checklist below and the Verification Log.
+  Commit: `BEDROCK-MAINTENANCE-0018` (the GitHub observation of the `book` workflow and the Pages URL is
+  recorded in a docs-only follow-up; the leaf closes then).
+
+  ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — at `c8603bb` (1.0.3) bedrock had no guided read for a person and no
+    gate that would keep one complete: `git ls-tree -r --name-only HEAD -- docs/book | wc -l` → `0`;
+    `git show HEAD:scripts/check_doctrines.sh | grep -c BOOK-COVERAGE` → `0` (`rc=1`). And the bootstrap's
+    de-template was a hand-kept list — `git show HEAD:scripts/bootstrap.sh | grep -c '^rm -f MAINTAINING.md'`
+    → `1`, `grep -c maintainer` → `0` (`rc=1`) — so a new maintainer-class file (a book about the template)
+    would have shipped to every child. The transcripts captured for the book showed three more defects: the
+    plan printed a migration's `since` with its trailing comment (`sed -n 's/^# since: *//p' … | head -1`,
+    no field split); migration 0004 printed `the instruction body moved` when it had moved nothing; the
+    bootstrap still said `(or: make hooks)` / `make gate` with no Makefile in the spine.
+  - [x] **ADDRESSED (verified)** — `docs/book/`: 17 chapters + `SUMMARY.md`, 1,862 lines; `mdbook build
+    docs/book` → `HTML book written` (`rc=0`), `ls docs/book/book/*.html | wc -l` → `21`. The gate:
+    `bash scripts/check_book_coverage.sh` → `BOOK-COVERAGE: OK — 18 chapters name every doctrine, entry point,
+    seam, pack and migration` (`rc=0`), registered as check 15 of 18 (`grep -c BOOK-COVERAGE
+    scripts/check_doctrines.sh` → `1`). The bootstrap reads the manifest: `grep -c maintainer
+    scripts/bootstrap.sh` → `10` (`rc=0`), and the manifest classifies `docs/book/` and
+    `.github/workflows/book.yml` as `maintainer`, `scripts/check_book_coverage.sh` as `spine`:
+    `bash scripts/check_manifest.sh` → `MANIFEST: OK — 95 entries` (`rc=0`). The `since` parse gains
+    `| awk '{ print $1 }'` in both loops; migration 0004 prints the move only when `moved=1` — its first form,
+    `[ "$moved" = 1 ] && echo …` as the script's last line, made the migration exit `1` whenever nothing had
+    moved, and the suite's two old-child arms caught it (`update: 0004-agents-canonical.sh failed (rc=1)`)
+    before any commit; it is an `if … fi` now; no `make` in the bootstrap's output. Suite arms `child_carries_no_book` and `book_coverage_refuses_dropped_doctrine`
+    added, `mdbook_pack_child` and `bedrock_itself_green_in_ci_mode` extended: `scripts/tests/spine_tests.sh` → `arms: 88 pass / 0 xfail / 0 fail / 0 xpass (of 88)` (`rc=0`), the three
+    book arms among them.
+  - [x] **NO REGRESSION** — the same suite under stock bash 3.2 (`/bin/bash scripts/tests/spine_tests.sh`) →
+    `arms: 88 pass / 0 xfail / 0 fail / 0 xpass (of 88)` (`rc=0`); every `--self-test` (`check_gap_claims`, `check_lesson_promotion`,
+    `check_live_doc_currency`, `check_routing_evidence`, `check_table_arity`) → `rc=0`; both probe drivers
+    → `rc=0`; `bash -n` over every script, hook and migration clean; `bash scripts/check_neutrality.sh` →
+    `NEUTRALITY: OK — 42 spine logic files scanned` (`rc=0`); `bash scripts/check_readme_stability.sh` →
+    `README.md is 88/300 lines, 5131/16384 bytes` (`rc=0`); the full gate with this commit's subject →
+    `=== all doctrines green ===` (`rc=0`). shellcheck is not installed on this machine; CI runs it.
+  - [x] **LOCKSTEP** — `CHANGELOG.md` 1.1.0, `DOCTRINE_VERSION`, `MEMORY.md`, `MAINTAINING.md` (the book in
+    the architecture table and in the three recipes), `DOCTRINE_ENFORCEMENT.md` (the `BOOK-COVERAGE` row),
+    `README.md` (one line to the Guide), `.gitignore` (`/docs/book/book`).
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
 | --- | --- | --- | --- |
-| 1 | `BEDROCK-MAINTENANCE.4` | `pending` | the enhancement loop after 1.0.0 — pick the next candidate from its list (evidence re-run in CI first) |
+| 1 | `BEDROCK-MAINTENANCE.4.1` | `active` | the user guide as an mdBook, with a coverage gate and GitHub Pages |
+| 2 | `BEDROCK-MAINTENANCE.4` | `pending` | the enhancement loop after 1.0.0 — pick the next candidate from its list (evidence re-run in CI first) |
 | — | `BEDROCK-MAINTENANCE.3` | `done` | the 2026-09-30 review closed in `docs/tasks/REVIEW-2026-09.md` (0.11.0 → 1.0.0) |
 | 2 | `BEDROCK-MAINTENANCE.2` | `active` | the ongoing transfer loop; pick a backlog item below |
 | — | `BEDROCK-MAINTENANCE.2.1` | `done` | README Stability Policy + the layer-A byte cap (0.2.0) |
@@ -837,6 +892,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 - None.
 
 ## Verification Log
+
+- `2026-09-30` — `.4.1`: the book built locally with mdBook 0.5.2 (`21` HTML pages); `BOOK-COVERAGE` green on the staged index and RED (`rc=1`, `never names the doctrine \`TABLE-ARITY-RATCHET\``) on a clone of the same tree with that name removed from every chapter — the suite arm `book_coverage_refuses_dropped_doctrine`; a bootstrapped child (`rust`, `claude`) carries no `docs/book`, no `book.yml`, no `MAINTAINING.md`, and its `check_book_coverage.sh` says `not the template itself` — the arm `child_carries_no_book`. The first full run was RED, `arms: 86 pass / 0 xfail / 2 fail / 0 xpass (of 88)`, both old-child upgrade arms: the migration 0004 fix's first form exited `1` when nothing had moved; corrected, the two arms pass alone (`--only`, `1 pass` each) and the full suite is `88 pass` under bash 5.3 and bash 3.2 (`rc=0` both). GitHub Pages was not yet enabled on `rdje/bedrock` when this was written (`gh api repos/rdje/bedrock/pages` → `404`); it is enabled with `build_type=workflow` before the push.
 
 - `2026-09-21` — `.2.11`: write audit — every write lands in `$tmp` or `.bedrock-incoming/`, except the seed `cp` (inside `[ ! -f ]`) and the `chmod` (scoped to `SEEDED`). Clean clone of a real project, **310 tracked files: CONTENT changed 0, MODE changed 0**; only `.bedrock-incoming/` and the new `VISIBILITY.md` appear. ⚠️ The first proof run was REFUSED by the dirty-tree guard because its own baselines were written inside the repo — the control working on its author. `bash -n` clean; `make gate` green.
 
@@ -908,6 +965,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 | `2026-07-24` | `.1` | enforcer (5 checks) · cargo metadata · commit-msg hook · KM gen | all green |
 
 ## Commit Log
+
+- `2026-09-30` — `.4.1` — `BEDROCK-MAINTENANCE-0018`: the bedrock Guide (`docs/book/`, 17 chapters, mdBook), the `BOOK-COVERAGE` gate, the `book` workflow publishing it on GitHub Pages, the bootstrap de-templating from the manifest, three transcript-found fixes; `DOCTRINE_VERSION` 1.0.3 → 1.1.0
 
 - `2026-09-21` — `.2.11` follow-up — `BEDROCK-MAINTENANCE-0017`: the dirty-tree refusal named `git checkout` as the undo, which is true for committed content and silently wrong for the uncommitted content that is the actual risk; it now states that uncommitted work is recoverable by nothing and that this is why it refuses rather than warns
 

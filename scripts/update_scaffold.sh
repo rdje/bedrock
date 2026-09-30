@@ -236,7 +236,7 @@ n_total="$(grep -vE '^[[:space:]]*(#|$)' "$B/.bedrock/manifest" | awk '$2=="spin
 
 if [ "$PLAN" = 1 ]; then
   echo "update: PLAN — $n_seed to seed, $n_ff to update (unmodified), $n_diff differ (would go to .bedrock-incoming/); migrations newer than $old_v:"
-  for m in "$B"/migrations/[0-9]*.sh; do [ -f "$m" ] || continue; since="$(sed -n 's/^# since: *//p' "$m" | head -1)"; ver_ge "$old_v" "$since" || echo "  would run      $(basename "$m") (since $since)"; done
+  for m in "$B"/migrations/[0-9]*.sh; do [ -f "$m" ] || continue; since="$(sed -n 's/^# since: *//p' "$m" | head -1 | awk '{ print $1 }')"; ver_ge "$old_v" "$since" || echo "  would run      $(basename "$m") (since $since)"; done
   echo "update: nothing written (--plan)"; exit 0
 fi
 
@@ -244,7 +244,7 @@ fi
 MIGRATED=""
 for m in "$B"/migrations/[0-9]*.sh; do
   [ -f "$m" ] || continue
-  since="$(sed -n 's/^# since: *//p' "$m" | head -1)"
+  since="$(sed -n 's/^# since: *//p' "$m" | head -1 | awk '{ print $1 }')"
   ver_ge "$old_v" "${since:-0.0.0}" && continue
   out="$(bash "$m" "$new_version" 2>&1)"; rc=$?
   printf '%s\n' "$out" | sed 's/^/  /'
