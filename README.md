@@ -60,15 +60,17 @@ Anyone who clones the project later runs only `./scripts/bootstrap.sh --contribu
 
 ## Keep the spine current
 
-bedrock improves over time. To pull the latest **project-neutral** spine (doctrine docs,
-hooks, universal checks) into a project you already created — without touching your
-roadmap, task-trees, decisions, or code — run:
+bedrock improves over time. To pull the latest spine into a project you already created, run:
 
 ```bash
-./scripts/update_scaffold.sh <bedrock-repo-url>
+./scripts/update_scaffold.sh <bedrock-repo-url> [--ref <tag>] [--plan]
 ```
 
-The scaffold version is recorded in `DOCTRINE_VERSION`.
+It acts by ownership class (`.bedrock/manifest`, read from the source): a spine file you never
+touched is updated, one you changed is never overwritten (theirs lands in `.bedrock-incoming/`),
+your own files are not touched. It replaces itself first, runs the migrations your version
+needs, seeds an `UPDATE-<version>` leaf, and prints the commit. `--plan` shows the plan and
+writes nothing. The spine version is recorded in `DOCTRINE_VERSION`.
 
 This README is deliberately a **landing page**, governed by [`README_POLICY.md`](README_POLICY.md)
 and mechanically capped (line **and** byte) by the `README-STABILITY` doctrine. Route changing

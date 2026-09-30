@@ -1,5 +1,30 @@
 # CHANGELOG.md
 
+## 0.17.0 — 2026-09-30 — the updater's manifest lives with the source; unmodified spine files fast-forward, modified ones are never touched
+
+`BEDROCK-REVIEW-0007` (leaf `REVIEW-2026-09.6`), per `docs/decisions/decision_updater_ownership_classes.md`.
+
+- ✅ **`.bedrock/manifest`** classifies every shipped path (`spine` / `seed` / `project` / `maintainer`) and the
+  new `MANIFEST` gate keeps it complete in bedrock and verifies every spine path exists in a child (BR-01, BK-09).
+- ✅ **The updater reads the manifest from the source it fetches and replaces itself first** (BK-09), resolves
+  its repository from its own location, exports a pinned `--ref` with `git archive` (BR-09), refuses a dirty
+  tree and a downgrade, and `--plan` writes nothing.
+- ✅ **Fast-forward for a spine file the project never modified** — identical to that path at any commit that
+  carried the project's recorded version — and **never for one it changed** (`.bedrock-incoming/`, `--merge`).
+- ✅ **Migrations** (`migrations/NNNN-<slug>.sh`, `# since: <version>`) run for every version newer than the
+  project's: 0001 removes `Last updated` fields, 0002 retires `.doctrine/code_paths.txt`, 0003 backfills
+  `.bedrock/project`, 0004 makes `AGENTS.md` canonical, 0005 renames the pointer's fields (BK-10).
+- ✅ **The upgrade commit passes the project's own gates**: every registered check verified present, an
+  `UPDATE-<version>` leaf with measured evidence, the index row and the pointer edited and printed,
+  `DOCTRINE_VERSION` written only after the enforcer passes over the staged upgrade, the commit printed.
+- 📊 Proven on real children built from bedrock's own `0.4.0` and `0.6.1` commits: `26 seeded, 20 updated, 0
+  differ, 5 migration(s)`, the legacy field gone, their own trees intact, the upgrade committed through the new
+  hooks and green in CI mode. Conformance suite: `arms: 66 pass / 2 xfail / 0 fail / 0 xpass (of 68)`.
+- ⚠️ **Existing children — one manual step, once:** your copy of the updater predates this release and knows
+  nothing of the manifest. Copy `scripts/update_scaffold.sh` from bedrock at this version into your project by
+  hand, commit it, then run it (`./scripts/update_scaffold.sh <bedrock> --plan` first). From then on it replaces
+  itself. Review `.bedrock-incoming/` after the run: anything you modified is there, untouched.
+
 ## 0.16.0 — 2026-09-30 — a bootstrap that cannot lie or break the project
 
 `BEDROCK-REVIEW-0006` (leaf `REVIEW-2026-09.5`).

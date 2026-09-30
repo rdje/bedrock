@@ -101,6 +101,7 @@ DOCTRINES=(
   "GAP-CLAIM-CENSUS|a task leaf that ADDS a nothing-checks-X claim records the census it rests on, in the same section — such a sentence quantifies over the whole tree and is false the moment one reader exists|scripts/check_gap_claims.sh"
   "TABLE-ARITY-RATCHET|a changed markdown file may not RAISE the number of table rows whose cell count disagrees with their header — GFM silently drops the extra cells or pads the missing ones|scripts/check_table_arity.sh"
   "COMMIT-MESSAGE|the commit subject is id-shaped and the message carries no agent attribution trailer (evaluated wherever a message exists: commit-msg hook and CI)|scripts/check_commit_message.sh"
+  "MANIFEST|.bedrock/manifest classifies every shipped path (spine / seed / project / maintainer) and every spine path it names exists — the updater's ground truth|scripts/check_manifest.sh"
   "RESUME-POINTER|MEMORY.md is TRUE for this commit: latest_commit names it when the change is governed, the active tree exists, the frontier leaf exists and is open, next_action is set — a fresh agent in any harness resumes from the repository alone|scripts/check_resume_pointer.sh"
 )
 # Optional subsystems: registered when present. ⛔ "present" is the file, not its mode — every

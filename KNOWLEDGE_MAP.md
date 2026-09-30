@@ -20,4 +20,5 @@
 - [`decision_licence.md`](docs/decisions/decision_licence.md)
 - [`decision_neutral_spine_and_packs.md`](docs/decisions/decision_neutral_spine_and_packs.md)
 - [`decision_ownership_contract.md`](docs/decisions/decision_ownership_contract.md)
+- [`decision_updater_ownership_classes.md`](docs/decisions/decision_updater_ownership_classes.md)
 - [`reference_bedrock_provenance.md`](docs/decisions/reference_bedrock_provenance.md)

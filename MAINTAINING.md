@@ -59,8 +59,11 @@ language, build tool, docs tool or harness → it is a **pack**, not the spine.
    the specific gate names). What remains should read as if bedrock never knew about PGEN.
 4. **Land it in bedrock** under a `BEDROCK-MAINTENANCE` task-tree leaf (bedrock maintains
    *itself* with its own discipline — task-tree first, `COMMIT.md`, the enforcer).
-5. **If it is a re-syncable neutral file**, ensure it is in the `NEUTRAL` allow-list in
-   `scripts/update_scaffold.sh` so downstream projects can pull it.
+5. **Classify it in `.bedrock/manifest`** (`spine` if it never carries project content, `seed` if the
+   project owns it after creation, `maintainer` if it is bedrock-only). The `MANIFEST` gate refuses an
+   unclassified path, and `scripts/update_scaffold.sh` reads the manifest from the source it fetches.
+   If the change alters the SHAPE of content earlier templates created, ship a migration under
+   `migrations/` (`NNNN-<slug>.sh`, `# since: <version>`, idempotent).
 6. **Bump `DOCTRINE_VERSION`** and note the change in `CHANGELOG.md`.
 
 Downstream projects then adopt it with `scripts/update_scaffold.sh <bedrock-url>`.

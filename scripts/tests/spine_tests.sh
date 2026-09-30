@@ -99,6 +99,14 @@ bootstrap_contributor_mode              req    BK-18
 bootstrap_identity_and_history_reset    req    BR-12
 bootstrap_evidence_truthful             req    BK-04
 bootstrap_fresh_git_init_allowed        req    BR-06
+updater_child_0_4_0_upgrades            req    BK-09
+updater_child_0_6_1_upgrades            req    BK-10
+updater_never_overwrites_modified       req    BR-01
+updater_self_replaces                   req    BK-09
+updater_refuses_dirty_tree              req    BR-01
+updater_refuses_downgrade               req    BR-09
+updater_plan_writes_nothing             req    BR-01
+updater_same_version_is_noop_commitable req    BK-10
 "
 
 if [ "$LIST" = 1 ]; then
@@ -600,7 +608,94 @@ arm_bootstrap_fresh_git_init_allowed() {
   printf '%s\n' 'DEMO-BOOTSTRAP-0001 (leaf BOOTSTRAP.1): bootstrapped from bedrock' > "$T/.m" && git commit -q -F "$T/.m" >/dev/null 2>&1
 }
 
+# ── updater arms: real children from bedrock's own history (maintainer-only: need that history) ──
+old_child() { # $1 = bedrock revision → rebuild $T as a child created from that revision, bootstrapped and committed
+  [ -f "$SUITE_ROOT/MAINTAINING.md" ] || return 3
+  git -C "$SRC_REPO" cat-file -e "$1^{commit}" 2>/dev/null || return 3
+  rm -rf "$T"; mkdir -p "$T"
+  git -C "$SRC_REPO" archive "$1" | tar -x -C "$T" || return 1
+  cd "$T" && git init -q -b main . && git config user.email t@example.invalid && git config user.name tester \
+    && chmod +x scripts/*.sh knowledge-map/scripts/*.sh .githooks/* 2>/dev/null \
+    && git add -A && git -c core.hooksPath=/dev/null commit -qm "Initial commit" \
+    && ./scripts/bootstrap.sh oldproj > "$T/.oldboot.log" 2>&1 \
+    && git add -A && git -c core.hooksPath=/dev/null commit -qm "OLDPROJ-BOOT-0001 (leaf BOOTSTRAP.1): bootstrap" \
+    && cp docs/tasks/TEMPLATE.md docs/tasks/STITCH.md \
+    && printf '| [`STITCH`](tasks/STITCH.md) | `active` | `.1` | repo-local |\n' >> docs/TASK_TREE.md \
+    && git add -A && git -c core.hooksPath=/dev/null commit -qm "OLDPROJ-TREE-0001: first tree" \
+    && cp "$SRC_REPO/scripts/update_scaffold.sh" scripts/update_scaffold.sh   # the release note's one manual step
+}
+upgrade_and_commit() { # runs the updater against the suite root's worktree, then the printed commit through the hooks
+  git -c core.hooksPath=/dev/null commit -qam "OLDPROJ-SYNC-0001: take the new updater" >/dev/null 2>&1
+  ./scripts/update_scaffold.sh "$SRC_REPO" > "$T/.update.log" 2>&1 || return 1
+  printed="$(awk '/^Commit the update/ { on=1; next } on && /^[[:space:]]*$/ { exit } on && /^[[:space:]]+(git|printf)/ { print }' "$T/.update.log")"
+  [ -n "$printed" ] || return 1
+  git config core.hooksPath .githooks
+  OUT="$(bash -c "$printed" 2>&1)"; RC=$?
+}
+arm_updater_child_0_4_0_upgrades() {
+  old_child 6cc8900; rc=$?; [ "$rc" -eq 3 ] && return 0; [ "$rc" -eq 0 ] || return 1
+  grep -q 'Last updated' docs/tasks/STITCH.md || return 1            # the 0.4.0 template shipped the field
+  upgrade_and_commit || return 1
+  green && grep -q '^bedrock-scaffold ' DOCTRINE_VERSION && [ "$(cat DOCTRINE_VERSION)" = "$(cat "$SRC_REPO/DOCTRINE_VERSION")" ] \
+    && ! grep -q 'Last updated' docs/tasks/STITCH.md \
+    && grep -q 'tasks/STITCH.md' docs/TASK_TREE.md && grep -q 'tasks/UPDATE-' docs/TASK_TREE.md \
+    && [ -f scripts/lib/spine.sh ] && [ -f scripts/check_resume_pointer.sh ] && [ -f .bedrock/project ] \
+    && grep -q 'AGENTS.md' CLAUDE.md && grep -q 'updated ' "$T/.update.log"
+}
+arm_updater_child_0_6_1_upgrades() {
+  old_child 340fe2f; rc=$?; [ "$rc" -eq 3 ] && return 0; [ "$rc" -eq 0 ] || return 1
+  upgrade_and_commit || return 1
+  green && [ "$(cat DOCTRINE_VERSION)" = "$(cat "$SRC_REPO/DOCTRINE_VERSION")" ] && grep -q 'source ' docs/tasks/UPDATE-*.md \
+    && gate_ci HEAD && green
+}
+arm_updater_never_overwrites_modified() {
+  # a spine file the project modified lands in .bedrock-incoming/, and the project's copy is byte-identical afterwards
+  printf '\n# project customisation\n' >> scripts/check_docpaths.sh
+  git -c core.hooksPath=/dev/null commit -qam "DEMO-CFG-0004: customise a check" >/dev/null 2>&1
+  before="$(shasum -a 256 scripts/check_docpaths.sh 2>/dev/null || sha256sum scripts/check_docpaths.sh)"
+  ./scripts/update_scaffold.sh "$SRC_REPO" > "$T/.update.log" 2>&1; rc=$?
+  after="$(shasum -a 256 scripts/check_docpaths.sh 2>/dev/null || sha256sum scripts/check_docpaths.sh)"
+  [ "$before" = "$after" ] && grep -q 'DIFFERS.*scripts/check_docpaths.sh' "$T/.update.log" && [ -f .bedrock-incoming/scripts/check_docpaths.sh ]
+}
+arm_updater_self_replaces() {
+  printf '\n# an older or customised updater\n' >> scripts/update_scaffold.sh
+  git -c core.hooksPath=/dev/null commit -qam "DEMO-CFG-0004: touch the updater" >/dev/null 2>&1
+  ./scripts/update_scaffold.sh "$SRC_REPO" > "$T/.update.log" 2>&1
+  grep -q 'step 0 — replaced scripts/update_scaffold.sh' "$T/.update.log" && [ -f .bedrock-incoming/scripts/update_scaffold.sh.previous ] \
+    && cmp -s scripts/update_scaffold.sh "$SRC_REPO/scripts/update_scaffold.sh" && grep -q '^✓ update:' "$T/.update.log"
+}
+arm_updater_refuses_dirty_tree() {
+  printf '\nnote\n' >> README.md
+  ./scripts/update_scaffold.sh "$SRC_REPO" > "$T/.update.log" 2>&1; rc=$?
+  [ "$rc" -eq 2 ] && grep -q 'not clean' "$T/.update.log" && [ "$(git status --porcelain | wc -l | tr -d ' ')" = 1 ]
+}
+arm_updater_refuses_downgrade() {
+  [ -f "$SUITE_ROOT/MAINTAINING.md" ] || return 0
+  git -C "$SRC_REPO" cat-file -e 340fe2f^{commit} 2>/dev/null || return 0
+  ./scripts/update_scaffold.sh "$SRC_REPO" --ref 340fe2f > "$T/.update.log" 2>&1; rc=$?
+  [ "$rc" -eq 2 ] && grep -qiE 'older|manifest' "$T/.update.log" && [ -z "$(git status --porcelain --untracked-files=all)" ]
+}
+arm_updater_plan_writes_nothing() {
+  ./scripts/update_scaffold.sh "$SRC_REPO" --plan > "$T/.update.log" 2>&1; rc=$?
+  [ "$rc" -eq 0 ] && grep -q 'nothing written' "$T/.update.log" && [ -z "$(git status --porcelain --untracked-files=all)" ]
+}
+arm_updater_same_version_is_noop_commitable() {
+  # a child already current: the run seeds nothing, updates nothing, and its upgrade commit still passes the gate
+  ./scripts/update_scaffold.sh "$SRC_REPO" > "$T/.update.log" 2>&1 || return 1
+  grep -q '0 seeded, 0 updated, 0 differ' "$T/.update.log"
+}
+
 # ── the runner ────────────────────────────────────────────────────────────────────────────────
+# The SOURCE the updater arms sync from: a clone of this repository (full history, for the merge
+# base) with the WORKING TREE committed on top, so an uncommitted change is what gets tested.
+build_source() {
+  git clone -q "$SUITE_ROOT" "$WORK/src" 2>/dev/null || return 1
+  git ls-files -co --exclude-standard -z | tar --null -T - -cf - | tar -x -C "$WORK/src" || return 1
+  ( cd "$WORK/src" && git config user.email t@example.invalid && git config user.name tester \
+    && git add -A && git -c core.hooksPath=/dev/null commit -q --allow-empty -m "SUITE-0000: the working tree under test" ) || return 1
+  SRC_REPO="$WORK/src"; export SRC_REPO
+}
+build_source || { note "REFUSED — could not build the source clone"; exit 2; }
 build_base || { note "REFUSED — could not build the base child (see $WORK/bootstrap.log and first_commit.log)"; [ "$KEEP" = 1 ] || cat "$WORK/bootstrap.log" 2>/dev/null | tail -5 >&2; exit 2; }
 
 pass=0; fail=0; xfail=0; xpass=0; n=0
