@@ -867,11 +867,42 @@ process.
     (`rc=0`).
   - [x] **LOCKSTEP** — `CHANGELOG.md` 1.1.1, `DOCTRINE_VERSION`, `MEMORY.md`.
 
+- ID: `BEDROCK-MAINTENANCE.4.2`
+  Status: `done`
+  Goal: the conformance suite's refusal pointed at a log it had just deleted. Opened on a wrong premise — the
+  maintainer was told the suite "never removes its own work directory" after twenty leftover `tmp.*` directories
+  (1.4 GB) were found; a tool check showed the cleanup has existed since the suite's first commit and runs on
+  INT, TERM and HUP under both bashes, and that the leftovers came from `--only` / `--keep` runs (kept by
+  design) and killed runs. What was real: on a REFUSED run the message `see $WORK/bootstrap.log` named a path
+  the EXIT trap removed the moment it was printed.
+  Acceptance: a refused run keeps its work directory and says so; a green run still removes it.
+  Verification: see the checklist below.
+  Commit: `BEDROCK-MAINTENANCE-0022`
+
+  ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — the premise disproved first: `git log -S'trap '\''rm -rf "$WORK"'\'' EXIT' --
+    scripts/tests/spine_tests.sh` → `ab9913c` (the suite's first commit), and a signal experiment (a script with
+    the same trap, killed) → `SIGINT → removed`, `SIGTERM → removed`, `SIGHUP → removed` under bash 5.3.15 and
+    bash 3.2.57. The real defect: `scripts/tests/spine_tests.sh:148` at `d7444eb` armed `rm -rf "$WORK"` for every
+    exit, while line 880 printed `REFUSED — could not build the base child (see $WORK/bootstrap.log …)`; measured
+    in a scratch copy with a bootstrap that exits 1: the old suite → `rc=2`, and the printed path
+    `the printed path does NOT exist (deleted by the EXIT trap)`.
+  - [x] **ADDRESSED (verified)** — the trap is a function that keeps `$WORK` on `--keep`/`--only` and on exit `2`,
+    and removes it otherwise. The same scratch copy with the new suite → `rc=2`, `work kept under
+    <tmpdir>/tmp.FzmQZQHSgl for inspection — remove it when done`, and `bootstrap.log exists at the printed path`.
+  - [x] **NO REGRESSION** — `scripts/tests/spine_tests.sh` → `arms: 89 pass / 0 xfail / 0 fail / 0 xpass (of 89)` (`rc=0`) and the
+    same under stock bash 3.2 → `89 pass … (of 89)` (`rc=0`); after both green runs the temp folder holds `0`
+    suite-shaped directories (a green run still removes its work); the full gate with this commit's subject → `=== all doctrines green ===`
+    (`rc=0`).
+  - [x] **LOCKSTEP** — `CHANGELOG.md` 1.1.2, `DOCTRINE_VERSION`, `MEMORY.md`.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
 | --- | --- | --- | --- |
 | 1 | `BEDROCK-MAINTENANCE.4` | `pending` | the enhancement loop after 1.0.0 — pick the next candidate from its list (evidence re-run in CI first) |
+| — | `BEDROCK-MAINTENANCE.4.2` | `done` | a refused suite run keeps the work directory its message points at (1.1.2) |
 | — | `BEDROCK-MAINTENANCE.4.1.1` | `done` | the Knowledge Map generator reads a tree file of any size without a false REFUSED (1.1.1) |
 | — | `BEDROCK-MAINTENANCE.4.1` | `done` | the bedrock Guide (mdBook) live at <https://rdje.github.io/bedrock/>, the `BOOK-COVERAGE` gate, the `book` workflow (1.1.0) |
 | — | `BEDROCK-MAINTENANCE.3` | `done` | the 2026-09-30 review closed in `docs/tasks/REVIEW-2026-09.md` (0.11.0 → 1.0.0) |
@@ -1004,6 +1035,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 | `2026-07-24` | `.1` | enforcer (5 checks) · cargo metadata · commit-msg hook · KM gen | all green |
 
 ## Commit Log
+
+- `2026-09-30` — `.4.2` — `BEDROCK-MAINTENANCE-0022`: a REFUSED suite run keeps its work directory and says where, so the `see $WORK/bootstrap.log` it prints is true; green and failed runs still remove it; `DOCTRINE_VERSION` 1.1.1 → 1.1.2
 
 - `2026-09-30` — `.4.1.1` — `BEDROCK-MAINTENANCE-0020`: the Knowledge Map generator reads each tree and knowledge file to a temp file before `grep -m1`, so a file above the pipe buffer no longer makes `git show` die of EPIPE and print a false `REFUSED`; a suite arm with a 135 KB tree; `DOCTRINE_VERSION` 1.1.0 → 1.1.1
 

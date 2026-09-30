@@ -1,5 +1,15 @@
 # CHANGELOG.md
 
+## 1.1.2 — 2026-09-30 — a refused suite run keeps the log it points at
+
+`BEDROCK-MAINTENANCE-0022` (leaf `BEDROCK-MAINTENANCE.4.2`). When the conformance suite could not build its base
+child it printed `see $WORK/bootstrap.log` and then removed `$WORK` in its exit trap. A refused run (exit 2) now
+keeps the directory and says so; a green or failed run removes it as before, and `--keep` / `--only` keep it as
+documented. (The suite's cleanup itself was never missing: it has run at exit, including on INT, TERM and HUP,
+since the suite's first commit.)
+
+**For existing children:** nothing to run; the suite applies to the template only.
+
 ## 1.1.1 — 2026-09-30 — the Knowledge Map generator no longer prints a false REFUSED on a large tree file
 
 `BEDROCK-MAINTENANCE-0020` (leaf `BEDROCK-MAINTENANCE.4.1.1`). Once a task-tree file outgrew a pipe buffer

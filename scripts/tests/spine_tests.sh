@@ -145,7 +145,15 @@ if [ "$LIST" = 1 ]; then
 fi
 
 WORK="$(mktemp -d)"; export WORK
-[ "$KEEP" = 1 ] || trap 'rm -rf "$WORK"' EXIT
+# The work directory is removed at exit — on a green run, a failed run (each FAIL's log tail is printed) and a
+# signal (bash runs the EXIT trap on INT, TERM and HUP; nothing can run on KILL). It is KEPT on `--keep`/`--only`,
+# and on a REFUSED run (exit 2): a refusal names $WORK/bootstrap.log, and a path that is deleted the moment it
+# is printed is a false pointer (.4.2).
+cleanup_work() {
+  rc=$?
+  if [ "$KEEP" = 1 ]; then :; elif [ "$rc" -eq 2 ]; then note "work kept under $WORK for inspection — remove it when done"; else rm -rf "$WORK"; fi
+}
+trap cleanup_work EXIT
 BASE="$WORK/base"
 
 note() { printf 'spine_tests: %s\n' "$*" >&2; }
