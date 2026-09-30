@@ -14,7 +14,7 @@
 #
 # Each probe builds a throwaway git repository, because the check reads the STAGED diff.
 set -uo pipefail
-ROOT="$(git rev-parse --show-toplevel)"; cd "$ROOT"
+ROOT="$(git rev-parse --show-toplevel)" || exit 2; cd "$ROOT" || exit 2
 GUARD="$ROOT/scripts/check_task_acceptance.sh"
 [ -f "$GUARD" ] || { echo "probe: REFUSED — $GUARD not found" >&2; exit 2; }
 
@@ -23,8 +23,9 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 
 mkrepo() { # $1 = name -> repo dir
   local d="$WORK/$1"
-  rm -rf "$d"; mkdir -p "$d/scripts" "$d/docs/tasks" "$d/crates/app/src"
+  rm -rf "$d"; mkdir -p "$d/scripts/lib" "$d/docs/tasks" "$d/crates/app/src"
   cp "$GUARD" "$d/scripts/check_task_acceptance.sh"
+  cp "$ROOT/scripts/lib/spine.sh" "$d/scripts/lib/spine.sh"   # the check sources the library
   git -C "$d" init -q .
   git -C "$d" config user.email probe@example.invalid
   git -C "$d" config user.name  probe
@@ -67,7 +68,7 @@ echo "== TASK-ACCEPTANCE probes =="
 # ---------------------------------------------------------------- GREEN-1: the compliant case
 d="$(mkrepo green1)"; codechange "$d"; good_leaf > "$d/docs/tasks/TREE.md"
 git -C "$d" add -A >/dev/null
-probe GREEN-1 "$d" 0 "task-acceptance: OK"
+probe GREEN-1 "$d" 0 "TASK-ACCEPTANCE: OK"
 
 # ---------------------------------------------------------------- RED-1: code, no owning leaf
 d="$(mkrepo red1)"; codechange "$d"
@@ -144,9 +145,13 @@ probe CTRL-3 "$d" 0 ""
 # ---------------------------------------------------------------- ⭐ CTRL-4: the project seam
 # A project declares its OWN tool's signature; a box evidenced only by that token must pass.
 # This is what keeps the check neutral instead of hardcoding one project's vocabulary.
-d="$(mkrepo ctrl4)"; codechange "$d"
+d="$(mkrepo ctrl4)"
+# ⛔ The seam is read AS OF THE LAST COMMIT (BK-06: a commit cannot loosen the gate that judges it),
+#    so the declaration is committed first and the evidenced leaf is judged in the NEXT change.
 mkdir -p "$d/.doctrine"
 printf '# our own tools\nWIDGET-COVERAGE:\n' > "$d/.doctrine/evidence_tokens.txt"
+git -C "$d" add -A >/dev/null 2>&1; git -C "$d" commit -qm "SEED-0002: declare the seam" >/dev/null 2>&1
+codechange "$d"
 cat > "$d/docs/tasks/TREE.md" <<'EOF'
 # TREE
 
@@ -156,7 +161,7 @@ cat > "$d/docs/tasks/TREE.md" <<'EOF'
 - [x] **NO REGRESSION** — `WIDGET-COVERAGE: missing=0` across all suites.
 EOF
 git -C "$d" add -A >/dev/null
-probe CTRL-4 "$d" 0 "task-acceptance: OK"
+probe CTRL-4 "$d" 0 "TASK-ACCEPTANCE: OK"
 
 # and the same leaf WITHOUT the declaration must fail — proving the seam did the work
 d2="$(mkrepo ctrl4b)"; codechange "$d2"
@@ -178,7 +183,7 @@ cat > "$d/docs/tasks/TEMPLATE.md" <<'EOF'
 - [ ] **NO REGRESSION** — <suite re-run>
 EOF
 git -C "$d" add -A >/dev/null
-probe CTRL-5 "$d" 0 "task-acceptance: OK"
+probe CTRL-5 "$d" 0 "TASK-ACCEPTANCE: OK"
 
 echo
 printf 'probes: %d pass / %d fail\n' "$pass" "$fail"

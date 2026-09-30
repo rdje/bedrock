@@ -16,6 +16,7 @@
 
 ## Decision records
 
+- [`decision_context_continuity.md`](docs/decisions/decision_context_continuity.md)
 - [`decision_licence.md`](docs/decisions/decision_licence.md)
 - [`decision_neutral_spine_and_packs.md`](docs/decisions/decision_neutral_spine_and_packs.md)
 - [`decision_ownership_contract.md`](docs/decisions/decision_ownership_contract.md)

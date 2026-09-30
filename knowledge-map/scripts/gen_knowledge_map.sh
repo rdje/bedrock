@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # knowledge-map/scripts/gen_knowledge_map.sh
+# SPDX-License-Identifier: LGPL-2.1-or-later
 # Derive KNOWLEDGE_MAP.md from its sources and print it to STDOUT (deterministic).
 #   --print-map-path : print the absolute path of the map file and exit.
-# The pre-commit hook redirects this into KNOWLEDGE_MAP.md and stages it, so map-drift is
-# structurally impossible. check_knowledge_map.sh diffs a fresh render against the committed
-# file to catch any out-of-band edit (e.g. in CI, where the hook did not run).
+# Sources are read from the AFTER snapshot (the index locally, the commit in CI — BR-14: generating
+# from the worktree let the map link a file the commit did not ship). The pre-commit hook redirects
+# this into KNOWLEDGE_MAP.md and stages it; check_knowledge_map.sh diffs a fresh render against the
+# committed file to catch any out-of-band edit.
 set -uo pipefail
-ROOT="$(git rev-parse --show-toplevel)"
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/spine.sh"; spine_init KNOWLEDGE-MAP
 MAP="$ROOT/KNOWLEDGE_MAP.md"
 if [ "${1:-}" = "--print-map-path" ]; then echo "$MAP"; exit 0; fi
-cd "$ROOT"
 
 cat <<'HDR'
 # KNOWLEDGE_MAP — derived orientation map
@@ -20,16 +21,27 @@ cat <<'HDR'
 
 ## Key subsystems
 HDR
-if [ -f knowledge-map/subsystems.md ]; then
-  # embed the curated section, stripping its leading HTML comment block
-  sed '/^<!--/,/-->/d' knowledge-map/subsystems.md
+if spine_after_has knowledge-map/subsystems.md; then
+  # embed the curated section with every HTML comment removed — same-line, multi-line, and one
+  # left open at end of file. ⛔ Not `sed '/^<!--/,/-->/d'`: a range looks for its END on the lines
+  # AFTER its start, so a one-line comment deleted everything down to the next `-->` (BK-12).
+  spine_read knowledge-map/subsystems.md | awk '
+    { line = $0; out = ""; marker = inc
+      while (1) {
+        if (inc) { j = index(line, "-->"); if (j == 0) { line = ""; break } line = substr(line, j + 3); inc = 0; marker = 1 }
+        i = index(line, "<!--"); if (i == 0) { out = out line; break }
+        out = out substr(line, 1, i - 1); line = substr(line, i + 4); inc = 1; marker = 1
+      }
+      # a line that carried a comment boundary and nothing else disappears entirely (no blank left)
+      if (!marker || out ~ /[^[:space:]]/) print out
+    }'
 fi
 
 echo
 echo "## Active task-trees"
 echo
 found=0
-for f in $(ls docs/tasks/*.md 2>/dev/null | LC_ALL=C sort); do
+for f in $(spine_after_ls 'docs/tasks/*.md' | grep -E '^docs/tasks/[^/]+\.md$' | LC_ALL=C sort); do
   b="$(basename "$f")"; [ "$b" = "TEMPLATE.md" ] && continue
   echo "- [\`$b\`](docs/tasks/$b)"; found=1
 done
@@ -39,7 +51,7 @@ echo
 echo "## Decision records"
 echo
 found=0
-for f in $(ls docs/decisions/*.md 2>/dev/null | LC_ALL=C sort); do
+for f in $(spine_after_ls 'docs/decisions/*.md' | LC_ALL=C sort); do
   b="$(basename "$f")"; case "$b" in INDEX.md|TEMPLATE.md) continue;; esac
   echo "- [\`$b\`](docs/decisions/$b)"; found=1
 done

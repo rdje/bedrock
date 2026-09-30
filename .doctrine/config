@@ -1,0 +1,12 @@
+# .doctrine/config — project-declared settings, one `key = value` per line (see .doctrine/README.md).
+#
+# ⛔ Read from the LAST COMMIT (the before-snapshot), never from the working tree: a change here
+#    takes effect from the NEXT commit, so a commit cannot loosen the gate that judges it (BK-06).
+#    Editing this file is itself a governed change and needs an owning leaf.
+#
+# The resume pointer (MEMORY.md) — MEMORY_ARCHITECTURE.md §6: a LINE cap and a BYTE cap, complements.
+memory_pointer_line_cap = 50
+memory_pointer_byte_cap = 7168
+# The landing page (README.md) — README_POLICY.md: tighten both after your own review-and-trim.
+readme_line_cap = 300
+readme_byte_cap = 16384

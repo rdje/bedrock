@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
-# .githooks/pre-commit — repo-hygiene gate; block the commit on any doctrine breach.
+# .githooks/pre-commit — repo-hygiene gate; block the commit on any doctrine breach or refusal.
 #
 # Activated once per clone with:  git config core.hooksPath .githooks
-# CI runs the SAME enforcer, so the discipline holds even if a local hook is
+# CI runs the SAME enforcer per commit, so the discipline holds even if a local hook is
 # bypassed with --no-verify (the CI run is the "no matter what" backstop).
 #
-# This hook is harness-agnostic: it fires identically for Claude Code, Codex,
-# Gemini, Cursor, or a human — the discipline lives in git, not in any one agent.
-set -e
-ROOT="$(git rev-parse --show-toplevel)"
+# This hook is harness-agnostic: it fires identically for any AI harness or a human — the
+# discipline lives in git, not in any one agent.
+set -u
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "pre-commit: REFUSED — git rev-parse failed" >&2; exit 2; }
+[ -n "$ROOT" ] || { echo "pre-commit: REFUSED — no worktree root" >&2; exit 2; }
 
-# KNOWLEDGE_MAP.md is DERIVED. Regenerate + stage it here so map-drift is
-# structurally impossible before the enforcer verifies it. (Optional subsystem:
-# skipped cleanly if the knowledge-map generator is absent.)
-if [ -x "$ROOT/knowledge-map/scripts/gen_knowledge_map.sh" ]; then
-  MAP="$("$ROOT/knowledge-map/scripts/gen_knowledge_map.sh" --print-map-path)"
-  "$ROOT/knowledge-map/scripts/gen_knowledge_map.sh" > "$MAP"
-  git add "$MAP" 2>/dev/null || true
+# KNOWLEDGE_MAP.md is DERIVED. Regenerate it FROM THE INDEX (what this commit ships — BR-14) and
+# stage it here, so map-drift is structurally impossible before the enforcer verifies it.
+# (Optional subsystem: skipped cleanly if the generator is absent.)
+if [ -f "$ROOT/knowledge-map/scripts/gen_knowledge_map.sh" ]; then
+  MAP="$(bash "$ROOT/knowledge-map/scripts/gen_knowledge_map.sh" --print-map-path)" || { echo "pre-commit: REFUSED — the Knowledge Map generator failed" >&2; exit 2; }
+  bash "$ROOT/knowledge-map/scripts/gen_knowledge_map.sh" > "$MAP.tmp" || { rm -f "$MAP.tmp"; echo "pre-commit: REFUSED — the Knowledge Map generator failed" >&2; exit 2; }
+  mv "$MAP.tmp" "$MAP" && git add "$MAP" || { echo "pre-commit: REFUSED — could not stage the Knowledge Map" >&2; exit 2; }
 fi
 
-# The single general doctrine enforcer (registry + driver) — runs every
-# mechanizable check and exits nonzero on any breach.
-"$ROOT/scripts/check_doctrines.sh"
+# The single general doctrine enforcer (registry + driver): the index against HEAD.
+exec bash "$ROOT/scripts/check_doctrines.sh"

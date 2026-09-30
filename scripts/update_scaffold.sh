@@ -69,6 +69,12 @@ NEUTRAL=(
   .doctrine/README.md
   scripts/check_docpaths.sh
   scripts/check_task_tree_ownership.sh
+  scripts/check_commit_message.sh
+  scripts/lib/spine.sh
+  scripts/tests/spine_tests.sh
+  .github/workflows/doctrines.yml
+  LICENSE
+  NOTICE
   knowledge-map/scripts/gen_knowledge_map.sh
   knowledge-map/scripts/check_knowledge_map.sh
   DOCTRINE_VERSION
@@ -86,6 +92,7 @@ NEUTRAL=(
 # project may change, so it is copied when ABSENT and left alone when present.
 SEED_ONCE=(
   VISIBILITY.md
+  .doctrine/config
 )
 
 # ⛔ Refuse on a dirty tree, and this is the load-bearing guard rather than a courtesy.

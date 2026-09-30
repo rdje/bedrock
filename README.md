@@ -17,7 +17,7 @@ Cursor, a custom runner — or a human, identically.
 
 | File / dir | What it gives you |
 | --- | --- |
-| `CLAUDE.md` / `AGENTS.md` | harness-neutral agent bootstrap (read this first) |
+| `AGENTS.md` | the canonical, harness-neutral agent bootstrap (read this first); `CLAUDE.md` is an optional adapter |
 | `MEMORY_ARCHITECTURE.md` | the durable 4-layer memory model (A resume pointer · B task-trees · C decisions · D git) |
 | `docs/TASK_TREE.md` + `docs/tasks/` | task-tree tracking — nothing changes without a leaf |
 | `COMMIT.md` | the strict, repeatable commit workflow |
@@ -67,7 +67,7 @@ This README is deliberately a **landing page**, governed by [`README_POLICY.md`]
 and mechanically capped (line **and** byte) by the `README-STABILITY` doctrine. Route changing
 detail to its canonical home rather than growing this file.
 
-## The non-negotiables (full detail in `CLAUDE.md`)
+## The non-negotiables (full detail in `AGENTS.md`)
 
 - Nothing changes without a **task-tree leaf** first.
 - Record durable facts/decisions in `docs/decisions/`.

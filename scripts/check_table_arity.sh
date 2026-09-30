@@ -21,12 +21,16 @@
 #   and a trailing pipe are delimiters, not cells. A pipe inside a link or HTML is counted as a
 #   separator, as GFM does. A code span left UNPAIRED (an odd run) swallows the rest of the row —
 #   exactly the defect this rule catches, so it is counted as such rather than special-cased.
-# CONTRACT: exit code is the verdict; explains on stderr; deterministic; read-only; fast.
+# CONTRACT: exit code is the verdict (0 holds · 1 breach · 2 REFUSED); explains on stderr;
+#   deterministic; read-only; judged on the change through scripts/lib/spine.sh.
+# ⚠️ Needs python3 until REVIEW-2026-09.7 rewrites the cell counter in awk. Missing python3 is
+#   REFUSED (exit 2), never a pass: before this, `python3: command not found` produced a green run
+#   (BR-05). SPDX-License-Identifier: LGPL-2.1-or-later
 set -uo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT" || exit 1
+. "$(dirname "${BASH_SOURCE[0]}")/lib/spine.sh"; spine_init TABLE-ARITY-RATCHET
+command -v python3 >/dev/null 2>&1 || spine_refuse "python3 is required by this check and is not on PATH (REVIEW-2026-09.7 removes the dependency)"
 
-PY_SRC=$(cat <<'PY'
+IFS= read -r -d '' PY_SRC <<'PY' || true
 import re, sys
 def cells(line):
     s = line.strip()
@@ -58,7 +62,6 @@ while i < len(lines):
         continue
     i += 1
 PY
-)
 arity_defects() { # stdin = markdown; stdout = "lineno<TAB>have<TAB>want<TAB>text" per defective row
   python3 -c "$PY_SRC"
 }
@@ -81,24 +84,24 @@ fi
 
 if [ "${1:-}" = "--all" ]; then
   total=0
-  for f in $(git ls-files '*.md'); do n="$(count_defects < "$f")"; [ "$n" -gt 0 ] && { printf '  %-60s %s\n' "$f" "$n"; total=$((total + n)); }; done
+  for f in $(spine_after_ls '*.md'); do n="$(spine_read "$f" | count_defects)"; [ "$n" -gt 0 ] && { printf '  %-60s %s\n' "$f" "$n"; total=$((total + n)); }; done
   echo "TABLE-ARITY-RATCHET --all (ADVISORY): $total arity-defective row(s) in tracked markdown"
   exit 0
 fi
 
-staged="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep -E '\.md$' || true)"
-[ -n "$staged" ] || { echo "TABLE-ARITY-RATCHET: ok (no staged markdown)"; exit 0; }
+staged="$(spine_changed_paths | grep -E '\.md$' || true)"
+[ -n "$staged" ] || { spine_ok "ok (no markdown in this change)"; exit 0; }
 fail=0
 for f in $staged; do
-  now="$(git show ":$f" 2>/dev/null | count_defects)"
-  before="$(git show "HEAD:$f" 2>/dev/null | count_defects)"
+  now="$(spine_read "$f" | count_defects)"
+  before="$(spine_read_before "$f" 2>/dev/null | count_defects)"
   if [ "${now:-0}" -gt "${before:-0}" ]; then
     fail=1
-    { echo "TABLE-ARITY-RATCHET: RISE — $f has $now row(s) whose cell count disagrees with their header (HEAD: $before):"
-      git show ":$f" | arity_defects | while IFS=$'\t' read -r ln have want text; do echo "    line $ln: $have cell(s), header has $want: $text"; done
+    { echo "TABLE-ARITY-RATCHET: RISE — $f has $now row(s) whose cell count disagrees with their header (before: $before):"
+      spine_read "$f" | arity_defects | while IFS=$'\t' read -r ln have want text; do echo "    line $ln: $have cell(s), header has $want: $text"; done
       echo "  GFM silently DROPS the extra cells or PADS the missing ones. Fix the row (an escaped \\| or a code span for a literal pipe)."; } >&2
   fi
 done
-[ "$fail" = 0 ] && echo "TABLE-ARITY-RATCHET: ok ($(printf '%s\n' "$staged" | wc -l | tr -d ' ') staged markdown file(s), no rise)"
+[ "$fail" = 0 ] && spine_ok "ok ($(printf '%s\n' "$staged" | wc -l | tr -d ' ') markdown file(s) in this change, no rise)"
 [ "$fail" = 0 ] || exit 1
 exit 0

@@ -11,10 +11,33 @@ every human, identically.
 - **E2 — self-check.** `scripts/check_doctrines.sh` (the driver) + each registered
   `scripts/check_*.sh`. The single source of truth for "which doctrine is enforced by
   what". Runnable by hand anytime.
-- **E3 — git hook.** `.githooks/pre-commit` calls the enforcer; `.githooks/commit-msg`
-  checks the subject shape. Activate once per clone: `git config core.hooksPath .githooks`.
-- **E4 — CI.** The same enforcer runs in CI (`.github/workflows/doctrines.yml`), so a
-  locally `--no-verify`'d hook still fails the build. This is the "no matter what" backstop.
+- **E3 — git hook.** `.githooks/pre-commit` calls the enforcer on the index; `.githooks/commit-msg`
+  calls it again with the message. Activate once per clone: `git config core.hooksPath .githooks`.
+- **E4 — CI.** The same enforcer runs in CI (`.github/workflows/doctrines.yml`) **on every commit
+  the push or pull request introduces**, each judged against its parent, with its real message —
+  so a locally `--no-verify`'d hook still fails the build. A second job runs the enforcer's own
+  tests (`scripts/tests/spine_tests.sh`, every `--self-test`, the probe drivers, shellcheck).
+
+## The check contract
+
+Every check is a script that reads the change through **`scripts/lib/spine.sh`** and honours one
+contract, which the driver reports:
+
+| Exit | Meaning | The driver prints |
+| --- | --- | --- |
+| `0` | the doctrine holds | `✅` |
+| `1` | a breach — the change violates the doctrine | `❌` and the check's stderr |
+| `2` | **cannot evaluate** — git failed, a dependency is missing, a pattern is invalid | `⛔ REFUSED`, and the run fails |
+
+- **The change context.** A check receives `before` and `after`: locally `HEAD` and the index; in
+  CI the commit's parent and the commit. Every read goes through `spine_read` (the `after`
+  snapshot), never the worktree, so an unstaged edit cannot hide a staged defect. Changes are
+  enumerated with `spine_changes`, which includes deletions and both sides of a rename.
+- **Configuration from `before`.** `.doctrine/` is read as of the last commit, so a commit cannot
+  loosen the gate that judges it; a change there takes effect from the next commit.
+- **An error is never a pass.** `2` fails the run. A registered check that is missing is a
+  refusal; the project slot is run through `bash`, so a lost executable bit cannot drop it.
+- **Scratch outside the worktree.** `spine_tmp` is a temporary directory removed on exit.
 
 ## The enforcer registry
 
@@ -32,6 +55,7 @@ every human, identically.
 | `LESSON-PROMOTION` | a NEW dated lesson heading staged in `DEV_NOTES.md` must be either **promoted** (a `docs/knowledge/` change, or a `docs/decisions/` record gaining `answers:`) or **explicitly declined** (`promotion: declined (<reason>)` in the owning leaf) — never silently dropped. Founding measurement upstream: 1 592 lesson entries, none reachable by question, because no gate asked. Evidence archetype: it verifies a decision was RECORDED, not that it was right | `scripts/check_lesson_promotion.sh` |
 | `ROUTING-EVIDENCE` | a task leaf that routes a finding **out to another tree** carries a `ROUTING EVIDENCE` section: does the finding reproduce OUTSIDE the family it is sent to, what was measured, what would make the routing wrong. Keyed on the semantics of leaving the tree (the first cut upstream, keyed on a tree-ID spelling, missed its own founding incident); intra-tree routing is not flagged | `scripts/check_routing_evidence.sh` |
 | `GAP-CLAIM-CENSUS` | a task leaf that **ADDS** a *"nothing checks X"* claim records the CENSUS it rests on in the same heading section (a command that enumerates a population, or `census: not run (<why>)`). Such a sentence is a universally quantified claim over the whole tree, false the moment one reader exists; staged-diff-scoped (81 pre-existing claims upstream would otherwise teach bypass); `--all` reports the backlog, advisory | `scripts/check_gap_claims.sh` |
+| `COMMIT-MESSAGE` | the subject is id-shaped and the message carries no agent attribution trailer; evaluated wherever a message exists (the `commit-msg` hook, and CI per commit — so a `--no-verify`'d message is judged) | `scripts/check_commit_message.sh` |
 | `TABLE-ARITY-RATCHET` | a staged `.md` may not RAISE the number of table rows whose cell count disagrees with their header — GFM silently DROPS extra cells and PADS missing ones, so the page looks fine and the reader loses the rightmost column (26 of 197 rows of a shipped contract upstream, every enforcer green). Per-file ratchet against HEAD; code spans and escaped pipes respected; a fresh minimal implementation with an 8-arm `--self-test` | `scripts/check_table_arity.sh` |
 | `KNOWLEDGE-MAP` | the derived Knowledge Map is in sync (if the subsystem exists) | `knowledge-map/scripts/check_knowledge_map.sh` |
 | `PROJECT-SPECIFIC` | this project's own doctrines | `scripts/check_doctrines.project.sh` |
@@ -42,8 +66,10 @@ own build gates, format checks, invariant proofs, etc.
 
 ## Adding a doctrine
 
-1. Write `scripts/check_<name>.sh` — cheap, deterministic, self-describing; exit nonzero
-   with a one-line stderr message on breach. Keep it fast (heavy proofs belong in CI).
+1. Write `scripts/check_<name>.sh` — cheap, deterministic, self-describing; source
+   `scripts/lib/spine.sh`, read the change through it, and honour the contract above (exit
+   `1` with a one-line stderr message on breach, `2` when you cannot evaluate). Keep it fast
+   (heavy proofs belong in CI).
 2. Register it — universal → the `DOCTRINES` array in the driver; project → append it to
    `scripts/check_doctrines.project.sh`.
 3. Mirror it in the table above (this file is the human-readable mirror of the registry).

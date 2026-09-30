@@ -22,13 +22,13 @@
 # RECORDED, not that the decision was correct. A lazy `promotion: declined (n/a)` passes. What it
 # makes impossible is the SILENT omission, which is the measured failure.
 #
-# CONTRACT: exit code is the verdict; explains on stderr; deterministic; read-only;
-# staged-scope-aware; path-agnostic; fast. Ground truth (pure verdict + controls) runs on every
-# invocation and REFUSES (exit 2) if a control misses.
+# CONTRACT: exit code is the verdict (0 holds · 1 breach · 2 REFUSED); explains on stderr;
+# deterministic; read-only; judged on the change through scripts/lib/spine.sh. Ground truth (pure
+# verdict + controls) runs on every invocation and REFUSES (exit 2) if a control misses.
+# SPDX-License-Identifier: LGPL-2.1-or-later
 set -uo pipefail
-
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT" || exit 1
+. "$(dirname "${BASH_SOURCE[0]}")/lib/spine.sh"; spine_init LESSON-PROMOTION
+T="$(spine_tmp)"
 
 NOTES="DEV_NOTES.md"
 DECLINE_TOKEN="promotion: declined"
@@ -70,14 +70,13 @@ lesson_promotion_self_check() {
 lesson_promotion_self_check
 [ "${1:-}" = "--self-test" ] && { echo "LESSON-PROMOTION --self-test: 9/9 controls"; exit 0; }
 
-# No staged set (a manual run outside a commit) => nothing to judge.
-staged="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)"
-[ -n "$staged" ] || { echo "LESSON-PROMOTION: ok (nothing staged)"; exit 0; }
-printf '%s\n' "$staged" | grep -qx "$NOTES" || { echo "LESSON-PROMOTION: ok ($NOTES not staged)"; exit 0; }
+# No change => nothing to judge.
+staged="$(spine_changed_paths)"
+[ -n "$staged" ] || { spine_ok "ok (no change)"; exit 0; }
+printf '%s\n' "$staged" | grep -qx "$NOTES" || { spine_ok "ok ($NOTES not in this change)"; exit 0; }
 
 # Newly ADDED dated lesson headings only — reflowing an existing entry is not a new lesson.
-added_entries="$(git diff --cached -U0 -- "$NOTES" 2>/dev/null \
-                 | grep -E '^\+## .*[0-9]{4}-[0-9]{2}-[0-9]{2}' | sed 's/^\+//' || true)"
+added_entries="$(spine_added_text "$NOTES" | grep -E '^## .*[0-9]{4}-[0-9]{2}-[0-9]{2}' || true)"
 added_count="$(printf '%s' "$added_entries" | grep -c . || true)"
 [ "$added_count" -eq 0 ] && { echo "LESSON-PROMOTION: ok (no new dated lesson in $NOTES)"; exit 0; }
 
@@ -85,16 +84,18 @@ added_count="$(printf '%s' "$added_entries" | grep -c . || true)"
 promoted=0
 printf '%s\n' "$staged" | grep -qE '^docs/knowledge/.*\.md$' && promoted=1
 if [ "$promoted" -eq 0 ]; then
-    git diff --cached -U0 -- docs/decisions 2>/dev/null | grep -qE '^\+answers:' && promoted=1
+    for d in $(printf '%s\n' "$staged" | grep -E '^docs/decisions/.*\.md$' || true); do
+        spine_added_text "$d" | grep -qE '^answers:' && { promoted=1; break; }
+    done
 fi
 
 # (b) DECLINED: an explicit token in a staged task leaf, carrying a REAL reason.
 # ⛔ A MENTION IS NOT A DECISION: the placeholder `(<reason>)` is rejected, the reason must be non-empty.
 declined=0
-for f in $(printf '%s\n' "$staged" | grep -E '^docs/tasks/.*\.md$' || true); do
-    [ -r "$f" ] || continue
+for f in $(printf '%s\n' "$staged" | grep -E '^docs/tasks/[^/]+\.md$' || true); do
     case "$f" in docs/tasks/TEMPLATE.md) continue ;; esac
-    if grep -E "${DECLINE_TOKEN} \(..*\)" "$f" | grep -vqF "${DECLINE_TOKEN} (<reason>)"; then
+    spine_read "$f" > "$T/leaf.md" || continue
+    if grep -E "${DECLINE_TOKEN} \(..*\)" "$T/leaf.md" | grep -vqF "${DECLINE_TOKEN} (<reason>)"; then
         declined=1; break
     fi
 done

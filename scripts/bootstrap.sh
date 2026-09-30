@@ -70,7 +70,7 @@ SEED
 SEED
 
   # strip the maintainer-only notes (bounded by BEDROCK-MAINTAINER-NOTE markers)
-  for f in CLAUDE.md ROADMAP.md; do
+  for f in AGENTS.md ROADMAP.md; do
     [ -f "$f" ] && sed -i '/BEDROCK-MAINTAINER-NOTE:START/,/BEDROCK-MAINTAINER-NOTE:END/d' "$f"
   done
   echo "✓ de-templated (maintainer files removed; layer-A/C + tree index reset)"
@@ -171,7 +171,7 @@ gate_out="$(scripts/check_doctrines.sh 2>&1)" && gate_rc=0 || gate_rc=$?
 printf '%s\n' "$gate_out"
 if [ -f docs/tasks/BOOTSTRAP.md ] && grep -q '__GATE_HEAD__' docs/tasks/BOOTSTRAP.md; then
   gate_head="$(printf '%s\n' "$gate_out" | grep -E '^=== doctrine enforcement' | head -1 || true)"
-  gate_tail="$(printf '%s\n' "$gate_out" | grep -E '^=== all doctrines green ===|FAILED' | tail -1 || true)"
+  gate_tail="$(printf '%s\n' "$gate_out" | grep -E '^=== all doctrines green ===|breach|refusal' | tail -1 || true)"
   sed -i "s|__GATE_HEAD__|${gate_head:-(no summary line)}|g; s|__GATE_TAIL__|${gate_tail:-(no verdict line)}|g; s|__GATE_RC__|$gate_rc|g" docs/tasks/BOOTSTRAP.md
 fi
 [ "$gate_rc" = 0 ] || { echo "enforcer reported a breach — fix it before your first commit"; exit 1; }

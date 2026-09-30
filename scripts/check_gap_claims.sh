@@ -29,15 +29,14 @@
 #   nor that its population was right, nor that its conclusion was correct.
 # ⚠️ KNOWN FALSE-POSITIVE CLASS (measured upstream at 1 in 13): a line that QUOTES an earlier claim
 #   fires it. Accepted: the discharge is one pasted command; it errs toward asking.
-# CONTRACT: exit code is the verdict; explains on stderr; deterministic; read-only;
-#   staged-scope-aware; path-agnostic; inert out of scope.
+# CONTRACT: exit code is the verdict (0 holds · 1 breach · 2 REFUSED); explains on stderr;
+#   deterministic; read-only; judged on the change through scripts/lib/spine.sh; inert out of scope.
+# SPDX-License-Identifier: LGPL-2.1-or-later
 set -uo pipefail
-
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT" || exit 1
+. "$(dirname "${BASH_SOURCE[0]}")/lib/spine.sh"; spine_init GAP-CLAIM-CENSUS
 
 HEADLINE="GAP-CLAIM-CENSUS"
-WORK="target/doctrine_scratch/gap_claim_census"
+WORK="$(spine_tmp)/gap_claim_census"   # scratch OUTSIDE the worktree (NT-07)
 
 note() { printf '%s: %s\n' "$HEADLINE" "$1" >&2; }
 ok()   { printf '%s: %s\n' "$HEADLINE" "$1"; }
@@ -150,11 +149,11 @@ fi
 
 if [ "$mode" = "--all" ]; then
   mkdir -p "$WORK"; total=0; unbacked=0; files=0
-  for f in $(git ls-files 'docs/tasks/*.md'); do
-    [ -r "$f" ] || continue
-    seq 1 "$(wc -l < "$f")" > "$WORK/all.nums"
-    rows="$(awk -v CLAIM_RE="$CLAIM_RE" -v CENSUS_RE="$CENSUS_RE" "$CLASSIFY_AWK" "$WORK/all.nums" "$f")"
-    n_claims="$(awk -v CLAIM_RE="$CLAIM_RE" '{ if (tolower($0) ~ CLAIM_RE) c++ } END { print c+0 }' "$f")"
+  for f in $(spine_after_ls 'docs/tasks/*.md' | grep -E '^docs/tasks/[^/]+\.md$'); do
+    spine_read "$f" > "$WORK/all.md" || continue
+    seq 1 "$(wc -l < "$WORK/all.md")" > "$WORK/all.nums"
+    rows="$(awk -v CLAIM_RE="$CLAIM_RE" -v CENSUS_RE="$CENSUS_RE" "$CLASSIFY_AWK" "$WORK/all.nums" "$WORK/all.md")"
+    n_claims="$(awk -v CLAIM_RE="$CLAIM_RE" '{ if (tolower($0) ~ CLAIM_RE) c++ } END { print c+0 }' "$WORK/all.md")"
     n_unbacked="$(printf '%s' "$rows" | grep -c '^BLOCKED' || true)"
     total=$((total + n_claims)); unbacked=$((unbacked + n_unbacked))
     [ "$n_claims" -gt 0 ] && { files=$((files + 1)); printf '  %-52s claims=%-4s unbacked=%s\n' "$f" "$n_claims" "$n_unbacked"; }
@@ -164,14 +163,14 @@ if [ "$mode" = "--all" ]; then
 fi
 
 mkdir -p "$WORK"
-staged="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep -E '^docs/tasks/[^/]*\.md$' || true)"
-[ -n "$staged" ] || { ok "NOT EVALUATED — no staged docs/tasks file"; exit 0; }
+staged="$(spine_changed_paths | grep -E '^docs/tasks/[^/]+\.md$' || true)"
+[ -n "$staged" ] || { ok "NOT EVALUATED — no docs/tasks file in this change"; exit 0; }
 fail=0; checked=0
 for file in $staged; do
   case "$file" in docs/tasks/TEMPLATE.md) continue ;; esac
-  # Judge the INDEX content, never the worktree: the commit ships what is staged.
-  git show ":$file" > "$WORK/staged.md" 2>/dev/null || continue
-  git diff --cached -U0 -- "$file" 2>/dev/null | added_line_numbers | sort -un > "$WORK/staged.nums"
+  # Judge the AFTER snapshot, never the worktree: the commit ships what is staged.
+  spine_read "$file" > "$WORK/staged.md" || continue
+  spine_added_lines "$file" | sort -un > "$WORK/staged.nums"
   [ -s "$WORK/staged.nums" ] || continue
   checked=$((checked + 1))
   rows="$(awk -v CLAIM_RE="$CLAIM_RE" -v CENSUS_RE="$CENSUS_RE" "$CLASSIFY_AWK" "$WORK/staged.nums" "$WORK/staged.md")"

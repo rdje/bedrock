@@ -25,7 +25,7 @@
 #
 # Each probe builds a throwaway git repository, because the check reads the STAGED diff.
 set -uo pipefail
-ROOT="$(git rev-parse --show-toplevel)"; cd "$ROOT"
+ROOT="$(git rev-parse --show-toplevel)" || exit 2; cd "$ROOT" || exit 2
 GUARD="$ROOT/scripts/check_waiver_routing.sh"
 [ -f "$GUARD" ] || { echo "probe: REFUSED — $GUARD not found" >&2; exit 2; }
 
@@ -35,8 +35,9 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 # $1 = name, $2 = guard to install -> prints the repo dir
 mkrepo() {
   local d="$WORK/$1" guard="$2"
-  rm -rf "$d"; mkdir -p "$d/scripts" "$d/docs/tasks"
+  rm -rf "$d"; mkdir -p "$d/scripts/lib" "$d/docs/tasks"
   cp "$guard" "$d/scripts/check_waiver_routing.sh"
+  cp "$ROOT/scripts/lib/spine.sh" "$d/scripts/lib/spine.sh"   # the check sources the library
   git -C "$d" init -q .
   git -C "$d" config user.email probe@example.invalid
   git -C "$d" config user.name  probe

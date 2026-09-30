@@ -184,12 +184,14 @@ starts fresh.
 
 ## File inventory (the spine)
 
-- Bootstrap: `CLAUDE.md`, `AGENTS.md`. Memory: `MEMORY_ARCHITECTURE.md`, `MEMORY.md`.
+- Agent entry: `AGENTS.md` (canonical, complete); `CLAUDE.md` is an optional adapter pointing at it.
+  Memory: `MEMORY_ARCHITECTURE.md`, `MEMORY.md`.
 - Task-trees: `docs/TASK_TREE.md`, `docs/TASK_TREE_README.md`, `docs/tasks/`.
 - Decisions: `docs/decisions/` (+ `INDEX.md`). Commit: `COMMIT.md`.
-- Enforcement: `DOCTRINE_ENFORCEMENT.md`, `scripts/check_doctrines.sh` (+ universal
-  `check_*.sh`), `scripts/check_doctrines.project.sh` (project slot), `.githooks/`,
-  `.github/workflows/`.
+- Enforcement: `DOCTRINE_ENFORCEMENT.md`, `scripts/lib/spine.sh` (the library every check reads
+  the change through), `scripts/check_doctrines.sh` (+ universal `check_*.sh`),
+  `scripts/check_doctrines.project.sh` (project slot), `scripts/tests/spine_tests.sh` (the
+  conformance suite), `.githooks/`, `.github/workflows/`, `.doctrine/` (project seams).
 - Tools-first: `TOOLBOX.md`. Knowledge map: `KNOWLEDGE_MAP.md` (derived), `knowledge-map/`.
 - Docs surface: `docs/book/` (mdBook). Live-docs: `CHANGELOG.md`, `DEV_NOTES.md`,
   `LIVE_STATUS.md`. Rust: `Cargo.toml`, `crates/`, `Makefile`, `rust-toolchain.toml` — these

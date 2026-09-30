@@ -27,12 +27,12 @@
 #
 # ARCHETYPE: evidence. HONEST LIMIT — this verifies the reasoning was RECORDED, not that the
 #   reproduction was attempted or that its conclusion was right.
-# CONTRACT: exit code is the verdict; explains on stderr; deterministic; read-only;
-#   staged-scope-aware; path-agnostic; fast.
+# CONTRACT: exit code is the verdict (0 holds · 1 breach · 2 REFUSED); explains on stderr;
+#   deterministic; read-only; judged on the change through scripts/lib/spine.sh.
+# SPDX-License-Identifier: LGPL-2.1-or-later
 set -uo pipefail
-
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT" || exit 1
+. "$(dirname "${BASH_SOURCE[0]}")/lib/spine.sh"; spine_init ROUTING-EVIDENCE
+T="$(spine_tmp)"
 
 ROUTE_OUT_RE='routed out|routing out|route(d)? it to (that|another)|routed to (another|that) (family|tree)|belongs to another (family|tree)|filed against the [a-z0-9_-]+ (family|tree)|(that|another) (family|tree)'"'"'s (model|problem|defect|business)'
 
@@ -55,22 +55,20 @@ EOT
   exit 0
 fi
 
-staged="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null \
-          | grep -E '^docs/tasks/[^/]*\.md$' || true)"
-[ -n "$staged" ] || { echo "ROUTING-EVIDENCE: ok (no staged task leaf)"; exit 0; }
+staged="$(spine_changed_paths | grep -E '^docs/tasks/[^/]+\.md$' || true)"
+[ -n "$staged" ] || { spine_ok "ok (no task leaf in this change)"; exit 0; }
 
 fail=0
 for file in $staged; do
-  [ -r "$file" ] || continue
   case "$file" in docs/tasks/TEMPLATE.md) continue ;; esac
+  spine_read "$file" > "$T/leaf.md" || continue
   # ADDED lines that assert routing a finding OUT of this tree. `routed in` is the RECEIVING side.
-  offending="$(git diff --cached -U0 -- "$file" 2>/dev/null \
-               | grep '^+' | grep -v '^+++' \
+  offending="$(spine_added_text "$file" \
                | grep -iE "$ROUTE_OUT_RE" \
                | grep -viE 'routed[- ]in' \
-               | sed 's/^+//' | cut -c1-160 | sed 's/^/    /' || true)"
+               | cut -c1-160 | sed 's/^/    /' || true)"
   [ -n "$offending" ] || continue
-  if grep -qE '^[^[:alnum:]]*ROUTING EVIDENCE|## .*[Rr]outing [Ee]vidence' "$file"; then
+  if grep -qE '^[^[:alnum:]]*ROUTING EVIDENCE|## .*[Rr]outing [Ee]vidence' "$T/leaf.md"; then
     continue
   fi
   fail=1
@@ -89,6 +87,6 @@ for file in $staged; do
   } >&2
 done
 
-[ "$fail" -eq 0 ] && echo "ROUTING-EVIDENCE: ok"
+[ "$fail" -eq 0 ] && spine_ok "ok"
 [ "$fail" -eq 0 ] || exit 1
 exit 0

@@ -47,29 +47,35 @@ bootstrap_no_name_uninitialised_exit2   xfail  BK-18
 bootstrap_under_bsd_sed                 xfail  BR-10
 ownership_dart_perl_julia_no_leaf       xfail  NT-03
 spine_hook_and_workflow_no_leaf         xfail  BK-05
-deletion_needs_leaf                     xfail  BR-08
+deletion_needs_leaf                     req    BR-08
 evidence_reuse_done_leaf                xfail  BK-01
 prose_evidence_refused                  xfail  BK-03
 keyword_box_shadowing_refused           xfail  BK-03
 bare_version_number_not_evidence        xfail  BK-03
 stamped_evidence_line_accepted          xfail  NT-04
-config_weakened_same_commit             xfail  BK-06
+config_weakened_same_commit             req    BK-06
 env_bypass_ignored                      xfail  BK-08
 exception_trailer_honoured              xfail  BK-08
-subdir_markdown_not_a_leaf              xfail  BK-15
-spine_docs_deleted                      xfail  BK-13
-child_without_claude_md_passes          xfail  NT-08
-project_slot_not_executable             xfail  BK-14
-git_failure_refused                     xfail  BK-17
-unstaged_fix_hides_staged_defect        xfail  BR-03
-ci_judges_each_commit                   xfail  BR-04
+subdir_markdown_not_a_leaf              req    BK-15
+spine_docs_deleted                      req    BK-13
+child_without_claude_md_passes          req    NT-08
+project_slot_not_executable             req    BK-14
+git_failure_refused                     req    BK-17
+unstaged_fix_hides_staged_defect        req    BR-03
+ci_judges_each_commit                   req    BR-04
 commit_msg_human_named_claude           xfail  BK-11
-commit_msg_agent_co_developed_by        xfail  BK-11
-commit_msg_leading_blank_line           xfail  BK-11
-knowledge_map_single_line_comment       xfail  BK-12
+commit_msg_agent_co_developed_by        req    BK-11
+commit_msg_leading_blank_line           req    BK-11
+knowledge_map_single_line_comment       req    BK-12
 census_make_sure_not_a_discharge        xfail  BK-16
 waiver_owner_must_resolve               xfail  BK-16
-scratch_stays_out_of_worktree           xfail  NT-07
+scratch_stays_out_of_worktree           req    NT-07
+rename_needs_leaf                       req    BR-08
+python3_missing_refused                 req    BR-05
+invalid_regex_refused                   req    BR-05
+invalid_regex_repair_allowed            req    BR-05
+ci_message_judged                       req    BR-21
+subject_hello_refused                   xfail  BR-21
 "
 
 if [ "$LIST" = 1 ]; then
@@ -281,7 +287,7 @@ arm_bare_version_number_not_evidence() {
 arm_stamped_evidence_line_accepted() {
   # the tool-neutral evidence shape: a line the wrapper prints, pasted into each box
   [ -x scripts/evidence ] || return 1
-  line="$(scripts/evidence -- sh -c 'echo ok' 2>/dev/null | head -1)"
+  scripts/evidence -- sh -c 'echo ok' > "$T/.ev" 2>/dev/null; line="$(head -1 "$T/.ev")"
   printf '%s\n' "$line" | grep -q '^evidence: rc=0 ' || return 1
   code_change
   printf '%s\n' "$line" "$line" "$line" | sed 's/^/`/; s/$/`/' | boxes_leaf FEAT > docs/tasks/FEAT.md
@@ -349,7 +355,9 @@ arm_commit_msg_leading_blank_line() {
 }
 arm_knowledge_map_single_line_comment() {
   printf '<!-- curated input -->\n- `crates/demo/` — the CLI entry point.\n<!-- TODO: add the storage layer -->\n- `crates/store/` — persistence.\n- `crates/net/` — networking.\n' > knowledge-map/subsystems.md
-  knowledge-map/scripts/gen_knowledge_map.sh | grep -q 'crates/demo'
+  git add knowledge-map/subsystems.md    # the generator reads the INDEX (BR-14), as the hook does
+  # ⛔ never `gen | grep -q` under pipefail: grep exits at the first match, the generator takes SIGPIPE
+  bash knowledge-map/scripts/gen_knowledge_map.sh > "$T/.map" && grep -q 'crates/demo' "$T/.map"
 }
 arm_census_make_sure_not_a_discharge() {
   printf '# FEAT\n\n### `.3` — gap\n- **THE GAP** — nothing checks the retry budget; make sure we revisit.\n' > docs/tasks/FEAT.md
@@ -368,6 +376,39 @@ arm_scratch_stays_out_of_worktree() {
   [ -z "$(git status --porcelain --untracked-files=all | grep -v 'docs/tasks/BOOTSTRAP.md')" ]
 }
 
+arm_rename_needs_leaf() {
+  git mv crates/app/src/main.rs crates/app/src/app.rs; gate; refused_by 'TASK-TREE-OWNERSHIP'
+}
+arm_python3_missing_refused() {
+  # a PATH with everything the spine needs except python3: the check must REFUSE, not pass
+  mkdir -p "$T/bin"
+  for t in bash sh git awk sed grep head tail cut tr wc sort uniq mktemp dirname basename cat diff cmp mv rm mkdir seq paste date ls cp chmod tar env comm; do
+    p="$(command -v "$t" 2>/dev/null)"; [ -n "$p" ] && ln -s "$p" "$T/bin/$t"
+  done
+  printf '\nA README line.\n' >> README.md; git add README.md
+  OUT="$(PATH="$T/bin" bash scripts/check_doctrines.sh 2>&1)"; RC=$?
+  refused_by 'TABLE-ARITY-RATCHET'
+}
+arm_invalid_regex_refused() {
+  mkdir -p .doctrine; printf '[\n' > .doctrine/code_paths.txt; git add .doctrine/code_paths.txt
+  commit_nohooks 'DEMO-CFG-0003: broken code paths' || return 1
+  code_change; good_leaf > docs/tasks/FEAT.md; git add -A; gate; refused_by 'TASK-ACCEPTANCE'
+}
+arm_invalid_regex_repair_allowed() {
+  mkdir -p .doctrine; printf '[\n' > .doctrine/code_paths.txt; git add .doctrine/code_paths.txt
+  commit_nohooks 'DEMO-CFG-0003: broken code paths' || return 1
+  printf '\\.rs$\n' > .doctrine/code_paths.txt; good_leaf > docs/tasks/FEAT.md; git add -A; gate; green
+}
+arm_ci_message_judged() {
+  # a subject the shape rule rejects, committed with the hooks bypassed: CI must still refuse it
+  printf '\nA README line.\n' >> README.md; git add README.md; commit_nohooks '(no id): fix' || return 1
+  gate_ci HEAD; refused_by 'COMMIT-MESSAGE'
+}
+arm_subject_hello_refused() {
+  # BR-21: a bare word is not a work-unit id; the permissive rule accepts it until REVIEW-2026-09.4
+  printf 'hello\n' > "$T/.m"; ! bash scripts/check_commit_message.sh "$T/.m" >/dev/null 2>&1
+}
+
 # ── the runner ────────────────────────────────────────────────────────────────────────────────
 build_base || { note "REFUSED — could not build the base child (see $WORK/bootstrap.log and first_commit.log)"; [ "$KEEP" = 1 ] || cat "$WORK/bootstrap.log" 2>/dev/null | tail -5 >&2; exit 2; }
 
@@ -377,7 +418,7 @@ while read -r name expect id; do
   [ -z "$ONLY" ] || [ "$name" = "$ONLY" ] || continue
   n=$((n+1))
   T="$WORK/$name"; rm -rf "$T"; cp -R "$BASE" "$T"
-  ( cd "$T" && "arm_$name" ) > "$WORK/$name.log" 2>&1; ok=$?
+  ( cd "$T" && "arm_$name"; rc=$?; printf '\n--- last captured output ---\n%s\n' "$OUT"; exit $rc ) > "$WORK/$name.log" 2>&1; ok=$?
   case "$expect:$ok" in
     req:0)   pass=$((pass+1));   printf '  ✓ pass   %-40s %s\n' "$name" "$id" ;;
     req:*)   fail=$((fail+1));   printf '  ✗ FAIL   %-40s %s — required, and the spine does not comply\n' "$name" "$id"

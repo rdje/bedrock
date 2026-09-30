@@ -6,10 +6,16 @@ turns a portable standard into a fork of it — that is what these seams exist t
 
 | file | consumed by | meaning |
 |---|---|---|
-| `code_paths.txt` | `TASK-ACCEPTANCE` | one extended regular expression per line: what counts as a **code change** here. Absent ⇒ the built-in Rust-workspace default (`crates/`, `src/`, `scripts/`, `*.rs`, `*.sh`, `Makefile`). |
+| `code_paths.txt` | `TASK-ACCEPTANCE` | one extended regular expression per line (**not** a glob: `\.c$`, not `*.c`): what counts as a **code change** here. Absent ⇒ the built-in default (`crates/`, `src/`, `scripts/`, `*.rs`, `*.sh`, `Makefile`). Replaced by deny-by-default governance in `REVIEW-2026-09.4`. |
 | `evidence_tokens.txt` | `TASK-ACCEPTANCE` | one extended regular expression per line: **your** tools' output signatures, ADDED to the universal defaults. Absent ⇒ defaults only. |
+| `config` | `MEMORY-ARCH`, `README-STABILITY` | `key = value` settings: `memory_pointer_line_cap`, `memory_pointer_byte_cap`, `readme_line_cap`, `readme_byte_cap`. Absent ⇒ the built-in defaults (50 / 7168 / 300 / 16384). |
 
-Blank lines and `#` comments are ignored in both.
+Blank lines and `#` comments are ignored in all of them.
+
+⛔ **Every file here is read as of the LAST COMMIT, never from the working tree.** A change to a
+seam takes effect from the *next* commit, so a commit cannot loosen the gate that judges it
+(`decision_ownership_contract`, BK-06). An invalid regular expression is **refused** (exit 2), not
+skipped; repair it in a change that touches only `.doctrine/` and documentation.
 
 ## When to declare evidence tokens
 

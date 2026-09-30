@@ -31,17 +31,16 @@
 #   HONEST LIMIT — this verifies an owner was NAMED, not that the owner is real or that the work
 #   happens. Stated rather than hidden.
 #
-# CONTRACT (DOCTRINE_ENFORCEMENT.md §4): exit code is the verdict; explains on stderr;
-# deterministic; read-only; staged-scope-aware; path-agnostic; fast.
+# CONTRACT: exit code is the verdict (0 holds · 1 breach · 2 REFUSED); explains on stderr;
+# deterministic; read-only; judged on the AFTER snapshot through scripts/lib/spine.sh.
+# SPDX-License-Identifier: LGPL-2.1-or-later
 set -uo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/lib/spine.sh"; spine_init WAIVER-ROUTING
+T="$(spine_tmp)"
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT" || exit 1
-
-# Staged task-tree files only. No staged set (e.g. a manual run) => nothing to judge.
-staged="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null \
-          | grep -E '^docs/tasks/.*\.md$' || true)"
-[ -n "$staged" ] || exit 0
+# Top-level task-tree files this change touches. Nothing touched => nothing to judge.
+staged="$(spine_changed_paths | grep -E '^docs/tasks/[^/]+\.md$' || true)"
+[ -n "$staged" ] || { spine_ok "OK (no task leaf in this change)"; exit 0; }
 
 # Waiver / inapplicability language. Kept tight and phrase-anchored so it fires on a real claim
 # ("the signatures do not apply") and not on incidental prose containing the words separately.
@@ -58,10 +57,10 @@ OWNER_RE='`?[A-Z][A-Z0-9-]+\.[0-9]+[0-9a-z.]*`?|[A-Z][A-Z0-9]+-[A-Z0-9-]+-[0-9]{
 
 fail=0
 for file in $staged; do
-  [ -r "$file" ] || continue
+  spine_read "$file" > "$T/file.md" || continue
 
   # ADDED lines only — this binds NEW claims, never the historical record.
-  added="$(git diff --cached -U0 -- "$file" 2>/dev/null | grep '^+' | grep -v '^+++' || true)"
+  added="$(spine_added_text "$file" || true)"
   [ -n "$added" ] || continue
 
   # Bind only when this commit ADDS a waiver claim; the historical record is never retro-bound.
@@ -89,15 +88,15 @@ for file in $staged; do
   while IFS= read -r ln; do
     [ -n "$ln" ] || continue
     lo=$(( ln > WINDOW ? ln - WINDOW : 1 )); hi=$(( ln + WINDOW ))
-    win="$(sed -n "${lo},${hi}p" "$file" 2>/dev/null)"
+    win="$(sed -n "${lo},${hi}p" "$T/file.md" 2>/dev/null)"
     win_file="$(mktemp)"; printf '%s\n' "$win" > "$win_file"
     if ! grep -qE "$OWNER_RE" "$win_file"; then
       rm -f "$win_file"
-      undischarged="${undischarged}${file}:${ln}: $(sed -n "${ln}p" "$file")"$'\n'
+      undischarged="${undischarged}${file}:${ln}: $(sed -n "${ln}p" "$T/file.md")"$'\n'
     else
       rm -f "$win_file"
     fi
-  done < <(grep -nE "$WAIVER_RE" "$file" 2>/dev/null | cut -d: -f1)
+  done < <(grep -nE "$WAIVER_RE" "$T/file.md" 2>/dev/null | cut -d: -f1)
   [ -n "$undischarged" ] || continue
 
   fail=1

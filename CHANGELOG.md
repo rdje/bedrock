@@ -1,5 +1,36 @@
 # CHANGELOG.md
 
+## 0.13.0 — 2026-09-30 — every check reads the change through one library, and an error is never a pass
+
+`BEDROCK-REVIEW-0003` (leaf `REVIEW-2026-09.3`).
+
+- ✅ **`scripts/lib/spine.sh`**: a fail-closed prelude (a git failure is `REFUSED`, exit 2, never "nothing
+  staged"), the exit contract `0 holds · 1 breach · 2 REFUSED` that the driver reports and fails on, and a
+  change context — `before`/`after` revisions, reads through `git show`, changes enumerated with
+  `--name-status -z` including deletions and both sides of a rename. Every check converted (BK-17, BR-05,
+  BR-03, BR-08). Scratch files leave the worktree (NT-07).
+- ✅ **CI judges every commit** the push or pull request introduces, each against its parent with its real
+  message (`check_doctrines.sh --commit <rev>` / `--range <a>..<b>`, BR-04). A `--no-verify`'d subject or
+  agent trailer is now refused in CI (`COMMIT-MESSAGE`, BR-21).
+- ✅ **Configuration comes from the last commit**: `.doctrine/` is read from `before`, so a commit cannot
+  loosen the gate judging it (BK-06); an invalid pattern is refused, with a repair path (BR-05). Caps move to
+  `.doctrine/config` (BK-20). A tree file is top-level `docs/tasks/<TREE>.md` only (BK-15).
+- ✅ **`MEMORY-ARCH` checks the spine's own documents** (BK-13) and **`AGENTS.md` is canonical**: the complete
+  instructions live there; `CLAUDE.md` is an optional adapter; no vendor file is mandatory (NT-08, BR-13).
+- ✅ The project slot and every check run through `bash`, so a lost executable bit cannot drop a check (BK-14);
+  the Knowledge Map is generated from the index with a comment stripper that handles same-line comments
+  (BK-12, BR-14); `\s` replaced by POSIX classes; `check_table_arity.sh` now parses under bash 3.2.
+- ⚠️ **Two defects in the new library were caught by the suite before shipping**: a NUL-delimited stream
+  captured in a variable (every check saw "no change"), and a refusal inside `$( )` that ended only the
+  subshell (an invalid pattern became an empty one and passed). Recorded in the leaf.
+- 📌 **New requirement recorded** (`docs/decisions/decision_context_continuity.md`): harness/agent transparency
+  and guaranteed context continuity across session ends, with a `RESUME-POINTER` check and a `scripts/handoff`
+  command to come in `REVIEW-2026-09.10`.
+- Conformance suite: `arms: 20 pass / 17 xfail / 0 fail / 0 xpass (of 37)`.
+- ⚠️ **For existing children:** the library is a new file your copy of the updater does not know about; wait
+  for `REVIEW-2026-09.6` (the self-replacing updater) or copy `scripts/lib/spine.sh`, `scripts/check_*.sh`,
+  `scripts/check_doctrines.sh`, the hooks, `.doctrine/config` and `.github/workflows/doctrines.yml` by hand.
+
 ## 0.12.0 — 2026-09-30 — the conformance suite: the review's scenarios as arms, and CI tests the enforcer
 
 `BEDROCK-REVIEW-0002` (leaf `REVIEW-2026-09.2`).

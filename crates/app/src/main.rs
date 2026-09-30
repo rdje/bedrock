@@ -1,7 +1,7 @@
 //! Starter binary for a project scaffolded from the `bedrock` discipline-spine template.
 //!
 //! Replace this crate with your project. The first real work should be owned by a
-//! task-tree leaf under `docs/tasks/` (see `CLAUDE.md` and `docs/TASK_TREE.md`).
+//! task-tree leaf under `docs/tasks/` (see `AGENTS.md` and `docs/TASK_TREE.md`).
 
 fn main() {
     println!("bedrock: replace this crate with your project — start from ROADMAP.md.");
