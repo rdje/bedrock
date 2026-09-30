@@ -41,10 +41,10 @@ done
 ARMS="
 docs_only_change_passes                 req    GREEN
 owned_change_with_fresh_evidence_passes req    GREEN
-bootstrap_first_commit_as_printed       xfail  BR-11
-bootstrap_bad_names_refused             xfail  BK-04
-bootstrap_no_name_uninitialised_exit2   xfail  BK-18
-bootstrap_under_bsd_sed                 xfail  BR-10
+bootstrap_first_commit_as_printed       req    BR-11
+bootstrap_bad_names_refused             req    BK-04
+bootstrap_no_name_uninitialised_exit2   req    BK-18
+bootstrap_under_bsd_sed                 req    BR-10
 ownership_dart_perl_julia_no_leaf       req    NT-03
 spine_hook_and_workflow_no_leaf         req    BK-05
 deletion_needs_leaf                     req    BR-08
@@ -92,6 +92,13 @@ handoff_refuses_dirty_tree              req    CONTINUITY
 handoff_refuses_stale_pointer           req    CONTINUITY
 handoff_refuses_running_job             req    CONTINUITY
 handoff_ok_then_resume_from_fresh_clone req    CONTINUITY
+bootstrap_rerun_same_name_idempotent    req    BR-12
+bootstrap_rerun_other_name_refused      req    BR-12
+bootstrap_dirty_tree_refused            req    BR-06
+bootstrap_contributor_mode              req    BK-18
+bootstrap_identity_and_history_reset    req    BR-12
+bootstrap_evidence_truthful             req    BK-04
+bootstrap_fresh_git_init_allowed        req    BR-06
 "
 
 if [ "$LIST" = 1 ]; then
@@ -211,13 +218,16 @@ arm_owned_change_with_fresh_evidence_passes() {
   code_change; good_leaf > docs/tasks/FEAT.md; point_to DEMO-APP-0002 '`FEAT` → frontier leaf `FEAT.1` (`active`)'; git add -A
   commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main'; green
 }
-arm_bootstrap_first_commit_as_printed() {
-  # a fresh, un-bootstrapped copy; run bootstrap; execute the printed commit block verbatim
+fresh_copy() { # rebuild $T as a fresh, un-bootstrapped one-commit copy of the template (GitHub's "Use this template")
   rm -rf "$T"; mkdir -p "$T"
   ( cd "$SUITE_ROOT" && git ls-files -co --exclude-standard -z | tar --null -T - -cf - | tar -x -C "$T" )
-  git init -q -b main . && git config user.email t@example.invalid && git config user.name tester
-  chmod +x scripts/*.sh knowledge-map/scripts/*.sh .githooks/* 2>/dev/null
-  git add -A && git -c core.hooksPath=/dev/null commit -qm "Initial commit"
+  cd "$T" && git init -q -b main . && git config user.email t@example.invalid && git config user.name tester \
+    && chmod +x scripts/*.sh knowledge-map/scripts/*.sh .githooks/* 2>/dev/null \
+    && git add -A && git -c core.hooksPath=/dev/null commit -qm "Initial commit"
+}
+arm_bootstrap_first_commit_as_printed() {
+  # a fresh, un-bootstrapped copy; run bootstrap; execute the printed commit block verbatim
+  fresh_copy || return 1
   ./scripts/bootstrap.sh demo > "$T/.boot.log" 2>&1 || return 1
   # the printed block: the lines between "Commit the bootstrap itself" and the next blank line
   printed="$(awk '/Commit the bootstrap itself/ { on=1; next } on && /^[[:space:]]*$/ { exit } on && /^[[:space:]]+(git|printf)/ { print }' "$T/.boot.log")"
@@ -228,9 +238,7 @@ arm_bootstrap_first_commit_as_printed() {
 arm_bootstrap_bad_names_refused() {
   local n ok=0
   for n in 'x&y' 'a/b' 'my.proj' 'Stitch CAD'; do
-    rm -rf "$T"; mkdir -p "$T"
-    ( cd "$SUITE_ROOT" && git ls-files -co --exclude-standard -z | tar --null -T - -cf - | tar -x -C "$T" )
-    ( git init -q -b main . && git add -A && git -c core.hooksPath=/dev/null commit -qm "Initial commit" ) >/dev/null 2>&1
+    fresh_copy >/dev/null 2>&1 || return 1
     before="$(git status --porcelain | wc -l | tr -d ' ')"
     ./scripts/bootstrap.sh "$n" >/dev/null 2>&1; rc=$?
     after="$(git status --porcelain | wc -l | tr -d ' ')"
@@ -240,9 +248,7 @@ arm_bootstrap_bad_names_refused() {
   [ "$ok" -eq 4 ]
 }
 arm_bootstrap_no_name_uninitialised_exit2() {
-  rm -rf "$T"; mkdir -p "$T"
-  ( cd "$SUITE_ROOT" && git ls-files -co --exclude-standard -z | tar --null -T - -cf - | tar -x -C "$T" )
-  ( git init -q -b main . && git add -A && git -c core.hooksPath=/dev/null commit -qm "Initial commit" ) >/dev/null 2>&1
+  fresh_copy >/dev/null 2>&1 || return 1
   ./scripts/bootstrap.sh >/dev/null 2>&1; rc=$?
   [ "$rc" -eq 2 ] && [ -f MAINTAINING.md ]
 }
@@ -250,12 +256,11 @@ arm_bootstrap_under_bsd_sed() {
   # meaningful only where a BSD sed exists at /usr/bin/sed; elsewhere the arm is vacuously required
   if /usr/bin/sed --version >/dev/null 2>&1; then return 0; fi   # GNU sed there: nothing to test
   [ -x /usr/bin/sed ] || return 0
-  rm -rf "$T"; mkdir -p "$T"
-  ( cd "$SUITE_ROOT" && git ls-files -co --exclude-standard -z | tar --null -T - -cf - | tar -x -C "$T" )
-  ( git init -q -b main . && git config user.email t@example.invalid && git config user.name tester \
-    && git add -A && git -c core.hooksPath=/dev/null commit -qm "Initial commit" ) >/dev/null 2>&1
-  PATH="/usr/bin:/bin:/usr/sbin:/sbin" ./scripts/bootstrap.sh demo >/dev/null 2>&1; rc=$?
-  [ "$rc" -eq 0 ] && grep -q '^name = "demo"' crates/app/Cargo.toml && ! ls docs/TASK_TREE.md-e >/dev/null 2>&1
+  fresh_copy >/dev/null 2>&1 || return 1
+  PATH="/usr/bin:/bin:/usr/sbin:/sbin" ./scripts/bootstrap.sh demo > "$T/.boot.log" 2>&1; rc=$?
+  [ "$rc" -eq 0 ] && grep -q '^name = "demo"' crates/app/Cargo.toml && ! ls docs/TASK_TREE.md-e >/dev/null 2>&1 \
+    && printf '%s\n' 'DEMO-BOOTSTRAP-0001 (leaf BOOTSTRAP.1): bootstrapped from bedrock' > "$T/.m" \
+    && PATH="/usr/bin:/bin:/usr/sbin:/sbin" git commit -q -F "$T/.m" >/dev/null 2>&1
 }
 arm_ownership_dart_perl_julia_no_leaf() {
   mkdir -p lib t test bin
@@ -552,6 +557,47 @@ arm_handoff_ok_then_resume_from_fresh_clone() {
   [ -n "$tree" ] && [ -f "docs/tasks/$tree.md" ] || return 1
   grep -q '^- next_action: .' MEMORY.md || return 1
   gate; green
+}
+
+arm_bootstrap_rerun_same_name_idempotent() {
+  # the base child is already 'demo': a rerun with the same name changes nothing and exits 0
+  ./scripts/bootstrap.sh demo > "$T/.boot.log" 2>&1; rc=$?
+  [ "$rc" -eq 0 ] && [ -z "$(git status --porcelain --untracked-files=all)" ]
+}
+arm_bootstrap_rerun_other_name_refused() {
+  ./scripts/bootstrap.sh other > "$T/.boot.log" 2>&1; rc=$?
+  [ "$rc" -eq 2 ] && [ -z "$(git status --porcelain --untracked-files=all)" ] && grep -q '^name = "demo"' crates/app/Cargo.toml
+}
+arm_bootstrap_dirty_tree_refused() {
+  fresh_copy >/dev/null 2>&1 || return 1
+  printf '\n- an uncommitted note\n' >> MEMORY.md
+  ./scripts/bootstrap.sh demo > "$T/.boot.log" 2>&1; rc=$?
+  [ "$rc" -eq 2 ] && grep -q 'an uncommitted note' MEMORY.md && [ -f MAINTAINING.md ]
+}
+arm_bootstrap_contributor_mode() {
+  git config --unset core.hooksPath 2>/dev/null
+  ./scripts/bootstrap.sh --contributor > "$T/.boot.log" 2>&1; rc=$?
+  [ "$rc" -eq 0 ] && [ "$(git config core.hooksPath)" = ".githooks" ] && [ -z "$(git status --porcelain --untracked-files=all)" ]
+}
+arm_bootstrap_identity_and_history_reset() {
+  # the base child: identity recorded, no bedrock history in the live docs, no maintainer files
+  grep -q '^name = demo$' .bedrock/project && grep -q '^prefix = DEMO$' .bedrock/project \
+    && [ "$(grep -c 'BEDROCK-' CHANGELOG.md DEV_NOTES.md | awk -F: '{s+=$2} END{print s}')" = 0 ] \
+    && [ ! -f MAINTAINING.md ] && [ ! -d docs/reviews ]
+}
+arm_bootstrap_evidence_truthful() {
+  # the seeded leaf cites the gate verdict that bootstrap actually printed, and real counts
+  grep -q 'crates/app/Cargo.toml` → `1` before, `0` after' docs/tasks/BOOTSTRAP.md \
+    && grep -q '`=== all doctrines green ===` (`rc=0`)' docs/tasks/BOOTSTRAP.md \
+    && grep -q '=== all doctrines green ===' "$WORK/bootstrap.log"
+}
+arm_bootstrap_fresh_git_init_allowed() {
+  # cargo-generate leaves a repository with no commit: bootstrap must accept it and stage the whole tree
+  rm -rf "$T"; mkdir -p "$T"
+  ( cd "$SUITE_ROOT" && git ls-files -co --exclude-standard -z | tar --null -T - -cf - | tar -x -C "$T" )
+  cd "$T" && git init -q -b main . && git config user.email t@example.invalid && git config user.name tester
+  ./scripts/bootstrap.sh demo > "$T/.boot.log" 2>&1 || return 1
+  printf '%s\n' 'DEMO-BOOTSTRAP-0001 (leaf BOOTSTRAP.1): bootstrapped from bedrock' > "$T/.m" && git commit -q -F "$T/.m" >/dev/null 2>&1
 }
 
 # ── the runner ────────────────────────────────────────────────────────────────────────────────

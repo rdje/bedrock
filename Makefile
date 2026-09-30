@@ -11,7 +11,7 @@ help:
 	@echo "make test            - cargo test --all"
 	@echo "make book            - build the mdBook (requires mdbook)"
 	@echo "make hooks           - install the git hooks (core.hooksPath=.githooks)"
-	@echo "make bootstrap       - first-time project bootstrap"
+	@echo "make bootstrap       - initialise a new project: make bootstrap NAME=<project-name>"
 	@echo "make update-scaffold - pull the latest bedrock spine (set URL=<bedrock-repo>)"
 
 gate:
@@ -39,7 +39,8 @@ hooks:
 	@echo "git hooks activated (core.hooksPath=.githooks)"
 
 bootstrap:
-	scripts/bootstrap.sh
+	@[ -n "$(NAME)" ] || { echo "usage: make bootstrap NAME=<project-name>   (contributors: make hooks)"; exit 2; }
+	scripts/bootstrap.sh $(NAME)
 
 update-scaffold:
 	scripts/update_scaffold.sh $(URL)

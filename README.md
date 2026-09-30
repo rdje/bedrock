@@ -41,15 +41,22 @@ cargo generate --git <this-repo-url> --name <project>
 
 **Option B — GitHub "Use this template"** (enable the *Template repository* setting).
 
+(`gh repo create <name> --template rdje/bedrock --clone` does the copy and the clone in one step.)
+
 Then, either way, `cd <project>` and finalize with one command:
 
-1. `./scripts/bootstrap.sh <project>` — installs the git hooks, sets the crate + roadmap name,
-   generates the Knowledge Map, verifies the enforcer, and seeds the leaf that owns this step —
-   then **commit with the command it prints**. The canonical post-copy step for both paths
-   (option A needs `cargo install cargo-generate`).
+1. `./scripts/bootstrap.sh <project>` — validates the name, de-templates, records the identity in
+   `.bedrock/project`, installs the git hooks, generates the Knowledge Map, seeds the leaf that owns
+   this step, **stages everything and judges it with the enforcer** — then **commit with the exact
+   command it prints**. The canonical post-copy step for both paths (option A needs `cargo install
+   cargo-generate`).
 2. Replace `ROADMAP.md` with your project's roadmap, then create your first task-tree
    (`cp docs/tasks/TEMPLATE.md docs/tasks/<TREE-ID>.md`) and register it in `docs/TASK_TREE.md`.
-3. Grow the project one task-tree leaf at a time, committed via `COMMIT.md`.
+3. Grow the project one task-tree leaf at a time, committed via `COMMIT.md`; end every session
+   with `scripts/handoff`.
+
+Anyone who clones the project later runs only `./scripts/bootstrap.sh --contributor` (or
+`make hooks`) — never the naming bootstrap.
 
 ## Keep the spine current
 

@@ -10,11 +10,13 @@ enforced at the **git level** (hooks + CI), so it holds regardless of which agen
 human is working. Follow it exactly.
 
 <!-- BEDROCK-MAINTAINER-NOTE:START (removed by scripts/bootstrap.sh de-template) -->
-> **Maintaining bedrock itself?** If a `MAINTAINING.md` exists at the repo root, this IS the
-> bedrock discipline-spine template and your job is to improve the template (not to start a
-> project from it) — **read `MAINTAINING.md` first**, then resume from `MEMORY.md` →
-> `docs/tasks/BEDROCK-MAINTENANCE.md`. (A project generated from bedrock has no
-> `MAINTAINING.md`; ignore this note.)
+> **Maintaining bedrock itself?** If a `MAINTAINING.md` exists at the repo root AND
+> `git remote get-url origin` names `bedrock`, this IS the bedrock discipline-spine template and
+> your job is to improve the template (not to start a project from it) — **read `MAINTAINING.md`
+> first**, then resume from `MEMORY.md` → `docs/tasks/BEDROCK-MAINTENANCE.md`.
+> If `MAINTAINING.md` exists but the remote is some other project, this copy was created from the
+> template and **never initialised**: stop, run `scripts/bootstrap.sh <project-name>`, and commit
+> what it stages. (An initialised project has `.bedrock/project` and no `MAINTAINING.md`.)
 <!-- BEDROCK-MAINTAINER-NOTE:END -->
 
 

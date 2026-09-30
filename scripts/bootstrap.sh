@@ -1,53 +1,139 @@
 #!/usr/bin/env bash
-# scripts/bootstrap.sh — first-time setup for a project scaffolded from bedrock.
+# scripts/bootstrap.sh — first-time setup for a project created from bedrock (REVIEW-2026-09.5).
+# SPDX-License-Identifier: LGPL-2.1-or-later
 #
-#   scripts/bootstrap.sh [project-name]
+#   scripts/bootstrap.sh <project-name> [--title "<display title>"] [--prefix <WORK-UNIT-PREFIX>]
+#       initialise a NEW project from a pristine copy of the template: validate, de-template, set the
+#       name, install the hooks, regenerate the Knowledge Map, seed the leaf that owns this very step,
+#       STAGE everything, judge the staged index with the enforcer, and print the first commit.
+#   scripts/bootstrap.sh --contributor     in an initialised project: install the hooks, nothing else
+#   scripts/bootstrap.sh --maintainer      in bedrock itself: hooks, map, enforcer; no de-templating
+#   scripts/bootstrap.sh                   in an initialised project = --contributor;
+#                                          in an uninitialised copy: usage, exit 2 (BK-18)
 #
-# With a project-name it DE-TEMPLATES this copy into a fresh project: removes bedrock's own
-# maintainer files (MAINTAINING.md + the BEDROCK-MAINTENANCE tree + the provenance record)
-# and resets the layer-A/C seeds, then installs hooks, sets the name, generates the Knowledge
-# Map, and verifies the enforcer. Without a name it just installs hooks + regenerates the map
-# (safe to run in the bedrock source repo itself — it will NOT remove the maintainer files).
-#
-# Idempotent. It does NOT invent a task-tree from your roadmap — that judgment is left to you.
-set -euo pipefail
-# ⛔ Act on the repository THIS SCRIPT LIVES IN, never on the caller's working directory
-# (BEDROCK-MAINTENANCE.2.7): `git rev-parse --show-toplevel` from the caller's cwd would fail
-# outside a repository and — worse — de-template the PARENT repository when a user runs
-# `<name>/scripts/bootstrap.sh <name>` from the directory they cloned into.
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; cd "$ROOT"
-[ -d .git ] || { echo "bootstrap: $ROOT is not the root of a git clone" >&2; exit 2; }
-name="${1:-}"
+# ⛔ WHAT THIS REVISION FIXES, measured (docs/reviews/2026-09-30-consolidated-review.md):
+#   BK-04  names were interpolated into `sed`: `x&y` wrote `name = "xname = "app"y"` (invalid TOML),
+#          `a/b` made both substitutions fail behind `|| true`, and the seeded leaf then cited
+#          "renamed to a/b" next to a hardcoded `(rc=0)`. Every name is validated BEFORE any write,
+#          every edit is a LITERAL replacement that must change exactly one occurrence, and every
+#          number in the seeded evidence is measured.
+#   BK-04  the "enforcer run inside this bootstrap" ran with NOTHING staged. It now runs over the
+#          staged index with the first commit's subject — the real verdict the hook will repeat.
+#   BK-18  `make bootstrap` (no name) left a child that believed it was bedrock. Modes are explicit.
+#   BR-06  files were deleted before anything was checked, and an uncommitted MEMORY.md edit was
+#          discarded. Preflight refuses a dirty tree (unless there is no commit yet at all).
+#   BR-10  `sed -i` is GNU-only: on a stock Mac it wrote `docs/TASK_TREE.md-e`. No `sed -i` remains.
+#   BR-11  the printed commit carried a literal `<NAME>` and failed as printed. It is printed real.
+#   BR-12  the child kept bedrock's CHANGELOG and DEV_NOTES history; a rerun with another name
+#          renamed nothing and exited 0. The child's live docs are reset; the identity is recorded in
+#          `.bedrock/project`; a rerun with the same name is idempotent, another name is refused.
+# ⛔ PORTABILITY: bash 3.2, POSIX awk/sed/grep, git. Runs identically on a stock Mac and on Linux.
+set -uo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || exit 2
+cd "$ROOT" || exit 2
+die() { printf 'bootstrap: %s\n' "$*" >&2; exit 2; }
 
-# 0) de-template (only when a project name is given AND this is still a pristine bedrock copy)
-if [ -n "$name" ] && [ -f MAINTAINING.md ]; then
-  echo "→ de-templating this bedrock copy into project '$name'…"
-  # ⛔ EVERYTHING bedrock-only goes, not three named files (REVIEW-2026-09.1): the reset INDEX.md
-  # below lists no record, so any decision record left behind fails MEMORY-ARCH in the child's
-  # first gate run — measured on a scratch child before this line existed.
-  rm -f MAINTAINING.md docs/tasks/BEDROCK-MAINTENANCE.md docs/tasks/REVIEW-2026-09.md
-  rm -rf docs/reviews
-  for f in docs/decisions/*.md; do
-    case "$(basename "$f")" in INDEX.md|TEMPLATE.md) ;; *) rm -f "$f" ;; esac
-  done
+# ── arguments ─────────────────────────────────────────────────────────────────────────────────
+mode=""; name=""; title=""; prefix=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --contributor) mode=contributor ;;
+    --maintainer)  mode=maintainer ;;
+    --title)  shift; title="${1:-}" ;;
+    --prefix) shift; prefix="${1:-}" ;;
+    -h|--help) sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -*) die "unknown option $1" ;;
+    *) [ -z "$name" ] || die "one project name only (got '$name' and '$1')"; name="$1" ;;
+  esac
+  shift
+done
 
-  cat > MEMORY.md <<SEED
-# MEMORY — resume pointer (layer A; overwrite-only)
+# ── preflight (nothing is written before this block ends) ───────────────────────────────────
+for t in git awk sed grep; do command -v "$t" >/dev/null 2>&1 || die "required tool missing: $t"; done
+[ -d .git ] || [ -f .git ] || die "$ROOT is not the root of a git clone"
+initialised=0; [ -f .bedrock/project ] && initialised=1
+pristine=0;    [ -f MAINTAINING.md ] && pristine=1
 
-> Answers ONE question: **what is next?** Nothing else belongs in it — see
-> \`MEMORY_ARCHITECTURE.md\` §6. If this file grows, something is being written into it
-> that belongs in another layer.
+if [ -z "$mode" ]; then
+  if [ -n "$name" ]; then mode=init
+  elif [ "$initialised" = 1 ]; then mode=contributor
+  elif [ "$pristine" = 1 ]; then
+    { echo "bootstrap: this is an uninitialised copy of the bedrock template. Give it a name:"
+      echo "    scripts/bootstrap.sh <project-name>          (make bootstrap NAME=<project-name>)"
+      echo "  Maintaining bedrock itself?  scripts/bootstrap.sh --maintainer"; } >&2
+    exit 2
+  else die "neither an initialised project (.bedrock/project) nor a pristine template copy (MAINTAINING.md); nothing to do"; fi
+fi
 
-## Current state (OVERWRITE this block each update — do not append)
+case "$mode" in
+  contributor)
+    git config core.hooksPath .githooks || die "git config failed"
+    chmod +x scripts/*.sh scripts/evidence scripts/handoff scripts/tests/*.sh knowledge-map/scripts/*.sh .githooks/pre-commit .githooks/commit-msg 2>/dev/null || true
+    echo "✓ git hooks activated (core.hooksPath=.githooks) for $(sed -n 's/^name = //p' .bedrock/project 2>/dev/null || echo 'this project'); nothing else touched"
+    exit 0 ;;
+  maintainer)
+    [ "$pristine" = 1 ] || die "--maintainer is for the bedrock template itself (MAINTAINING.md is absent here)"
+    git config core.hooksPath .githooks || die "git config failed"
+    chmod +x scripts/*.sh scripts/evidence scripts/handoff scripts/tests/*.sh knowledge-map/scripts/*.sh .githooks/pre-commit .githooks/commit-msg 2>/dev/null || true
+    echo "✓ git hooks activated (maintainer mode: no de-templating)"
+    bash scripts/check_doctrines.sh; exit ;;
+esac
 
-- next_action: replace \`ROADMAP.md\`; create your first task-tree (\`cp docs/tasks/TEMPLATE.md docs/tasks/<TREE-ID>.md\`) and register it in \`docs/TASK_TREE.md\`.
-- active_work_unit: _none yet_
-- latest_commit: _none yet_
-- in_flight_uncommitted: none.
-- blockers: none.
-SEED
+# init mode: validate everything, then check the ground
+printf '%s' "$name" | grep -Eq '^[A-Za-z][A-Za-z0-9_-]{0,63}$' \
+  || die "project name '$name' is not valid: a letter, then letters, digits, '-' or '_' (max 64) — it names the crate, the identity file and the work-unit prefix"
+[ -n "$title" ] || title="$name"
+case "$title" in *'`'*|*'\'*) die "the title may not contain a backquote or a backslash" ;; esac
+[ "${#title}" -le 120 ] || die "the title is longer than 120 characters"
+[ -n "$prefix" ] || prefix="$(printf '%s' "$name" | tr '[:lower:]_' '[:upper:]-' | tr -cd 'A-Z0-9-' | sed 's/^-*//; s/-*$//; s/--*/-/g')"
+printf '%s' "$prefix" | grep -Eq '^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$' \
+  || die "work-unit prefix '$prefix' is not valid: uppercase words joined by '-' (pass --prefix)"
 
-  cat > docs/decisions/INDEX.md <<'SEED'
+if [ "$initialised" = 1 ]; then
+  cur="$(sed -n 's/^name = //p' .bedrock/project)"
+  if [ "$cur" = "$name" ]; then
+    echo "already initialised as '$name' — re-installing the hooks only (idempotent)"
+    exec "$0" --contributor
+  fi
+  die "already initialised as '$cur'; renaming a project is a deliberate change with its own leaf, not a re-run (this call asked for '$name')"
+fi
+[ "$pristine" = 1 ] || die "this copy carries no MAINTAINING.md and no .bedrock/project: it is neither a pristine template nor an initialised project"
+if git rev-parse -q --verify HEAD >/dev/null 2>&1; then
+  [ -z "$(git status --porcelain --untracked-files=all)" ] \
+    || die "the working tree is not clean; this run rewrites tracked files and would silently include or discard uncommitted work. Commit or stash first."
+  first_commit=0
+else
+  first_commit=1   # a fresh `git init` (e.g. cargo-generate): the whole tree becomes the first commit
+fi
+
+# ── helpers: literal, mode-preserving edits; no sed -i, no regex on user text ────────────────
+count_literal() { awk -v o="$2" '{ s=$0; while ((i=index(s,o))>0) { c++; s=substr(s,i+length(o)) } } END{ print c+0 }' "$1"; }
+replace_literal() { # FILE OLD NEW — exactly one occurrence, or the run stops
+  local f="$1" old="$2" new="$3" n tmp
+  n="$(count_literal "$f" "$old")"
+  [ "$n" -eq 1 ] || die "internal: expected exactly one occurrence of '$old' in $f, found $n — nothing written"
+  tmp="$f.bootstrap.$$"; cp -p "$f" "$tmp" || die "cannot write $tmp"
+  awk -v o="$old" -v n="$new" '{ i=index($0,o); if (i>0) $0=substr($0,1,i-1) n substr($0,i+length(o)); print }' "$f" > "$tmp" && mv "$tmp" "$f" || die "edit of $f failed"
+}
+delete_between() { # FILE START-MARKER END-MARKER (inclusive, literal)
+  local f="$1" tmp="$1.bootstrap.$$"
+  cp -p "$f" "$tmp" && awk -v a="$2" -v b="$3" '{ if (!d && index($0,a)) { d=1 } if (!d) print; else if (index($0,b)) d=0 }' "$f" > "$tmp" && mv "$tmp" "$f" || die "edit of $f failed"
+}
+truncate_from() { # FILE LINE-PREFIX — drop that line and everything after it
+  local f="$1" tmp="$1.bootstrap.$$"
+  cp -p "$f" "$tmp" && awk -v a="$2" '{ if (index($0,a)==1) exit; print }' "$f" > "$tmp" && mv "$tmp" "$f" || die "edit of $f failed"
+}
+
+# ── 0) de-template: everything bedrock-only goes ────────────────────────────────────────────
+echo "→ initialising project '$name' (title: $title, work-unit prefix: $prefix)"
+rm -f MAINTAINING.md docs/tasks/BEDROCK-MAINTENANCE.md docs/tasks/REVIEW-2026-09.md
+rm -rf docs/reviews
+for f in docs/decisions/*.md; do case "$(basename "$f")" in INDEX.md|TEMPLATE.md) ;; *) rm -f "$f" ;; esac; done
+for f in AGENTS.md ROADMAP.md; do [ -f "$f" ] && delete_between "$f" "BEDROCK-MAINTAINER-NOTE:START" "BEDROCK-MAINTAINER-NOTE:END"; done
+source_version="$(cat DOCTRINE_VERSION 2>/dev/null || echo bedrock-scaffold)"
+today="$(date +%F)"
+
+cat > docs/decisions/INDEX.md <<'SEED'
 # Decision & Fact Records — Index (memory layer C)
 
 Durable, cross-cutting facts and decisions live here, one record per file (ADR-style). Every
@@ -59,52 +145,102 @@ record must be listed below (the MEMORY-ARCH doctrine check enforces it). New re
 | _none yet_ | | |
 SEED
 
-  # reset the Active Task Trees section (the workflow doc above it is preserved)
-  sed -i '/^## Active Task Trees/,$d' docs/TASK_TREE.md
-  cat >> docs/TASK_TREE.md <<'SEED'
+truncate_from docs/TASK_TREE.md "## Active Task Trees"
+cat >> docs/TASK_TREE.md <<SEED
 ## Active Task Trees
 
 | Tree | Status | Frontier (next leaf) | Owner |
 | --- | --- | --- | --- |
-| _none yet — seed your first tree from `ROADMAP.md`_ | | | |
+| [\`BOOTSTRAP\`](tasks/BOOTSTRAP.md) | \`done\` | \`.1\` — bootstrapped from bedrock; seed your first real tree from \`ROADMAP.md\` | repo-local |
 SEED
 
-  # strip the maintainer-only notes (bounded by BEDROCK-MAINTAINER-NOTE markers)
-  for f in AGENTS.md ROADMAP.md; do
-    [ -f "$f" ] && sed -i '/BEDROCK-MAINTAINER-NOTE:START/,/BEDROCK-MAINTAINER-NOTE:END/d' "$f"
-  done
-  echo "✓ de-templated (maintainer files removed; layer-A/C + tree index reset)"
+cat > CHANGELOG.md <<SEED
+# CHANGELOG.md
+
+## 0.1.0 — $today — bootstrapped from bedrock
+
+\`${prefix}-BOOTSTRAP-0001\` (leaf \`BOOTSTRAP.1\`). Project \`$name\` created from the bedrock discipline-spine
+template ($source_version): durable 4-layer memory, task-tree tracking, the strict commit workflow, and the
+mechanical doctrine enforcer are in place and enforced by git hooks + CI. No project code yet.
+SEED
+
+cat > DEV_NOTES.md <<SEED
+# DEV_NOTES.md
+
+Detailed technical notes — root cause, implementation, validation — per slice. The
+engineering-continuity surface (not the public docs). Newest first. A NEW dated lesson heading
+here must be promoted to \`docs/decisions/\` (or \`docs/knowledge/\`) or explicitly declined in its
+leaf — the \`LESSON-PROMOTION\` doctrine.
+
+## _(bootstrap)_ — project created from bedrock
+
+Repo created from the \`bedrock\` template ($source_version) by \`scripts/bootstrap.sh $name\`.
+SEED
+
+cat > LIVE_STATUS.md <<SEED
+# LIVE_STATUS.md — authoritative live progress tracker
+
+Rows use ONLY these four states: **Done · Mostly Done · In Progress · Not Started**.
+Review and update before every commit whenever actual closure or remaining scope changes;
+summarize the snapshot in every commit-workflow completion message.
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Discipline spine (from bedrock $source_version) | Done | memory architecture · task-trees · commit workflow · doctrine enforcement |
+| Roadmap seeded into task-trees | Not Started | replace \`ROADMAP.md\`, then create your first tree from \`docs/tasks/TEMPLATE.md\` |
+| _(your first milestone)_ | Not Started | — |
+SEED
+echo "✓ de-templated: maintainer files, reviews and decision records removed; live docs reset"
+
+# ── 1) the name, literally ───────────────────────────────────────────────────────────────────
+crate_line=""
+if [ -f crates/app/Cargo.toml ]; then
+  before="$(count_literal crates/app/Cargo.toml 'name = "app"')"
+  replace_literal crates/app/Cargo.toml 'name = "app"' "name = \"$name\""
+  after="$(count_literal crates/app/Cargo.toml 'name = "app"')"
+  grep -q "^name = \"$name\"\$" crates/app/Cargo.toml || die "crate rename did not take"
+  crate_line="crate renamed: \`grep -c '^name = \"app\"' crates/app/Cargo.toml\` → \`$before\` before, \`$after\` after (\`rc=1\`, grep's no-match status); \`grep -c '^name = \"$name\"'\` → \`1\` (\`rc=0\`)."
+  echo "✓ crate renamed to '$name'"
 fi
+replace_literal ROADMAP.md "# ROADMAP — _(PROJECT NAME)_" "# ROADMAP — $title"
+mkdir -p .bedrock
+cat > .bedrock/project <<SEED
+# .bedrock/project — this project's identity, written by scripts/bootstrap.sh (do not edit by hand).
+name = $name
+title = $title
+prefix = $prefix
+created = $today
+source = $source_version
+packs =
+SEED
+echo "✓ identity recorded in .bedrock/project (name=$name, prefix=$prefix)"
 
-# 1) activate the git hooks (E3 enforcement)
-git config core.hooksPath .githooks
-echo "✓ git hooks activated (core.hooksPath=.githooks)"
+# ── 2) hooks and modes ───────────────────────────────────────────────────────────────────────
+git config core.hooksPath .githooks || die "git config failed"
+chmod +x scripts/*.sh scripts/evidence scripts/handoff scripts/tests/*.sh knowledge-map/scripts/*.sh .githooks/pre-commit .githooks/commit-msg 2>/dev/null || true
+hooks_path="$(git config core.hooksPath)"
+echo "✓ git hooks activated (core.hooksPath=$hooks_path)"
 
-# 2) make the spine scripts executable
-chmod +x scripts/*.sh knowledge-map/scripts/*.sh .githooks/pre-commit .githooks/commit-msg 2>/dev/null || true
-echo "✓ scripts marked executable"
+# ── 3) the resume pointer, true for the first commit ─────────────────────────────────────────
+cat > MEMORY.md <<SEED
+# MEMORY — resume pointer (layer A; overwrite-only)
 
-# 3) set the project name (crate + roadmap title)
-crate_before="$(grep -c '^name = "app"' crates/app/Cargo.toml 2>/dev/null || true)"; crate_before="${crate_before:-0}"
-if [ -n "$name" ]; then
-  [ -f crates/app/Cargo.toml ] && sed -i "s/^name = \"app\"/name = \"$name\"/" crates/app/Cargo.toml || true
-  [ -f ROADMAP.md ] && sed -i "s/# ROADMAP — _(PROJECT NAME)_/# ROADMAP — $name/" ROADMAP.md || true
-  echo "✓ project name set to '$name'"
-fi
+> Answers ONE question: **what is next?** Nothing else belongs in it — see
+> \`MEMORY_ARCHITECTURE.md\` §6. If this file grows, something is being written into it
+> that belongs in another layer.
 
-# 3b) seed the leaf that OWNS the bootstrap itself (only on a fresh de-template).
-#     ⛔ WHY (BEDROCK-MAINTENANCE.2.7, measured on a trial clone): the crate rename above is a CODE
-#     change, so the user's very first commit — the one that records this bootstrap — was refused by
-#     TASK-TREE-OWNERSHIP and TASK-ACCEPTANCE with no owning leaf. The discipline is right; the
-#     template must therefore ship the leaf, carrying the evidence this run just produced.
-#     The enforcer lines are placeholders here and are filled in by step 5, after the Knowledge Map
-#     exists — running the enforcer before the map is regenerated fails on KNOWLEDGE-MAP (measured).
-if [ -n "$name" ] && [ ! -f docs/tasks/BOOTSTRAP.md ] && [ -f docs/tasks/TEMPLATE.md ]; then
-  gate_head="__GATE_HEAD__"; gate_tail="__GATE_TAIL__"; gate_rc="__GATE_RC__"   # filled by step 5
-  crate_after="$(grep -c '^name = "app"' crates/app/Cargo.toml 2>/dev/null || true)"; crate_after="${crate_after:-0}"
-  upper="$(printf '%s' "$name" | tr '[:lower:]-' '[:upper:]_' | tr -cd 'A-Z0-9_')"
-  today="$(date +%F)"
-  cat > docs/tasks/BOOTSTRAP.md <<LEAF
+## Current state (OVERWRITE this block each update — do not append)
+
+- next_action: replace \`ROADMAP.md\`; create your first task-tree (\`cp docs/tasks/TEMPLATE.md docs/tasks/<TREE-ID>.md\`) and register it in \`docs/TASK_TREE.md\`.
+- active_work_unit: \`BOOTSTRAP\` (its only leaf is done) — seed your first real tree from \`ROADMAP.md\`.
+- latest_commit: \`${prefix}-BOOTSTRAP-0001\` — the bootstrap commit (make it with the command bootstrap printed).
+- in_flight_uncommitted: none.
+- blockers: none.
+SEED
+
+# ── 4) the leaf that owns this bootstrap, with measured evidence ─────────────────────────────
+subject="${prefix}-BOOTSTRAP-0001 (leaf BOOTSTRAP.1): bootstrapped from bedrock"
+cat > docs/tasks/BOOTSTRAP.md <<LEAF
 # BOOTSTRAP: this project's bootstrap from the bedrock template
 
 ## Metadata
@@ -117,9 +253,10 @@ if [ -n "$name" ] && [ ! -f docs/tasks/BOOTSTRAP.md ] && [ -f docs/tasks/TEMPLAT
 
 ## Goal
 
-Record the one-time de-templating of this copy of bedrock ($(cat DOCTRINE_VERSION 2>/dev/null || echo 'bedrock-scaffold')) into
-project \`$name\`, performed by \`scripts/bootstrap.sh $name\`, with the evidence that run produced —
-so the first commit of this project passes the same gates every later commit will.
+Record the one-time initialisation of this copy of bedrock ($source_version) into project \`$name\`
+(title "$title", work-unit prefix \`$prefix\`), performed by \`scripts/bootstrap.sh $name\`, with the
+evidence that run measured — so the first commit of this project passes the same gates every later
+commit will.
 
 ## Non-Goals
 
@@ -129,71 +266,73 @@ so the first commit of this project passes the same gates every later commit wil
 
 - ID: \`BOOTSTRAP.1\`
   Status: \`done\`
-  Goal: de-template, rename the crate, install the hooks, regenerate the Knowledge Map, verify the enforcer.
+  Goal: de-template, set the name, record the identity, install the hooks, regenerate the Knowledge Map, judge the staged first commit.
 
   ### Acceptance Checklist (enforced by \`TASK-ACCEPTANCE\`)
 
-  - [x] **ROOT CAUSE (WHY + WHERE)** — a copy of bedrock carries the template's crate name and
-    maintainer files: \`grep -c '^name = "app"' crates/app/Cargo.toml\` → $crate_before before the run,
-    $crate_after after (\`rc=0\`); \`MAINTAINING.md\` and the maintainer tree are removed by the de-template step.
-  - [x] **ADDRESSED (verified)** — crate renamed to \`$name\`; hooks installed: \`git config core.hooksPath\`
-    → \`$(git config core.hooksPath)\` (\`rc=0\`); the Knowledge Map regenerated; the enforcer run inside this
-    bootstrap: \`$gate_head\` … \`$gate_tail\` (\`rc=$gate_rc\`).
-  - [x] **NO REGRESSION** — the same enforcer is the pre-commit hook: \`scripts/check_doctrines.sh\` →
-    \`$gate_tail\`, \`rc=$gate_rc\`; \`make gate\` is that command.
+  - [x] **ROOT CAUSE (WHY + WHERE)** — a copy of bedrock carries the template's maintainer files, its live-doc
+    history and the starter's placeholder name: \`ls MAINTAINING.md\` → present before this run (\`rc=0\`),
+    absent after (\`rc=2\`); the de-template step removed them. ${crate_line}
+  - [x] **ADDRESSED (verified)** — identity written: \`sed -n 's/^name = //p' .bedrock/project\` → \`$name\`
+    (\`rc=0\`); hooks installed: \`git config core.hooksPath\` → \`$hooks_path\` (\`rc=0\`); the Knowledge Map
+    regenerated; the enforcer over the STAGED index with this commit's subject: __GATE__
+  - [x] **NO REGRESSION** — the same enforcer is the pre-commit and commit-msg hook, so the first commit is
+    judged again by \`scripts/check_doctrines.sh\` exactly as measured here (\`rc=0\` expected; \`scripts/gate\` /
+    \`make gate\` re-run it anytime); __STAGED__ path(s) staged, all written by this run.
 
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
 | --- | --- | --- | --- |
-| — | \`BOOTSTRAP.1\` | \`done\` | the bootstrap itself; nothing further belongs here |
+| — | \`BOOTSTRAP.1\` | \`done\` | the bootstrap itself; nothing further belongs here — seed your first real tree from \`ROADMAP.md\` |
 
 ## Commit Log
 
-- \`$today\` — \`BOOTSTRAP.1\` — \`${upper}-BOOTSTRAP-0001\`: bootstrapped from bedrock.
+| Leaf | Commit subject or reference | Notes |
+| --- | --- | --- |
+| \`BOOTSTRAP.1\` | \`$subject\` | the first commit |
 LEAF
-  # register it: the placeholder row becomes the BOOTSTRAP row; the seeding hint stays as a note
-  sed -i "s/^| _none yet — seed your first tree from \`ROADMAP.md\`_ | | | |\$/| [\`BOOTSTRAP\`](tasks\/BOOTSTRAP.md) | \`done\` | \`.1\` — bootstrapped from bedrock; seed your first real tree from \`ROADMAP.md\` | repo-local |/" docs/TASK_TREE.md
-  sed -i "s|^- active_work_unit: _none yet_\$|- active_work_unit: \`BOOTSTRAP\` (done) — seed your first real tree from \`ROADMAP.md\`|" MEMORY.md
-  sed -i "s|^- latest_commit: _none yet_\$|- latest_commit: \`${upper}-BOOTSTRAP-0001\` — the bootstrap commit (bootstrap.sh printed the command; make it now)|" MEMORY.md
-  echo "✓ docs/tasks/BOOTSTRAP.md seeded with this run's evidence (owns the crate rename for the first commit)"
+echo "✓ docs/tasks/BOOTSTRAP.md seeded"
+
+# ── 5) the Knowledge Map, from the index: stage first, then generate ─────────────────────────
+git add -A || die "git add failed"
+if [ -f knowledge-map/scripts/gen_knowledge_map.sh ]; then
+  bash knowledge-map/scripts/gen_knowledge_map.sh > KNOWLEDGE_MAP.md || die "the Knowledge Map generator failed"
+  git add KNOWLEDGE_MAP.md
+  echo "✓ KNOWLEDGE_MAP.md generated from the staged sources"
 fi
 
-# 4) generate the derived Knowledge Map (after de-templating, so it reflects the reset)
-if [ -x knowledge-map/scripts/gen_knowledge_map.sh ]; then
-  knowledge-map/scripts/gen_knowledge_map.sh > "$(knowledge-map/scripts/gen_knowledge_map.sh --print-map-path)"
-  echo "✓ KNOWLEDGE_MAP.md generated"
-fi
-
-# 5) sanity: run the enforcer — and hand its verdict to the bootstrap leaf as evidence
-echo "→ running the doctrine enforcer…"
-gate_out="$(scripts/check_doctrines.sh 2>&1)" && gate_rc=0 || gate_rc=$?
+# ── 6) judge the STAGED index with the first commit's subject — the real verdict ─────────────
+staged_n="$(git diff --cached --name-only | wc -l | tr -d ' ')"
+replace_literal docs/tasks/BOOTSTRAP.md "__STAGED__" "$staged_n"
+replace_literal docs/tasks/BOOTSTRAP.md "__GATE__" "measured on the staged index before this sentence was written, and repeated by the hook: see below."
+git add docs/tasks/BOOTSTRAP.md
+printf '%s\n' "$subject" > "$ROOT/.bootstrap.subject"
+echo "→ running the doctrine enforcer over the staged index…"
+gate_out="$(bash scripts/check_doctrines.sh --message "$ROOT/.bootstrap.subject" 2>&1)"; gate_rc=$?
+rm -f "$ROOT/.bootstrap.subject"
 printf '%s\n' "$gate_out"
-if [ -f docs/tasks/BOOTSTRAP.md ] && grep -q '__GATE_HEAD__' docs/tasks/BOOTSTRAP.md; then
-  gate_head="$(printf '%s\n' "$gate_out" | grep -E '^=== doctrine enforcement' | head -1 || true)"
-  gate_tail="$(printf '%s\n' "$gate_out" | grep -E '^=== all doctrines green ===|breach|refusal' | tail -1 || true)"
-  sed -i "s|__GATE_HEAD__|${gate_head:-(no summary line)}|g; s|__GATE_TAIL__|${gate_tail:-(no verdict line)}|g; s|__GATE_RC__|$gate_rc|g" docs/tasks/BOOTSTRAP.md
-fi
-[ "$gate_rc" = 0 ] || { echo "enforcer reported a breach — fix it before your first commit"; exit 1; }
+gate_tail="$(printf '%s\n' "$gate_out" | grep -E '^=== (all doctrines green|[0-9]+ doctrine breach)' | tail -1)"
+replace_literal docs/tasks/BOOTSTRAP.md "measured on the staged index before this sentence was written, and repeated by the hook: see below." \
+  "\`scripts/check_doctrines.sh --message <subject>\` → \`${gate_tail:-(no summary line)}\` (\`rc=$gate_rc\`), over $staged_n staged path(s)."
+git add docs/tasks/BOOTSTRAP.md
+[ "$gate_rc" = 0 ] || { echo "bootstrap: the enforcer reported a breach on the staged first commit — fix it, then commit" >&2; exit 1; }
 
-cat <<'EOF'
+cat <<EOT
 
-bedrock is ready.
+bedrock is ready: project '$name' is initialised and its first commit is staged.
 
 Next:
-  0) Commit the bootstrap itself (its leaf docs/tasks/BOOTSTRAP.md carries the evidence):
-       git add -A
-       printf '%s\n' '<NAME>-BOOTSTRAP-0001 (leaf BOOTSTRAP.1): bootstrapped from bedrock' > git_message_brief.txt
+  0) Commit the bootstrap itself (everything is staged; its leaf docs/tasks/BOOTSTRAP.md carries the evidence):
+       printf '%s\\n' '$subject' > git_message_brief.txt
        git commit -F git_message_brief.txt && : > git_message_brief.txt
-     (the hooks run the enforcer; <NAME> = your project name in CAPITALS)
-  0) Read VISIBILITY.md and decide deliberately. This project is PUBLIC by default and
-     carries nothing confidential; if it must be private, change the declared posture
-     there and record why. Do it before the first push, not after.
-  1) Replace ROADMAP.md with your project's real roadmap.
-  2) Create your first task-tree:
-       cp docs/tasks/TEMPLATE.md docs/tasks/<TREE-ID>.md    # then fill it in
-       (register it in docs/TASK_TREE.md's Active Task Trees table)
-  3) Work its first leaf, then commit via COMMIT.md.
 
-Re-run the spine check anytime with:  make gate
-EOF
+  1) Read VISIBILITY.md and decide deliberately: this project is PUBLIC by default and carries
+     nothing confidential; if it must be private, change the declared posture there and record why.
+  2) Replace ROADMAP.md with your project's real roadmap.
+  3) Create your first task-tree:  cp docs/tasks/TEMPLATE.md docs/tasks/<TREE-ID>.md   (then register it
+     in docs/TASK_TREE.md's Active Task Trees table, and point MEMORY.md at it).
+  4) Work its first leaf, commit via COMMIT.md, and end every session with:  scripts/handoff
+
+Anyone who clones this project later runs only:  scripts/bootstrap.sh --contributor   (or: make hooks)
+EOT

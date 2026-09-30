@@ -1,5 +1,26 @@
 # CHANGELOG.md
 
+## 0.16.0 — 2026-09-30 — a bootstrap that cannot lie or break the project
+
+`BEDROCK-REVIEW-0006` (leaf `REVIEW-2026-09.5`).
+
+- ✅ **Validation before any write** (BK-04): the project name (`[A-Za-z][A-Za-z0-9_-]{0,63}`), the display
+  title (`--title`) and the work-unit prefix (`--prefix`, derived otherwise) are checked first; `x&y`, `a/b`,
+  `my.proj` and `Stitch CAD` are refused with exit 2 and nothing written.
+- ✅ **Literal, mode-preserving edits, no `sed -i`** (BR-10): every edit must change exactly one occurrence
+  or the run stops. The whole bootstrap runs under BSD `sed`/`awk` and bash 3.2 (the suite proves it).
+- ✅ **Evidence that is measured** (BK-04): the seeded `BOOTSTRAP` leaf cites real counts and the verdict of
+  the enforcer run **over the staged index with the first commit's subject** — the same judgement the hook
+  repeats. Bootstrap now stages everything itself.
+- ✅ **Explicit modes** (BK-18): `bootstrap.sh <name>` initialises; `--contributor` installs the hooks only
+  (what a later clone runs); `--maintainer` is for bedrock itself; no name in a pristine copy prints usage
+  and exits 2; `make bootstrap NAME=<name>` refuses an empty name. CI fails an uninitialised child.
+- ✅ **Preflight and a defined rerun** (BR-06, BR-12): a dirty tree is refused (a fresh `git init` with no
+  commit is allowed); the identity lives in `.bedrock/project`; a rerun with the same name is idempotent,
+  another name is refused. The child's `CHANGELOG.md`, `DEV_NOTES.md` and `LIVE_STATUS.md` start clean.
+- ✅ **The printed commit works as printed** (BR-11), and the README says what a later clone runs (BR-21).
+- Conformance suite: `arms: 58 pass / 2 xfail / 0 fail / 0 xpass (of 60)`.
+
 ## 0.15.0 — 2026-09-30 — context continuity as a guaranteed property: the pointer is true, and handoff proves it
 
 `BEDROCK-REVIEW-0005` (leaf `REVIEW-2026-09.10`), for the maintainer's requirement of 2026-09-30

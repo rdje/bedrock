@@ -21,6 +21,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Refuse an uninitialised copy of the template
+        # A repository created from the template but never bootstrapped still carries MAINTAINING.md
+        # and believes it is bedrock (BK-18). The template repository itself, and forks of it that keep
+        # its name, are exempt.
+        if: github.event.repository.name != 'bedrock'
+        run: |
+          if [ -f MAINTAINING.md ]; then
+            echo "::error::This repository was created from the bedrock template but never initialised. Run  scripts/bootstrap.sh <project-name>  and commit the result."
+            exit 1
+          fi
       - name: Run the doctrine enforcer on every commit this event introduces
         # Each commit is judged against its parent with its real message (BR-04). A push to a
         # new branch, or a manual run, has no known base: the driver then judges the tip only.
