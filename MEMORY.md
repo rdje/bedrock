@@ -6,8 +6,8 @@
 
 ## Current state (OVERWRITE this block each update — do not append)
 
-- next_action: `BEDROCK-MAINTENANCE.4.1` — after the push of 1.1.0: confirm the `book` workflow deployed the Guide at <https://rdje.github.io/bedrock/> and record it in the leaf (docs-only commit), then close the leaf; next candidate from `BEDROCK-MAINTENANCE.4`: evidence re-run in CI. Read `MAINTAINING.md` first.
-- active_work_unit: `BEDROCK-MAINTENANCE` → frontier leaf `BEDROCK-MAINTENANCE.4.1` (`active`); the review tree `REVIEW-2026-09` is done.
+- next_action: `BEDROCK-MAINTENANCE.4` — the enhancement loop after 1.1.0; first candidate: evidence re-run in CI (`evidence: rc=N cmd=…` lines re-executed, `rc` compared). Read `MAINTAINING.md` first, then the candidate list in `docs/tasks/BEDROCK-MAINTENANCE.md`. The Guide is live at <https://rdje.github.io/bedrock/>; a new doctrine, pack or migration must be named in `docs/book/src/` (`BOOK-COVERAGE`).
+- active_work_unit: `BEDROCK-MAINTENANCE` → frontier leaf `BEDROCK-MAINTENANCE.4` (`pending`); the Guide leaf (1.1.0) and the review tree `REVIEW-2026-09` are done.
 - latest_commit: `BEDROCK-MAINTENANCE-0018`.
 - in_flight_uncommitted: none.
 - blockers: none.

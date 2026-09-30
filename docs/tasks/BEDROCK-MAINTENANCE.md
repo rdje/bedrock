@@ -780,7 +780,7 @@ process.
   Commit: pending
 
 - ID: `BEDROCK-MAINTENANCE.4.1`
-  Status: `active`
+  Status: `done`
   Goal: a user guide for bedrock, as an mdBook (maintainer request 2026-09-30: *"document every aspect of
   BEDROCK for the user to read … walk the user into how bootstrap.sh and update_scaffold.sh work in detail,
   explain everything worth knowing"*). The root documents are rules and reference for agents and maintainers;
@@ -794,8 +794,8 @@ process.
   dropped from the book; a child carries neither the book nor its workflow (and gets the pack's skeleton when
   it selects the mdBook pack); the suite stays green; the book is served from GitHub Pages.
   Verification: see the checklist below and the Verification Log.
-  Commit: `BEDROCK-MAINTENANCE-0018` (the GitHub observation of the `book` workflow and the Pages URL is
-  recorded in a docs-only follow-up; the leaf closes then).
+  Commit: `BEDROCK-MAINTENANCE-0018` (b3bdb5c, tagged `v1.1.0`); the GitHub observation recorded by the docs-only
+  `BEDROCK-MAINTENANCE-0019`, which closed the leaf.
 
   ### Acceptance Checklist (enforced by `TASK-ACCEPTANCE`)
 
@@ -837,8 +837,8 @@ process.
 
 | Order | Leaf | Status | Why next |
 | --- | --- | --- | --- |
-| 1 | `BEDROCK-MAINTENANCE.4.1` | `active` | the user guide as an mdBook, with a coverage gate and GitHub Pages |
-| 2 | `BEDROCK-MAINTENANCE.4` | `pending` | the enhancement loop after 1.0.0 — pick the next candidate from its list (evidence re-run in CI first) |
+| 1 | `BEDROCK-MAINTENANCE.4` | `pending` | the enhancement loop after 1.0.0 — pick the next candidate from its list (evidence re-run in CI first) |
+| — | `BEDROCK-MAINTENANCE.4.1` | `done` | the bedrock Guide (mdBook) live at <https://rdje.github.io/bedrock/>, the `BOOK-COVERAGE` gate, the `book` workflow (1.1.0) |
 | — | `BEDROCK-MAINTENANCE.3` | `done` | the 2026-09-30 review closed in `docs/tasks/REVIEW-2026-09.md` (0.11.0 → 1.0.0) |
 | 2 | `BEDROCK-MAINTENANCE.2` | `active` | the ongoing transfer loop; pick a backlog item below |
 | — | `BEDROCK-MAINTENANCE.2.1` | `done` | README Stability Policy + the layer-A byte cap (0.2.0) |
@@ -892,6 +892,8 @@ Concrete candidates, each to become a `.2.x` leaf when worked:
 - None.
 
 ## Verification Log
+
+- `2026-09-30` — `.4.1` observed on GitHub for `b3bdb5c` (1.1.0): `doctrines` run `36762088861` → `enforce success`, `enforcer-selftest (ubuntu-latest) success`, `enforcer-selftest (macos-latest) success`; `book` run `36762088748` → `build success`, `deploy success`; `curl -s -o /dev/null -w '%{http_code}' https://rdje.github.io/bedrock/` → `200`, the title `Introduction - The bedrock Guide`, and `updating.html`, `bootstrap.html`, `gates.html`, `reference.html` each `200`. Tagged `v1.1.0`. Leaf closed.
 
 - `2026-09-30` — `.4.1`: the book built locally with mdBook 0.5.2 (`21` HTML pages); `BOOK-COVERAGE` green on the staged index and RED (`rc=1`, `never names the doctrine \`TABLE-ARITY-RATCHET\``) on a clone of the same tree with that name removed from every chapter — the suite arm `book_coverage_refuses_dropped_doctrine`; a bootstrapped child (`rust`, `claude`) carries no `docs/book`, no `book.yml`, no `MAINTAINING.md`, and its `check_book_coverage.sh` says `not the template itself` — the arm `child_carries_no_book`. The first full run was RED, `arms: 86 pass / 0 xfail / 2 fail / 0 xpass (of 88)`, both old-child upgrade arms: the migration 0004 fix's first form exited `1` when nothing had moved; corrected, the two arms pass alone (`--only`, `1 pass` each) and the full suite is `88 pass` under bash 5.3 and bash 3.2 (`rc=0` both). GitHub Pages was not yet enabled on `rdje/bedrock` when this was written (`gh api repos/rdje/bedrock/pages` → `404`); it is enabled with `build_type=workflow` before the push.
 
