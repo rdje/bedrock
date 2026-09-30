@@ -54,13 +54,28 @@ if [ -n "$RANGE" ]; then
   git rev-parse --verify -q "$from^{commit}" >/dev/null || { printf 'check_doctrines: REFUSED — %s is not a commit\n' "$from" >&2; exit 2; }
   shas="$(git rev-list --reverse "$from..$to" 2>/dev/null)" || { printf 'check_doctrines: REFUSED — git rev-list %s failed\n' "$RANGE" >&2; exit 2; }
   [ -n "$shas" ] || { printf '=== range %s introduces no commit ===\n' "$RANGE"; exit 0; }
+  # ⛔ THE CONTRACT EPOCH: commits at or before `ci_range_since` (in the TIP's .doctrine/config) were judged
+  #   by the gate they shipped with and are not re-judged by today's. Set once, in a governed change, when
+  #   a contract lands (bedrock: 1.0.0). Measured on the first push of 1.0.0: sixteen commits, fifteen of
+  #   them pre-contract, all refused by a gate that did not exist when they were made.
+  epoch="$(git show "$to:.doctrine/config" 2>/dev/null | grep -vE '^[[:space:]]*(#|$)' | awk -F'=' '{ k=$1; sub(/^[ \t]+/,"",k); sub(/[ \t]+$/,"",k); if (k=="ci_range_since") { v=$2; sub(/^[ \t]+/,"",v); sub(/[ \t]+$/,"",v); print v } }' | tail -1)"
+  skipped=0
+  if [ -n "$epoch" ]; then
+    epoch_sha="$(git rev-parse --verify -q "$epoch^{commit}" 2>/dev/null)" || { printf 'check_doctrines: REFUSED — ci_range_since=%s in .doctrine/config is not a commit\n' "$epoch" >&2; exit 2; }
+    kept=""
+    for sha in $shas; do
+      if git merge-base --is-ancestor "$sha" "$epoch_sha" 2>/dev/null; then skipped=$((skipped+1)); else kept="$kept $sha"; fi
+    done
+    shas="$kept"
+    [ "$skipped" -eq 0 ] || printf '=== %d commit(s) at or before the contract epoch %s (.doctrine/config ci_range_since) are not re-judged ===\n' "$skipped" "$(git rev-parse --short "$epoch_sha")"
+  fi
   bad=0; n=0; exc=0
   for sha in $shas; do
     n=$((n+1)); printf '\n##### commit %s — %s\n' "$(git rev-parse --short "$sha")" "$(git log -1 --format=%s "$sha" | cut -c1-100)"
     if git log -1 --format=%B "$sha" | git interpret-trailers --parse 2>/dev/null | grep -qi '^Spine-Exception:'; then exc=$((exc+1)); fi
     bash "$SELF" --commit "$sha" || bad=$((bad+1))
   done
-  printf '\n=== range %s: %d commit(s), %d failing, %d with a Spine-Exception ===\n' "$RANGE" "$n" "$bad" "$exc"
+  printf '\n=== range %s: %d commit(s) judged, %d failing, %d with a Spine-Exception, %d before the epoch ===\n' "$RANGE" "$n" "$bad" "$exc" "$skipped"
   [ "$bad" -eq 0 ]; exit
 fi
 

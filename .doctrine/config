@@ -10,3 +10,7 @@ memory_pointer_byte_cap = 7168
 # The landing page (README.md) — README_POLICY.md: tighten both after your own review-and-trim.
 readme_line_cap = 300
 readme_byte_cap = 16384
+# The contract epoch: CI (`check_doctrines.sh --range`) does not re-judge commits at or before this one —
+# they were judged by the gate they shipped with. Set it once when a contract lands. A child created from
+# bedrock leaves it empty: its whole history is under the contract it received.
+ci_range_since = 0f471da77014966cd1f94aec26bf2e177bb4e33f

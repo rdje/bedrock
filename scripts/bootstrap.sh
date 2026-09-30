@@ -247,6 +247,11 @@ install_pack() { # $1 = kind/name
 for h in $(printf '%s' "$HARNESS_PACKS" | tr ',' ' '); do install_pack "harness/$h"; done
 rm -rf packs
 replace_literal ROADMAP.md "# ROADMAP — _(PROJECT NAME)_" "# ROADMAP — $title"
+# the contract epoch is bedrock's own commit: a child's whole history is under the contract it receives
+if [ -f .doctrine/config ] && grep -q '^ci_range_since = .' .doctrine/config; then
+  t=".doctrine/config.bootstrap.$$"; cp -p .doctrine/config "$t"
+  awk '/^ci_range_since = / { print "ci_range_since ="; next } { print }' .doctrine/config > "$t" && mv "$t" .doctrine/config || die "edit of .doctrine/config failed"
+fi
 if [ "$VISIBILITY" = private ] && [ -f VISIBILITY.md ]; then
   replace_literal VISIBILITY.md "> **Declared posture: PUBLIC.**" "> **Declared posture: PRIVATE.** (declared at setup on $today; record the reason and the authority in \`docs/decisions/\`.)"
 fi

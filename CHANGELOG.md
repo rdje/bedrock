@@ -1,5 +1,22 @@
 # CHANGELOG.md
 
+## 1.0.1 — 2026-09-30 — what the first push showed: CI judges from the contract epoch on
+
+`BEDROCK-REVIEW-0011` (leaf `REVIEW-2026-09.9.1`). The first GitHub run of 1.0.0 was red in two jobs, both
+for reasons the local runs could not show.
+
+- 🔴 **`enforce` re-judged fifteen pre-contract commits** with the 1.0.0 gate and refused them all. ✅ The
+  driver's `--range` now honours a **contract epoch**, `ci_range_since` in the tip's `.doctrine/config`:
+  commits at or before it were judged by the gate they shipped with. bedrock's epoch is the 1.0.0 commit.
+- ✅ **A child never inherits that epoch**: bootstrap empties it, migration 0007 empties it in an upgraded
+  child — caught by the suite before the push (a child's CI range refused an epoch it could not resolve).
+- 🔴 **The macOS self-test failed two arms** that bootstrap children from bedrock's 0.4.0 and 0.6.1: their old
+  bootstrap is GNU-sed-only. ✅ Those arms run only where GNU sed exists; everything else on macOS was green.
+- `docs/REPOSITORY_SETTINGS.md` gives the exact branch-protection command and how to push afterwards.
+- Conformance suite: `arms: 86 pass / 0 xfail / 0 fail / 0 xpass (of 86)`.
+- For children: nothing to do; `ci_range_since` stays empty unless you adopt a stricter contract later and
+  want CI to start judging from that commit.
+
 ## 1.0.0 — 2026-09-30 — the review is closed: the maintainer's guide, the NEUTRALITY gate, CI on Linux and macOS
 
 `BEDROCK-REVIEW-0010` (leaf `REVIEW-2026-09.9`, the last of the tree). Every item of the consolidated review

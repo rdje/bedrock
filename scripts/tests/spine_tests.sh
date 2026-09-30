@@ -124,6 +124,7 @@ wizard_decline_writes_nothing           req    SETUP
 new_project_local                       req    SETUP
 add_pack_later                          req    NT-01
 bedrock_itself_green_in_ci_mode         req    NT-14
+ci_range_respects_contract_epoch        req    BR-04
 "
 
 if [ "$LIST" = 1 ]; then
@@ -628,6 +629,7 @@ arm_bootstrap_fresh_git_init_allowed() {
 # ── updater arms: real children from bedrock's own history (maintainer-only: need that history) ──
 old_child() { # $1 = bedrock revision → rebuild $T as a child created from that revision, bootstrapped and committed
   [ -f "$SUITE_ROOT/MAINTAINING.md" ] || return 3
+  sed --version >/dev/null 2>&1 || return 3      # the OLD bootstrap used GNU-only `sed -i` (BR-10): no GNU sed, no old child
   git -C "$SRC_REPO" cat-file -e "$1^{commit}" 2>/dev/null || return 3
   rm -rf "$T"; mkdir -p "$T"
   git -C "$SRC_REPO" archive "$1" | tar -x -C "$T" || return 1
@@ -663,6 +665,7 @@ arm_updater_child_0_6_1_upgrades() {
   old_child 340fe2f; rc=$?; [ "$rc" -eq 3 ] && return 0; [ "$rc" -eq 0 ] || return 1
   upgrade_and_commit || return 1
   green && [ "$(cat DOCTRINE_VERSION)" = "$(cat "$SRC_REPO/DOCTRINE_VERSION")" ] && grep -q 'source ' docs/tasks/UPDATE-*.md \
+    && grep -q '^ci_range_since =$' .doctrine/config \
     && gate_ci HEAD && green
 }
 arm_updater_never_overwrites_modified() {
@@ -803,6 +806,18 @@ arm_bedrock_itself_green_in_ci_mode() {
   ( cd "$SRC_REPO" && for c in scripts/check_neutrality.sh scripts/check_manifest.sh scripts/check_memory_architecture.sh; do
       SPINE_AFTER=HEAD SPINE_BEFORE=HEAD^ bash "$c" || exit 1; done ) > "$T/.self.log" 2>&1; rc=$?
   [ "$rc" -eq 0 ] && grep -q 'NEUTRALITY: OK' "$T/.self.log" && grep -q 'MANIFEST: OK' "$T/.self.log"
+}
+
+arm_ci_range_respects_contract_epoch() {
+  # a commit before the epoch is not re-judged; one after it is
+  base="$(git rev-parse HEAD)"
+  code_change; git add -A; commit_nohooks 'DEMO-APP-0002: unowned, pre-contract' || return 1
+  pre="$(git rev-parse HEAD)"
+  printf '\nci_range_since = %s\n' "$pre" >> .doctrine/config
+  good_leaf > docs/tasks/FEAT.md; point_to DEMO-APP-0003 '`FEAT` → frontier leaf `FEAT.1` (`active`)'; git add -A
+  commit_hooks 'DEMO-APP-0003 (leaf FEAT.1): record the epoch' || return 1
+  OUT="$(bash scripts/check_doctrines.sh --range "$base..HEAD" 2>&1)"; RC=$?
+  green && has '1 before the epoch' && has '1 commit(s) judged'
 }
 
 # ── the runner ────────────────────────────────────────────────────────────────────────────────

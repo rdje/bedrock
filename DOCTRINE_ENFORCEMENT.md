@@ -14,7 +14,8 @@ every human, identically.
 - **E3 — git hook.** `.githooks/pre-commit` calls the enforcer on the index; `.githooks/commit-msg`
   calls it again with the message. Activate once per clone: `git config core.hooksPath .githooks`.
 - **E4 — CI.** The same enforcer runs in CI (`.github/workflows/doctrines.yml`) **on every commit
-  the push or pull request introduces**, each judged against its parent, with its real message —
+  the push or pull request introduces** after the contract epoch (`ci_range_since` in
+  `.doctrine/config`; a child has none), each judged against its parent, with its real message —
   so a locally `--no-verify`'d hook still fails the build. A second job runs the enforcer's own
   tests (`scripts/tests/spine_tests.sh`, every `--self-test`, the probe drivers, shellcheck).
 

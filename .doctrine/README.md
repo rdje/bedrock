@@ -12,7 +12,7 @@ turns a portable standard into a fork of it — that is what these seams exist t
 | `handoff_ignore` | `scripts/handoff` | shell globs of session processes the hand-off census ignores (harness packs append theirs). Read from the working tree. |
 | `harness_adapters` | `MEMORY-ARCH` | the files a harness auto-reads instead of `AGENTS.md`; each one present must point at `AGENTS.md`. |
 | `evidence_tokens.txt` | `TASK-ACCEPTANCE` | one extended regular expression per line: **your** tools' output signatures, ADDED to the universal defaults. Absent ⇒ defaults only. |
-| `config` | `MEMORY-ARCH`, `README-STABILITY` | `key = value` settings: `memory_pointer_line_cap`, `memory_pointer_byte_cap`, `readme_line_cap`, `readme_byte_cap`. Absent ⇒ the built-in defaults (50 / 7168 / 300 / 16384). |
+| `config` | `MEMORY-ARCH`, `README-STABILITY`, the driver's `--range` | `key = value` settings: `memory_pointer_line_cap`, `memory_pointer_byte_cap`, `readme_line_cap`, `readme_byte_cap` (absent ⇒ 50 / 7168 / 300 / 16384); `ci_range_since` — the contract epoch, a commit at or before which CI does not re-judge history (empty in a child: its whole history is under the contract). |
 
 Blank lines and `#` comments are ignored in all of them.
 
