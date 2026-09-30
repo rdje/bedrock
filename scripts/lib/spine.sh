@@ -169,3 +169,64 @@ $1
 SPINE_EOF
   return 0
 }
+
+# ── governance: everything is governed except declared documentation (REVIEW-2026-09.4) ─────
+# ⛔ Deny-by-default (NT-03). The reviewed tree classified code by an allow-list of Rust paths, so
+#    Dart, Perl and Julia sources, the hooks, the workflows and `.doctrine/` itself passed the
+#    ownership gates unjudged. Here a path is exempt only if it is DOCUMENTATION — Markdown, plain
+#    text, licence/notice files, images, `.gitignore` — or declared so by the project in
+#    `.doctrine/docs_paths.txt` (one ERE per line, read from BEFORE). The SPINE SET is governed
+#    whatever a project declares: a project cannot exempt the gate that judges it (BK-05).
+SPINE_DOCS_DEFAULT_RE='\.(md|markdown|txt|rst|adoc)$|(^|/)(LICENSE|LICENCE|COPYING|NOTICE|AUTHORS|CHANGELOG)([.-][A-Za-z0-9.-]*)?$|^\.gitignore$|\.(png|jpe?g|gif|svg|ico|webp)$'
+SPINE_SET_RE='^\.githooks/|^\.github/workflows/|^\.doctrine/|^\.bedrock/|^scripts/(check_[A-Za-z0-9_-]+\.sh|check_doctrines\.project\.sh|gate|run|evidence|handoff|bootstrap\.sh|update_scaffold\.sh)$|^scripts/lib/|^scripts/tests/|^knowledge-map/scripts/|^DOCTRINE_VERSION$|(^|/)Makefile$'
+spine_load_docs_re() { # sets SPINE_DOCS_RE from BEFORE (+ the repair exception); refuses at top level on an invalid entry
+  local lines
+  SPINE_DOCS_RE="$SPINE_DOCS_DEFAULT_RE"
+  if spine_before_has .doctrine/code_paths.txt; then
+    if [ -n "$(spine_touched_paths | grep -vE '^\.doctrine/|\.md$' || true)" ]; then
+      spine_refuse ".doctrine/code_paths.txt is no longer read: governance is deny-by-default (everything but documentation). Delete it, and declare extra DOCUMENTATION in .doctrine/docs_paths.txt, in a change that touches only .doctrine/ and documentation"
+    fi
+  fi
+  lines="$(spine_config_file docs_paths.txt)"
+  [ -n "$lines" ] || return 0
+  if ! spine_re_from_lines "$lines"; then
+    if [ -z "$(spine_touched_paths | grep -vE '^\.doctrine/|\.md$' || true)" ]; then
+      lines="$(spine_read .doctrine/docs_paths.txt 2>/dev/null | grep -vE '^[[:space:]]*(#|$)' || true)"
+      spine_re_from_lines "$lines" || spine_refuse ".doctrine/docs_paths.txt still holds an invalid regular expression ('$SPINE_BAD_RE')"
+    else
+      spine_refuse ".doctrine/docs_paths.txt as of the last commit holds an invalid regular expression ('$SPINE_BAD_RE'); repair it in a change that touches only .doctrine/ and documentation"
+    fi
+  fi
+  [ -z "$SPINE_RE" ] || SPINE_DOCS_RE="$SPINE_DOCS_DEFAULT_RE|$SPINE_RE"
+}
+spine_governed_paths() { # every touched path (both sides of a rename) that is governed; needs spine_load_docs_re first
+  spine_touched_paths | { while IFS= read -r p; do
+      [ -n "$p" ] || continue
+      if printf '%s\n' "$p" | grep -qE "$SPINE_SET_RE"; then printf '%s\n' "$p"; continue; fi
+      printf '%s\n' "$p" | grep -qE "$SPINE_DOCS_RE" || printf '%s\n' "$p"
+    done; }
+}
+
+# ── the commit message: subject, the leaf it names, trailers, the exception ─────────────────
+spine_msg_text()    { git stripspace --strip-comments < "$1" 2>/dev/null; }
+spine_msg_subject() { spine_msg_text "$1" | head -1; }
+spine_msg_leaf()    { # the ONE `(leaf <TREE>.<n…>)` in the subject; prints the id, or nothing
+  spine_msg_subject "$1" | grep -oE '\(leaf [A-Za-z][A-Za-z0-9_-]*\.[0-9]+(\.[0-9]+)*[a-z]?\)' | sed 's/^(leaf //; s/)$//'
+}
+spine_msg_trailers() { # "key<TAB>value" per trailer, keys lower-cased (git's own parser, not a line scan)
+  git interpret-trailers --parse < "$1" 2>/dev/null | awk -F': ' 'NF>=2 { k=tolower($1); sub(/^[^:]*: /,""); print k "\t" $0 }'
+}
+spine_msg_exception() { # the Spine-Exception reason, or nothing
+  spine_msg_trailers "$1" | awk -F'\t' '$1=="spine-exception" && $2 ~ /[^[:space:]]/ { print $2; exit }'
+}
+
+# ── task-tree leaves ─────────────────────────────────────────────────────────────────────────
+spine_leaf_bounds() { # $1 = file, $2 = leaf id → "start end" (1-based, inclusive) of the leaf's section, or nothing
+  awk -v id="$2" '
+    { if (start && ($0 ~ /^- ID:/ || $0 ~ /^## /)) { print start, NR-1; done = 1; exit }
+      if (!start && $0 ~ ("^- ID: `" id "`[[:space:]]*$")) start = NR }
+    END { if (start && !done) print start, NR }' "$1"
+}
+spine_leaf_status() { # $1 = file, $2 = start, $3 = end → the leaf's Status value (first `Status: \`…\`` line in range)
+  sed -n "${2},${3}p" "$1" | grep -m1 -oE 'Status: `[^`]+`' | sed 's/Status: `//; s/`$//'
+}

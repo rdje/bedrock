@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# scripts/evidence — run a command and print ONE stamped, tool-neutral evidence line (NT-04).
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+#   scripts/evidence [-n <lines>] -- <command> [args…]
+#
+# Prints, on stdout:
+#   evidence: rc=<exit code> cmd="<command>" out-sha256=<first 16 hex of the combined output> lines=<count>
+# followed by the last <lines> (default 5) lines of the command's combined output, each prefixed
+# with "  | ". Exits with the command's own exit code, so it can be used in place of the command.
+#
+# Paste the `evidence:` line into an acceptance box, inside backticks. It is the same shape for any
+# language and any tool — `prove`, `pytest`, `go test`, `dart test`, `cargo test`, a shell script —
+# and CI can re-run `cmd` and compare `rc`. Honest limit: the line can be typed by hand; its value
+# is one shape for every ecosystem and a command a reviewer can re-run.
+set -uo pipefail
+n=5
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n) shift; n="${1:-5}" ;;
+    --) shift; break ;;
+    -h|--help) sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) break ;;
+  esac
+  shift
+done
+[ $# -gt 0 ] || { echo "usage: scripts/evidence [-n <lines>] -- <command> [args…]" >&2; exit 2; }
+out="$(mktemp)"; trap 'rm -f "$out"' EXIT
+"$@" > "$out" 2>&1; rc=$?
+cmd="$*"; cmd="${cmd//\\/\\\\}"; cmd="${cmd//\"/\\\"}"
+if command -v shasum >/dev/null 2>&1; then sum="$(shasum -a 256 "$out" | cut -c1-16)"
+elif command -v sha256sum >/dev/null 2>&1; then sum="$(sha256sum "$out" | cut -c1-16)"
+else sum="$(cksum "$out" | cut -d' ' -f1)"; fi
+printf 'evidence: rc=%s cmd="%s" out-sha256=%s lines=%s\n' "$rc" "$cmd" "$sum" "$(wc -l < "$out" | tr -d ' ')"
+tail -n "$n" "$out" | sed 's/^/  | /'
+exit "$rc"

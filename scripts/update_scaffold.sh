@@ -70,6 +70,7 @@ NEUTRAL=(
   scripts/check_docpaths.sh
   scripts/check_task_tree_ownership.sh
   scripts/check_commit_message.sh
+  scripts/evidence
   scripts/lib/spine.sh
   scripts/tests/spine_tests.sh
   .github/workflows/doctrines.yml
@@ -93,6 +94,8 @@ NEUTRAL=(
 SEED_ONCE=(
   VISIBILITY.md
   .doctrine/config
+  .doctrine/docs_paths.txt
+  .doctrine/agent_identities
 )
 
 # ⛔ Refuse on a dirty tree, and this is the load-bearing guard rather than a courtesy.

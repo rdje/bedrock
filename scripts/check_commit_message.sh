@@ -1,41 +1,83 @@
 #!/usr/bin/env bash
-# COMMIT-MESSAGE — the subject is id-shaped and the message carries no agent attribution trailer.
+# COMMIT-MESSAGE — the subject is a work-unit id, and the message carries no agent attribution.
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
 #   scripts/check_commit_message.sh [<message-file>]      (or SPINE_COMMIT_MSG set by the driver)
 #
-# Evaluated wherever a message EXISTS: the commit-msg hook (locally) and CI (per commit, so a
-# --no-verify'd message is judged too — MEMORY_ARCHITECTURE.md §9 promised that and nothing did
-# it, BK-13/BR-21). In the pre-commit hook there is no message yet, and the check says so instead
-# of pretending: NOT EVALUATED is printed, not a verdict.
+# Evaluated wherever a message EXISTS: the commit-msg hook and CI, per commit — so a message that
+# bypassed the hook is judged anyway. Without a message it says NOT EVALUATED.
 #
-# The subject is read after `git stripspace --strip-comments`, exactly as git will store it, so a
-# message whose first line is blank (which git removes) is judged on its real subject (BK-11).
+# THE SUBJECT starts with a work-unit id: `<PREFIX>-…-<NNNN>` (`DEMO-APP-0002`, `SEED-0001`), the
+# scheme COMMIT.md names. The reviewed rule accepted any identifier-shaped word (`hello` passed,
+# BR-21). The subject is read after `git stripspace --strip-comments`, exactly as git stores it,
+# so a leading blank line (which git removes) is not a defect (BK-11). A merge commit's subject
+# is git's own and is exempt; the root commit is never reached with a message.
 #
-# NO AGENT TRAILERS (COMMIT.md): a commit message ends with its own last line. The shapes refused
-# here are the known agent-attribution ones; a human co-author's `Co-Authored-By:` is not matched.
-# (REVIEW-2026-09.4 replaces the pattern with trailer parsing and `.doctrine/agent_identities`.)
+# NO AGENT TRAILERS (COMMIT.md): a commit message ends with its own last line. Trailers are read
+# with git's parser (`git interpret-trailers --parse`), never by scanning body text, and an AGENT
+# is recognised by DATA, not by a vendor list in this script (NT-09): `.doctrine/agent_identities`
+# holds `address <ERE>` lines matched against the e-mail and `name <ERE>` lines matched against the
+# whole name. The built-in default is the bot addresses only, so a HUMAN whose first name is
+# Claude, Gemini or Cursor is never refused (BK-11: `Co-Authored-By: Claude Martin <…@example.fr>`).
+# Any attribution key counts: Co-Authored-By, Co-Developed-By, Assisted-By, Generated-By, …
 set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib/spine.sh"; spine_init COMMIT-MESSAGE
+T="$(spine_tmp)"
 
 f="${1:-${SPINE_COMMIT_MSG:-}}"
 [ -n "$f" ] || { spine_ok "NOT EVALUATED — no commit message in this context (the commit-msg hook and CI supply one)"; exit 0; }
 [ -r "$f" ] || spine_refuse "message file $f is unreadable"
-msg="$(git stripspace --strip-comments < "$f" 2>/dev/null)" || spine_refuse "git stripspace failed"
-subject="$(printf '%s\n' "$msg" | head -1)"
+spine_msg_text "$f" > "$T/msg" || spine_refuse "git stripspace failed"
+subject="$(head -1 "$T/msg")"
 fail=0
-if ! printf '%s' "$subject" | grep -Eq '^[A-Za-z][A-Za-z0-9._-]+'; then
-  spine_fail "subject must begin with an identifier-shaped work-unit id — got: '$subject'"
-  spine_fail "  e.g. '<PROJECT>-<AREA>-<NNNN> (leaf <TREE>.<n>): <summary>'"
+
+if [ "${SPINE_MERGE:-0}" != 1 ]; then
+  if ! printf '%s\n' "$subject" | grep -Eq '^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*-[0-9]{4,}([^0-9A-Za-z]|$)'; then
+    spine_fail "the subject must start with a work-unit id such as PROJ-AREA-0007 — got: '$subject'"
+    spine_fail "  shape: '<PROJECT>-<AREA>-<NNNN> (leaf <TREE>.<n>): <summary>'  (COMMIT.md)"
+    fail=1
+  fi
+fi
+
+# agent identities: built-in bot addresses, plus the project's data file (as of the last commit)
+ADDR_RE='noreply@anthropic\.com$|noreply@openai\.com$|noreply@google\.com$|copilot@users\.noreply\.github\.com$'
+NAME_RE=''
+ids="$(spine_config_file agent_identities)"
+if [ -n "$ids" ]; then
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    kind="${line%% *}"; re="${line#* }"; re="${re#"${re%%[! ]*}"}"
+    spine_re_valid "$re" || spine_refuse ".doctrine/agent_identities holds an invalid regular expression: '$re'"
+    case "$kind" in
+      address) ADDR_RE="$ADDR_RE|$re" ;;
+      name)    NAME_RE="${NAME_RE:+$NAME_RE|}$re" ;;
+      *) spine_refuse ".doctrine/agent_identities: a line is 'address <ERE>' or 'name <ERE>', not '$line'" ;;
+    esac
+  done <<IDS
+$ids
+IDS
+fi
+
+spine_msg_trailers "$f" > "$T/trailers.tsv"
+while IFS=$'\t' read -r key value; do
+  case "$key" in co-authored-by|co-developed-by|assisted-by|generated-by|authored-by|reviewed-by|signed-off-by) ;; *) continue ;; esac
+  email="$(printf '%s' "$value" | grep -oE '<[^>]*>' | tr -d '<>' | tr 'A-Z' 'a-z')"
+  name="$(printf '%s' "$value" | sed 's/[[:space:]]*<.*$//')"
+  hit=0
+  [ -n "$email" ] && printf '%s\n' "$email" | grep -qiE "$ADDR_RE" && hit=1
+  [ -n "$NAME_RE" ] && printf '%s\n' "$name" | grep -qiE "^($NAME_RE)$" && hit=1
+  if [ "$hit" = 1 ]; then
+    spine_fail "the message attributes an AGENT in a trailer, which this repository forbids (COMMIT.md): $key: $value"
+    spine_fail "  A commit message ends with its own last line. Remove the trailer and commit again."
+    fail=1
+  fi
+done < "$T/trailers.tsv"
+# non-trailer attribution shapes some harnesses add as body text
+if grep -iEq '^(🤖 )?generated with (\[|[A-Za-z])|^claude-session:' "$T/msg"; then
+  spine_fail "the message carries a harness attribution line ('Generated with …' / 'claude-session:'), which this repository forbids (COMMIT.md)"
   fail=1
 fi
-AGENT_TRAILER_RE='^(co-authored-by|co-developed-by|assisted-by|generated-by):.*(claude|codex|gemini|copilot|chatgpt|openai|cursor|aider|noreply@anthropic|noreply@openai|noreply@google)|^claude-session:|^(generated with|🤖 generated with) |^[[:space:]]*🤖 '
-if printf '%s\n' "$msg" | grep -iEq "$AGENT_TRAILER_RE"; then
-  spine_fail "the message carries an agent/tool attribution trailer, which this repository forbids (COMMIT.md):"
-  printf '%s\n' "$msg" | grep -iE "$AGENT_TRAILER_RE" | sed 's/^/    /' >&2
-  spine_fail "  A commit message ends with its own last line. Remove the trailer and commit again."
-  fail=1
-fi
+
 [ "$fail" -eq 0 ] || exit 1
 spine_ok "OK — subject '$(printf '%s' "$subject" | cut -c1-60)'"
 exit 0

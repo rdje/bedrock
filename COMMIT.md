@@ -13,18 +13,21 @@ When the completed work belongs to a task-tree leaf (a node under `docs/tasks/`)
 - Update the owning `docs/tasks/<TREE>.md`: leaf status, verification log, commit log,
   frontier, decisions, blockers as applicable.
 - Update `docs/TASK_TREE.md` (the Active Task Trees index) only if the frontier changes.
-- The commit subject or first body line names the leaf ID alongside the work-unit id,
-  e.g. `MYPROJ-AREA-0007 (leaf FEATURE-X.2): <summary>`.
-- **One commit per completed leaf** before selecting another leaf.
+- The commit **subject** names the leaf ID alongside the work-unit id, and exactly one:
+  `MYPROJ-AREA-0007 (leaf FEATURE-X.2): <summary>`. The gates bind the change to that leaf.
+- An open leaf may own several commits (each adds its commit-log row and evidence to the leaf);
+  a leaf already `done` may own none — open a child leaf for a follow-up.
 
-**Code-change doctrine (binding, non-negotiable):** it is strictly forbidden to make ANY
-code change (Rust sources, `Cargo.toml`, build scripts, generated artifacts, config that
-alters behavior) unless it is first tracked/owned by a task-tree leaf. Create/extend the
-leaf, implement only that leaf, then run this workflow.
+**Ownership doctrine (binding, non-negotiable):** every path except documentation is governed —
+sources in any language, build files, hooks, workflows, `.doctrine/`, generated artifacts,
+anything that alters behaviour — and lands only when a task-tree leaf owns it **in the same
+commit**, with that leaf's checklist evidence new in the commit. Create/extend the leaf,
+implement only that leaf, then run this workflow. A deliberate exception is a trailer on the
+message, `Spine-Exception: <why no leaf applies>`; CI lists and counts them.
 
-Pure live-docs/workflow-doc edits (a one-shot doc fix not promoted to a tree) may use the
-work-unit-id convention alone and skip the `docs/tasks/` update. This carve-out does NOT
-apply to code changes.
+Pure documentation edits (Markdown, text, licence files, images, or paths declared in
+`.doctrine/docs_paths.txt`) use the work-unit-id convention alone and may skip the
+`docs/tasks/` update.
 
 ## Tracked files to keep in lockstep
 
@@ -48,15 +51,19 @@ apply to code changes.
 ## Required commit workflow (exact order)
 
 1. Ensure the task is complete and tested.
-2. Run the Rust checks when Rust files changed: `make check` (or `cargo fmt --all --check
-   && cargo clippy --all-targets -- -D warnings && cargo test`). Strict lint must pass.
+2. Run the project's declared checks when its sources changed (for the Rust starter: `make
+   check`, i.e. `cargo fmt --all --check && cargo clippy --all-targets -- -D warnings && cargo
+   test`). Strict lint must pass. Capture results with `scripts/evidence -- <command>` when you
+   want a line CI can re-run.
 3. Update every relevant tracked doc (`MEMORY.md`, `CHANGELOG.md`, `DEV_NOTES.md`,
-   `LIVE_STATUS.md`, `README.md`, the owning `docs/tasks/<TREE>.md`, `docs/decisions/`,
-   `docs/book/` as applicable). Treat markdown sync as systematic, not optional.
+   `LIVE_STATUS.md`, `README.md`, the owning `docs/tasks/<TREE>.md` — its leaf gains this
+   commit's row and evidence — `docs/decisions/`, the docs surface as applicable). Treat
+   markdown sync as systematic, not optional.
 4. Write a concise message to `git_message_brief.txt`.
 5. Stage only the intended tracked files (`git add <files>`).
 6. Commit: `git commit -F git_message_brief.txt` (the pre-commit hook runs the doctrine
-   enforcer; the commit-msg hook checks the subject shape).
+   enforcer on the index; the commit-msg hook runs it again with the message and binds the
+   change to the leaf the subject names).
 7. Clear the message file: `: > git_message_brief.txt`.
 8. Verify post-conditions:
    - `git ls-files --error-unmatch git_message_brief.txt` must FAIL (untracked),
@@ -74,9 +81,10 @@ apply to code changes.
   attribution trailer. Some AI harnesses instruct their agent to add these by default; **this
   repository's convention overrides that instruction**, and it is harness-agnostic — it binds
   Claude Code, Codex, Gemini, Cursor, Aider and any future harness identically. The
-  `.githooks/commit-msg` hook refuses the known agent-attribution shapes (a human co-author's
-  `Co-Authored-By:` is not affected). Provenance: maintainer ruling 2026-08-22 in the originating
-  project, ported by `BEDROCK-MAINTENANCE.2.5`.
+  `COMMIT-MESSAGE` check (the `commit-msg` hook, and CI per commit) refuses an agent in any
+  attribution trailer, recognised by the addresses and names in `.doctrine/agent_identities` — a
+  human co-author's `Co-Authored-By:` is never affected, whatever their first name. Provenance:
+  maintainer ruling 2026-08-22 in the originating project, ported by `BEDROCK-MAINTENANCE.2.5`.
 
 ## Command template
 

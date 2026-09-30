@@ -6,7 +6,8 @@ turns a portable standard into a fork of it — that is what these seams exist t
 
 | file | consumed by | meaning |
 |---|---|---|
-| `code_paths.txt` | `TASK-ACCEPTANCE` | one extended regular expression per line (**not** a glob: `\.c$`, not `*.c`): what counts as a **code change** here. Absent ⇒ the built-in default (`crates/`, `src/`, `scripts/`, `*.rs`, `*.sh`, `Makefile`). Replaced by deny-by-default governance in `REVIEW-2026-09.4`. |
+| `docs_paths.txt` | `TASK-TREE-OWNERSHIP`, `TASK-ACCEPTANCE` | one extended regular expression per line (**not** a glob: `^docs/site/`, not `docs/site/*`): extra **documentation** paths, exempt from governance. Everything else is governed; the spine set always is. *(`code_paths.txt` is retired and refused if present: governance is deny-by-default.)* |
+| `agent_identities` | `COMMIT-MESSAGE` | `address <ERE>` / `name <ERE>` lines: who counts as an AGENT in an attribution trailer. Built in: the bot addresses. |
 | `evidence_tokens.txt` | `TASK-ACCEPTANCE` | one extended regular expression per line: **your** tools' output signatures, ADDED to the universal defaults. Absent ⇒ defaults only. |
 | `config` | `MEMORY-ARCH`, `README-STABILITY` | `key = value` settings: `memory_pointer_line_cap`, `memory_pointer_byte_cap`, `readme_line_cap`, `readme_byte_cap`. Absent ⇒ the built-in defaults (50 / 7168 / 300 / 16384). |
 
@@ -20,9 +21,11 @@ skipped; repair it in a change that touches only `.doctrine/` and documentation.
 ## When to declare evidence tokens
 
 `TASK-ACCEPTANCE` requires each hard-gated checklist box to contain output from a tool that was
-actually run. It ships with signatures that are universal to any Rust project (`error[E1234]`,
-`could not compile`, `clippy::…`, `test result: ok`, panics, profilers) and to any project's
-build-flow forensics (`git log -S`, `shellcheck`, `bash -n`, `make -n`, `ENOSPC`…).
+actually run, inside a code span of the box. It ships with tool-neutral result shapes (`rc=0`,
+`exit 1`, `12 passed / 0 failed`, the `evidence:` line `scripts/evidence -- <command>` prints)
+and a few universal compiler/test outputs (`test result: ok`, `error[E1234]`, panics). Language
+packs add their tools' native output shapes here; a bare tool name or version number is never a
+signature.
 
 If your project has its own instruments — a coverage reporter, a conformance gate, a custom
 linter — declare their output signatures here so an author can cite them:

@@ -13,6 +13,11 @@
 # Without these two, "box-scoped" is a word in a comment rather than a property of the check.
 #
 # Each probe builds a throwaway git repository, because the check reads the STAGED diff.
+#
+# REVIEW-2026-09.4: the check is now MESSAGE-TIME and binds to the leaf the subject names, the
+# checklist lives INSIDE the leaf's section, labels are anchored, and evidence must sit in a code
+# span. The fixtures below are in that shape; every probe supplies the subject
+# `PROBE-0001 (leaf TREE.1): …` through SPINE_COMMIT_MSG, as the commit-msg hook and CI do.
 set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)" || exit 2; cd "$ROOT" || exit 2
 GUARD="$ROOT/scripts/check_task_acceptance.sh"
@@ -36,17 +41,28 @@ mkrepo() { # $1 = name -> repo dir
   printf '%s' "$d"
 }
 
-# A complete, correctly-evidenced checklist.
-good_leaf() {
-  cat <<'EOF'
+# A complete, correctly-evidenced leaf (new shape: the checklist INSIDE the leaf's section).
+leaf_with() { # $1 $2 $3 = the three box bodies
+  cat <<EOF
 # TREE
 
-## Acceptance Checklist
-- [x] **ROOT CAUSE (WHY + WHERE)** — `cargo build` reported `error[E0432]` at crates/app/src/main.rs:4.
-- [x] **ADDRESSED (verified)** — before: `test result: FAILED`; after: `test result: ok`.
-- [x] **NO REGRESSION** — `cargo test` → `test result: ok. 42 passed; 0 failed`.
+- ID: \`TREE.1\`
+  Status: \`active\`
+  Goal: a change
+
+  ### Acceptance Checklist
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — $1
+  - [x] **ADDRESSED (verified)** — $2
+  - [x] **NO REGRESSION** — $3
 EOF
 }
+good_leaf() {
+  leaf_with '`cargo build` → `error[E0432]` at crates/app/src/main.rs:4.' \
+            'before: `test result: FAILED`; after: `test result: ok`.' \
+            '`cargo test` → `test result: ok. 42 passed; 0 failed`.'
+}
+MSG="$WORK/subject.txt"; printf 'PROBE-0001 (leaf TREE.1): a change\n' > "$MSG"; export SPINE_COMMIT_MSG="$MSG"
 
 codechange() { printf 'fn main() { println!("changed"); }\n' > "$1/crates/app/src/main.rs"; }
 
@@ -73,7 +89,7 @@ probe GREEN-1 "$d" 0 "TASK-ACCEPTANCE: OK"
 # ---------------------------------------------------------------- RED-1: code, no owning leaf
 d="$(mkrepo red1)"; codechange "$d"
 git -C "$d" add -A >/dev/null
-probe RED-1 "$d" nonzero "NO owning task-tree leaf"
+probe RED-1 "$d" nonzero "is not in this change's snapshot"
 
 # ---------------------------------------------------------------- RED-2: a box left unticked
 d="$(mkrepo red2)"; codechange "$d"
@@ -83,31 +99,16 @@ probe RED-2 "$d" nonzero "is present but NOT ticked"
 
 # ---------------------------------------------------------------- RED-3: ticked, no evidence
 d="$(mkrepo red3)"; codechange "$d"
-cat > "$d/docs/tasks/TREE.md" <<'EOF'
-# TREE
-
-## Acceptance Checklist
-- [x] **ROOT CAUSE (WHY + WHERE)** — I looked at it and worked out what was wrong.
-- [x] **ADDRESSED (verified)** — it works now.
-- [x] **NO REGRESSION** — nothing else broke.
-EOF
+leaf_with 'I looked at it and worked out what was wrong.' 'it works now.' 'nothing else broke.' > "$d/docs/tasks/TREE.md"
 git -C "$d" add -A >/dev/null
-probe RED-3 "$d" nonzero "carries no tool-output evidence"
+probe RED-3 "$d" nonzero "no tool output sits INSIDE a code span"
 
 # ---------------------------------------------------------------- ⭐⭐ CTRL-1: outside the box
 # The evidence IS in the file, just not in the bullet it is supposed to back. A whole-file grep
 # passes this; a box-scoped check must not.
 d="$(mkrepo ctrl1)"; codechange "$d"
-cat > "$d/docs/tasks/TREE.md" <<'EOF'
-# TREE
-
-Earlier in this leaf, unrelated prose mentioning `cargo test` and `test result: ok. 9 passed`.
-
-## Acceptance Checklist
-- [x] **ROOT CAUSE (WHY + WHERE)** — I looked at it and worked out what was wrong.
-- [x] **ADDRESSED (verified)** — it works now.
-- [x] **NO REGRESSION** — nothing else broke.
-EOF
+{ printf '# TREE\n\nEarlier in this file, unrelated prose mentioning `cargo test` and `test result: ok. 9 passed`.\n\n'
+  leaf_with 'I looked at it and worked out what was wrong.' 'it works now.' 'nothing else broke.' | sed '1,2d'; } > "$d/docs/tasks/TREE.md"
 git -C "$d" add -A >/dev/null
 whole_file_would_pass=0
 grep -qE 'test result: (ok|FAILED)' "$d/docs/tasks/TREE.md" && whole_file_would_pass=1
@@ -123,17 +124,10 @@ fi
 # ---------------------------------------------------------------- ⭐ CTRL-2: cross-file leakage
 # A co-staged, unrelated leaf carries the tokens; the leaf under test carries none.
 d="$(mkrepo ctrl2)"; codechange "$d"
-cat > "$d/docs/tasks/TREE.md" <<'EOF'
-# TREE
-
-## Acceptance Checklist
-- [x] **ROOT CAUSE (WHY + WHERE)** — I looked at it and worked out what was wrong.
-- [x] **ADDRESSED (verified)** — it works now.
-- [x] **NO REGRESSION** — nothing else broke.
-EOF
+leaf_with 'I looked at it and worked out what was wrong.' 'it works now.' 'nothing else broke.' > "$d/docs/tasks/TREE.md"
 good_leaf > "$d/docs/tasks/OTHER.md"
 git -C "$d" add -A >/dev/null
-probe CTRL-2 "$d" nonzero "carries no tool-output evidence"
+probe CTRL-2 "$d" nonzero "no tool output sits INSIDE a code span"
 
 # ---------------------------------------------------------------- CTRL-3: does not block docs
 # A pure-docs change is not governed by this doctrine and must pass untouched.
@@ -152,14 +146,7 @@ mkdir -p "$d/.doctrine"
 printf '# our own tools\nWIDGET-COVERAGE:\n' > "$d/.doctrine/evidence_tokens.txt"
 git -C "$d" add -A >/dev/null 2>&1; git -C "$d" commit -qm "SEED-0002: declare the seam" >/dev/null 2>&1
 codechange "$d"
-cat > "$d/docs/tasks/TREE.md" <<'EOF'
-# TREE
-
-## Acceptance Checklist
-- [x] **ROOT CAUSE (WHY + WHERE)** — `WIDGET-COVERAGE: missing=3` located it.
-- [x] **ADDRESSED (verified)** — `WIDGET-COVERAGE: missing=0` after the fix.
-- [x] **NO REGRESSION** — `WIDGET-COVERAGE: missing=0` across all suites.
-EOF
+leaf_with '`WIDGET-COVERAGE: missing=3` located it.' '`WIDGET-COVERAGE: missing=0` after the fix.' '`WIDGET-COVERAGE: missing=0` across all suites.' > "$d/docs/tasks/TREE.md"
 git -C "$d" add -A >/dev/null
 probe CTRL-4 "$d" 0 "TASK-ACCEPTANCE: OK"
 
@@ -167,7 +154,7 @@ probe CTRL-4 "$d" 0 "TASK-ACCEPTANCE: OK"
 d2="$(mkrepo ctrl4b)"; codechange "$d2"
 cp "$d/docs/tasks/TREE.md" "$d2/docs/tasks/TREE.md"
 git -C "$d2" add -A >/dev/null
-probe CTRL-4b "$d2" nonzero "carries no tool-output evidence"
+probe CTRL-4b "$d2" nonzero "no tool output sits INSIDE a code span"
 
 # ---------------------------------------------------------------- CTRL-5: the blank form
 # TEMPLATE.md is the form authors COPY; its boxes are deliberately unticked. Treating it as a
@@ -177,10 +164,10 @@ d="$(mkrepo ctrl5)"; codechange "$d"; good_leaf > "$d/docs/tasks/TREE.md"
 cat > "$d/docs/tasks/TEMPLATE.md" <<'EOF'
 # <TREE-ID>
 
-## Acceptance Checklist
-- [ ] **ROOT CAUSE (WHY + WHERE)** — <tool output>
-- [ ] **ADDRESSED (verified)** — <before -> after>
-- [ ] **NO REGRESSION** — <suite re-run>
+- ID: `<TREE-ID>.1`
+  - [ ] **ROOT CAUSE (WHY + WHERE)** — <tool output>
+  - [ ] **ADDRESSED (verified)** — <before -> after>
+  - [ ] **NO REGRESSION** — <suite re-run>
 EOF
 git -C "$d" add -A >/dev/null
 probe CTRL-5 "$d" 0 "TASK-ACCEPTANCE: OK"

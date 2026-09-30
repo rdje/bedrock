@@ -45,17 +45,17 @@ bootstrap_first_commit_as_printed       xfail  BR-11
 bootstrap_bad_names_refused             xfail  BK-04
 bootstrap_no_name_uninitialised_exit2   xfail  BK-18
 bootstrap_under_bsd_sed                 xfail  BR-10
-ownership_dart_perl_julia_no_leaf       xfail  NT-03
-spine_hook_and_workflow_no_leaf         xfail  BK-05
+ownership_dart_perl_julia_no_leaf       req    NT-03
+spine_hook_and_workflow_no_leaf         req    BK-05
 deletion_needs_leaf                     req    BR-08
-evidence_reuse_done_leaf                xfail  BK-01
-prose_evidence_refused                  xfail  BK-03
-keyword_box_shadowing_refused           xfail  BK-03
-bare_version_number_not_evidence        xfail  BK-03
-stamped_evidence_line_accepted          xfail  NT-04
+evidence_reuse_done_leaf                req    BK-01
+prose_evidence_refused                  req    BK-03
+keyword_box_shadowing_refused           req    BK-03
+bare_version_number_not_evidence        req    BK-03
+stamped_evidence_line_accepted          req    NT-04
 config_weakened_same_commit             req    BK-06
-env_bypass_ignored                      xfail  BK-08
-exception_trailer_honoured              xfail  BK-08
+env_bypass_ignored                      req    BK-08
+exception_trailer_honoured              req    BK-08
 subdir_markdown_not_a_leaf              req    BK-15
 spine_docs_deleted                      req    BK-13
 child_without_claude_md_passes          req    NT-08
@@ -63,7 +63,7 @@ project_slot_not_executable             req    BK-14
 git_failure_refused                     req    BK-17
 unstaged_fix_hides_staged_defect        req    BR-03
 ci_judges_each_commit                   req    BR-04
-commit_msg_human_named_claude           xfail  BK-11
+commit_msg_human_named_claude           req    BK-11
 commit_msg_agent_co_developed_by        req    BK-11
 commit_msg_leading_blank_line           req    BK-11
 knowledge_map_single_line_comment       req    BK-12
@@ -75,7 +75,16 @@ python3_missing_refused                 req    BR-05
 invalid_regex_refused                   req    BR-05
 invalid_regex_repair_allowed            req    BR-05
 ci_message_judged                       req    BR-21
-subject_hello_refused                   xfail  BR-21
+subject_hello_refused                   req    BR-21
+second_commit_reusing_evidence_refused  req    BK-01
+open_leaf_owns_two_commits              req    BK-01
+done_leaf_child_leaf_passes             req    BK-01
+duplicate_label_refused                 req    BK-03
+docs_paths_declared_exempt              req    NT-03
+spine_path_cannot_be_exempted           req    BK-05
+code_paths_txt_retired                  req    BK-07
+merge_commit_exempt_from_binding        req    BR-04
+exception_counted_in_ci                 req    BK-08
 "
 
 if [ "$LIST" = 1 ]; then
@@ -115,7 +124,9 @@ regen_map() { # what the pre-commit hook does before the driver runs, so `gate` 
     knowledge-map/scripts/gen_knowledge_map.sh > "$m" 2>/dev/null && git add "$m" 2>/dev/null
   fi
 }
-gate()   { regen_map; OUT="$(bash scripts/check_doctrines.sh 2>&1)"; RC=$?; }
+gate()   { # [subject] — judges the index WITH a message, as the commit-msg hook does (binding is message-time)
+  regen_map; printf '%s\n' "${1:-DEMO-APP-0002: an unowned change}" > "$T/.subject"
+  OUT="$(bash scripts/check_doctrines.sh --message "$T/.subject" 2>&1)"; RC=$?; }
 gate_ci() { OUT="$(bash scripts/check_doctrines.sh --commit "${1:-HEAD}" 2>&1)"; RC=$?; }
 commit_hooks() { # $1 = message (may be multi-line); commits through the real hooks
   printf '%s\n' "$1" > "$T/.msg"; OUT="$(git commit -q -F "$T/.msg" 2>&1)"; RC=$?; rm -f "$T/.msg"
@@ -299,8 +310,8 @@ arm_config_weakened_same_commit() {
   git add -A; gate; refused_by 'TASK-TREE-OWNERSHIP' || refused_by 'TASK-ACCEPTANCE'
 }
 arm_env_bypass_ignored() {
-  code_change; git add -A
-  OUT="$(SPINE_ALLOW_UNOWNED=1 bash scripts/check_task_tree_ownership.sh 2>&1)"; RC=$?
+  code_change; git add -A; printf 'DEMO-APP-0002: unowned\n' > "$T/.subject"
+  OUT="$(SPINE_ALLOW_UNOWNED=1 SPINE_COMMIT_MSG="$T/.subject" bash scripts/check_task_tree_ownership.sh 2>&1)"; RC=$?
   [ "$RC" -ne 0 ]
 }
 arm_exception_trailer_honoured() {
@@ -390,14 +401,15 @@ arm_python3_missing_refused() {
   refused_by 'TABLE-ARITY-RATCHET'
 }
 arm_invalid_regex_refused() {
-  mkdir -p .doctrine; printf '[\n' > .doctrine/code_paths.txt; git add .doctrine/code_paths.txt
-  commit_nohooks 'DEMO-CFG-0003: broken code paths' || return 1
-  code_change; good_leaf > docs/tasks/FEAT.md; git add -A; gate; refused_by 'TASK-ACCEPTANCE'
+  mkdir -p .doctrine; printf '[\n' > .doctrine/docs_paths.txt; git add .doctrine/docs_paths.txt
+  commit_nohooks 'DEMO-CFG-0003: broken docs paths' || return 1
+  code_change; good_leaf > docs/tasks/FEAT.md; git add -A; gate 'DEMO-APP-0002 (leaf FEAT.1): x'; refused_by 'TASK-TREE-OWNERSHIP'
 }
 arm_invalid_regex_repair_allowed() {
-  mkdir -p .doctrine; printf '[\n' > .doctrine/code_paths.txt; git add .doctrine/code_paths.txt
-  commit_nohooks 'DEMO-CFG-0003: broken code paths' || return 1
-  printf '\\.rs$\n' > .doctrine/code_paths.txt; good_leaf > docs/tasks/FEAT.md; git add -A; gate; green
+  mkdir -p .doctrine; printf '[\n' > .doctrine/docs_paths.txt; git add .doctrine/docs_paths.txt
+  commit_nohooks 'DEMO-CFG-0003: broken docs paths' || return 1
+  printf '^docs/site/\n' > .doctrine/docs_paths.txt; good_leaf > docs/tasks/FEAT.md; git add -A
+  gate 'DEMO-APP-0002 (leaf FEAT.1): repair'; green
 }
 arm_ci_message_judged() {
   # a subject the shape rule rejects, committed with the hooks bypassed: CI must still refuse it
@@ -407,6 +419,82 @@ arm_ci_message_judged() {
 arm_subject_hello_refused() {
   # BR-21: a bare word is not a work-unit id; the permissive rule accepts it until REVIEW-2026-09.4
   printf 'hello\n' > "$T/.m"; ! bash scripts/check_commit_message.sh "$T/.m" >/dev/null 2>&1
+}
+
+arm_second_commit_reusing_evidence_refused() {
+  code_change; good_leaf > docs/tasks/FEAT.md; git add -A
+  commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main' || return 1
+  printf 'fn main() { println!("again"); }\n' > crates/app/src/main.rs
+  printf '\n- a note outside the leaf\n' >> docs/tasks/FEAT.md          # the file changes, the leaf section does not
+  git add -A; commit_hooks 'DEMO-APP-0003 (leaf FEAT.1): change again'; refused_by 'TASK-TREE-OWNERSHIP'
+}
+arm_open_leaf_owns_two_commits() {
+  code_change; good_leaf > docs/tasks/FEAT.md; git add -A
+  commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main' || return 1
+  printf 'fn main() { println!("again"); }\n' > crates/app/src/main.rs
+  # the second commit adds NEW evidence lines to each box and a commit-log row
+  awk '{ print } /\*\*ROOT CAUSE/ { print "    second pass: `cargo test` → `test result: FAILED. 0 passed; 1 failed` (`rc=101`)." }
+       /\*\*ADDRESSED/ { print "    second pass: `cargo test` → `test result: ok. 1 passed; 0 failed` (`rc=0`)." }
+       /\*\*NO REGRESSION/ { print "    second pass: `scripts/check_doctrines.sh` → `=== all doctrines green ===` (`rc=0`)." }' docs/tasks/FEAT.md > "$T/.f" && mv "$T/.f" docs/tasks/FEAT.md
+  git add -A; commit_hooks 'DEMO-APP-0003 (leaf FEAT.1): change again'; green
+}
+arm_done_leaf_child_leaf_passes() {
+  # BOOTSTRAP.1 is done; a follow-up as a child leaf BOOTSTRAP.1.1 with its own evidence is accepted
+  code_change
+  cat >> docs/tasks/BOOTSTRAP.md <<'L'
+
+- ID: `BOOTSTRAP.1.1`
+  Status: `done`
+  Goal: a follow-up to the bootstrap
+
+  ### Acceptance Checklist
+
+  - [x] **ROOT CAUSE (WHY + WHERE)** — `cargo test` → `test result: FAILED. 0 passed; 1 failed` (`rc=101`) at `crates/app/src/main.rs:1`.
+  - [x] **ADDRESSED (verified)** — `cargo test` → `test result: ok. 1 passed; 0 failed` (`rc=0`).
+  - [x] **NO REGRESSION** — `scripts/check_doctrines.sh` → `=== all doctrines green ===` (`rc=0`).
+L
+  git add -A; commit_hooks 'DEMO-APP-0002 (leaf BOOTSTRAP.1.1): follow-up'; green
+}
+arm_duplicate_label_refused() {
+  code_change
+  { good_leaf; printf '  - [x] **ADDRESSED (verified)** — a second one: `cargo test` → `test result: ok` (`rc=0`).\n'; } > docs/tasks/FEAT.md
+  # the extra box lands inside the leaf section only if it sits before "## Commit Log"; rebuild accordingly
+  awk 'BEGIN{d=0} /^## Commit Log/ && !d { print "  - [x] **ADDRESSED (verified)** — a second one: `cargo test` → `test result: ok` (`rc=0`)."; print ""; d=1 } { print }' <(good_leaf) > docs/tasks/FEAT.md
+  git add -A; commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): x'; refused_by 'TASK-ACCEPTANCE'
+}
+arm_docs_paths_declared_exempt() {
+  # a project declares its docs site as documentation: a change there needs no leaf
+  mkdir -p .doctrine; printf '^docs/site/\n' > .doctrine/docs_paths.txt; git add .doctrine/docs_paths.txt
+  commit_nohooks 'DEMO-CFG-0003: declare the docs site' || return 1
+  mkdir -p docs/site; printf '<html></html>\n' > docs/site/index.html; git add -A; gate; green
+}
+arm_spine_path_cannot_be_exempted() {
+  mkdir -p .doctrine; printf '^\\.githooks/\n' > .doctrine/docs_paths.txt; git add .doctrine/docs_paths.txt
+  commit_nohooks 'DEMO-CFG-0003: try to exempt the hooks' || return 1
+  printf '#!/usr/bin/env bash\nexit 0\n' > .githooks/pre-commit; git add -A; gate; refused_by 'TASK-TREE-OWNERSHIP'
+}
+arm_code_paths_txt_retired() {
+  mkdir -p .doctrine; printf '\\.rs$\n' > .doctrine/code_paths.txt; git add .doctrine/code_paths.txt
+  commit_nohooks 'DEMO-CFG-0003: old seam' || return 1
+  code_change; good_leaf > docs/tasks/FEAT.md; git add -A; gate 'DEMO-APP-0002 (leaf FEAT.1): x'
+  [ "$RC" -ne 0 ] && has 'code_paths.txt is no longer read'
+}
+arm_merge_commit_exempt_from_binding() {
+  git checkout -q -b topic
+  code_change; good_leaf > docs/tasks/FEAT.md; git add -A; commit_hooks 'DEMO-APP-0002 (leaf FEAT.1): rewrite main' || return 1
+  git checkout -q main; printf '\nA README line.\n' >> README.md; git add README.md
+  commit_hooks 'DEMO-DOC-0001: a docs line' || return 1
+  git merge -q --no-ff -m 'Merge branch topic' topic >/dev/null 2>&1 || return 1
+  gate_ci HEAD; green
+}
+arm_exception_counted_in_ci() {
+  base="$(git rev-parse HEAD)"
+  code_change; git add -A
+  commit_hooks 'DEMO-APP-0002: vendored change
+
+Spine-Exception: vendored third-party sources, no leaf applies' || return 1
+  OUT="$(bash scripts/check_doctrines.sh --range "$base..HEAD" 2>&1)"; RC=$?
+  green && has '1 with a Spine-Exception'
 }
 
 # ── the runner ────────────────────────────────────────────────────────────────────────────────

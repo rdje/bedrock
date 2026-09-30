@@ -54,12 +54,13 @@ if [ -n "$RANGE" ]; then
   git rev-parse --verify -q "$from^{commit}" >/dev/null || { printf 'check_doctrines: REFUSED — %s is not a commit\n' "$from" >&2; exit 2; }
   shas="$(git rev-list --reverse "$from..$to" 2>/dev/null)" || { printf 'check_doctrines: REFUSED — git rev-list %s failed\n' "$RANGE" >&2; exit 2; }
   [ -n "$shas" ] || { printf '=== range %s introduces no commit ===\n' "$RANGE"; exit 0; }
-  bad=0; n=0
+  bad=0; n=0; exc=0
   for sha in $shas; do
     n=$((n+1)); printf '\n##### commit %s — %s\n' "$(git rev-parse --short "$sha")" "$(git log -1 --format=%s "$sha" | cut -c1-100)"
+    if git log -1 --format=%B "$sha" | git interpret-trailers --parse 2>/dev/null | grep -qi '^Spine-Exception:'; then exc=$((exc+1)); fi
     bash "$SELF" --commit "$sha" || bad=$((bad+1))
   done
-  printf '\n=== range %s: %d commit(s), %d failing ===\n' "$RANGE" "$n" "$bad"
+  printf '\n=== range %s: %d commit(s), %d failing, %d with a Spine-Exception ===\n' "$RANGE" "$n" "$bad" "$exc"
   [ "$bad" -eq 0 ]; exit
 fi
 
@@ -77,6 +78,8 @@ if [ -n "$COMMIT" ]; then
   COMMIT_SHA="$sha"
 else
   export SPINE_AFTER=":"
+  # a merge commit being made: git runs the commit-msg hook for it too; its parents were judged
+  [ -f "$(git rev-parse --git-path MERGE_HEAD 2>/dev/null)" ] && export SPINE_MERGE=1
 fi
 spine_init DRIVER
 if [ -n "$COMMIT" ]; then
@@ -110,7 +113,7 @@ else
   printf '  -- %-22s skipped: no scripts/check_doctrines.project.sh\n' "PROJECT-SPECIFIC"
 fi
 
-fails=0; refusals=0
+fails=0; refusals=0; exceptions=0
 ctx="index vs $(git rev-parse --short "$SPINE_BEFORE_SHA" 2>/dev/null || echo "$SPINE_BEFORE_SHA" | cut -c1-7)"
 [ "$SPINE_AFTER_SHA" = ":" ] || ctx="$(git rev-parse --short "$SPINE_AFTER_SHA") vs $(git rev-parse --short "$SPINE_BEFORE_SHA" 2>/dev/null || echo empty-tree)${SPINE_MERGE:+ (merge)}"
 printf '=== doctrine enforcement (%s checks; %s) ===\n' "${#DOCTRINES[@]}" "$ctx"
@@ -121,7 +124,11 @@ for entry in "${DOCTRINES[@]}"; do
   fi
   out="$(SPINE_ID="$id" bash "$path" 2>&1)"; rc=$?
   case "$rc" in
-    0) printf '  ✅ %-22s %s\n' "$id" "$proves" ;;
+    0) case "$out" in
+         *"NOT EVALUATED"*) printf '  ⏸  %-22s not evaluated here: %s\n' "$id" "$(printf '%s' "$out" | sed -n 's/^[^:]*: NOT EVALUATED — //p' | head -1)" ;;
+         *"EXCEPTION"*)     printf '  ⚠️  %-22s EXCEPTION — %s\n' "$id" "$(printf '%s' "$out" | sed -n 's/^[^:]*: EXCEPTION — //p' | head -1)"; exceptions=$((exceptions+1)) ;;
+         *)                 printf '  ✅ %-22s %s\n' "$id" "$proves" ;;
+       esac ;;
     1) printf '  ❌ %-22s %s\n' "$id" "$proves"; printf '%s\n' "$out" | sed 's/^/       /'; fails=$((fails+1)) ;;
     *) printf '  ⛔ REFUSED  %-22s cannot evaluate (exit %s) — an error is not a pass\n' "$id" "$rc"; printf '%s\n' "$out" | sed 's/^/       /'; refusals=$((refusals+1)) ;;
   esac
@@ -131,5 +138,5 @@ if [ "$fails" -ne 0 ] || [ "$refusals" -ne 0 ]; then
   printf '=== %d doctrine breach(es), %d refusal(s) — commit blocked ===\n' "$fails" "$refusals" >&2
   exit 1
 fi
-printf '=== all doctrines green ===\n'
+if [ "$exceptions" -gt 0 ]; then printf '=== all doctrines green — with %d recorded exception(s) ===\n' "$exceptions"; else printf '=== all doctrines green ===\n'; fi
 exit 0

@@ -1,125 +1,115 @@
 #!/usr/bin/env bash
-# TASK-ACCEPTANCE — a CODE change must be owned by a task-tree leaf that carries a ticked
-# acceptance checklist, and each hard-gated box must be backed by EVIDENCE INSIDE ITS OWN BULLET.
+# TASK-ACCEPTANCE — the leaf that owns a governed change carries, IN THIS CHANGE, a ticked checklist
+# whose three hard-gated boxes each hold tool output inside their own bullet.
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
 # ⭐ THE DISCIPLINE, stated with no project's nouns: a change lands with (a) the CAUSE located,
-# (b) the EFFECT measured, and (c) a statement that nothing regressed — each backed by output
-# from a tool that was actually run, not by prose. "I fixed it" is a claim; a pasted verdict is
-# an artifact someone else can re-run.
+# (b) the EFFECT measured, and (c) a statement that nothing regressed — each backed by output from
+# a tool that was actually run, not by prose. "I fixed it" is a claim; a pasted verdict is an
+# artifact someone else can re-run.
 #
-# ⭐⭐ WHY BOX-SCOPING IS THE SOUNDNESS PROPERTY: two leakage holes were MEASURED upstream —
-#   (1) cross-FILE leakage (a co-staged unrelated tree file supplied the signature) and
-#   (2) incidental-PROSE leakage (a token anywhere in the leaf counted as evidence).
-#   ⇒ the signature must sit in the SAME BULLET as the box it backs.
+# THE CONTRACT (decision_ownership_contract, REVIEW-2026-09.4), on top of TASK-TREE-OWNERSHIP's binding:
+#   • LABELS ARE ANCHORED: a box is `- [x] **ROOT CAUSE…`, `- [x] **ADDRESSED…`, `- [x] **NO REGRESSION…`
+#     with the label at the START of the bold text; exactly one per label in the leaf's section.
+#     (Matching a keyword anywhere in a box let a `**FIX** — addressed by…` line stand in for an
+#     unticked ADDRESSED box, BK-03.)
+#   • EVIDENCE IS NEW IN THIS CHANGE: each box's bullet — the box line and its indented continuation
+#     lines — gains at least one line here. Yesterday's evidence answers for nothing (BK-01).
+#   • EVIDENCE IS TOOL OUTPUT IN A CODE SPAN: a result signature must sit INSIDE backticks (or a fenced
+#     block) in the bullet — `rc=0`, `exit 1`, `12 passed / 0 failed`, a declared token — never in
+#     prose. A bare version number or a bare tool name is not evidence (BK-03, NT-04). The
+#     tool-neutral shape is the line `scripts/evidence -- <command>` prints: `evidence: rc=N cmd="…"`.
+#   • Box-scoping stays the soundness property: the signature must sit in the SAME bullet.
 #
-# ⚠️ HONEST LIMIT: this verifies a box was TICKED and that tool-shaped output sits inside it. It
-# cannot verify the output is true. The un-fakeable leg is re-running the cited command in CI.
+# ⚠️ HONEST LIMIT: this proves a re-runnable artifact was cited in this change, not that it is true.
+#    The un-fakeable leg is re-running `evidence:` lines in CI.
 #
-# ⚠️ STILL OPEN HERE, closed by REVIEW-2026-09.4: the leaf is not yet bound to the commit subject,
-# evidence is not yet required to be NEW in this change, and labels are matched by keyword. What
-# this revision fixes: the change is read from the index/commit (not the worktree), deletions and
-# renames are governed, `.doctrine/` is read from the LAST commit so a commit cannot loosen its own
-# gate (BK-06), an invalid pattern is REFUSED (BR-05), and a tree file is top-level only (BK-15).
-#
-# ── PROJECT SEAMS ──────────────────────────────────────────────────────────────────────────────
-#   .doctrine/code_paths.txt       one EXTENDED REGULAR EXPRESSION per line (not a glob) — what
-#                                  counts as a CODE change here. Absent → the built-in default.
-#   .doctrine/evidence_tokens.txt  one ERE per line — your tools' output signatures, ADDED to the
-#                                  universal defaults. Absent → defaults only.
-#   Both are validated at load and read as of the LAST commit.
+# ── PROJECT SEAMS (.doctrine/, read as of the LAST commit) ─────────────────────────────────────
+#   docs_paths.txt        extra DOCUMENTATION patterns (exempt from governance), one ERE per line
+#   evidence_tokens.txt   your tools' result signatures, one ERE per line, ADDED to the defaults
+# Message-time check, like TASK-TREE-OWNERSHIP: NOT EVALUATED without a message.
 set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib/spine.sh"; spine_init TASK-ACCEPTANCE
 T="$(spine_tmp)"
 
-# ── what counts as a code change (from BEFORE; a repair of an invalid file is allowed when the
-#    change touches nothing but .doctrine/ and documentation) ─────────────────────────────────
-default_code_re='(^|/)(crates|src|scripts)/|\.(rs|sh)$|(^|/)Makefile$'
-load_re() { # $1 = file under .doctrine/, $2 = default → sets LOADED_RE (never in a subshell: a refusal must end the CHECK)
-  local lines
-  lines="$(spine_config_file "$1")"
-  [ -n "$lines" ] || { LOADED_RE="$2"; return 0; }
+spine_load_docs_re
+spine_governed_paths > "$T/governed.txt"
+[ -s "$T/governed.txt" ] || { spine_ok "OK — no governed path in this change"; exit 0; }
+[ -n "${SPINE_COMMIT_MSG:-}" ] || { spine_ok "NOT EVALUATED — needs the commit message (the commit-msg hook and CI supply it)"; exit 0; }
+[ "${SPINE_MERGE:-0}" = 1 ] && { spine_ok "OK — merge commit: binding exempt"; exit 0; }
+exception="$(spine_msg_exception "$SPINE_COMMIT_MSG")"
+[ -z "$exception" ] || { spine_ok "EXCEPTION — no leaf judged: Spine-Exception: $exception"; exit 0; }
+
+leaf="$(spine_msg_leaf "$SPINE_COMMIT_MSG")"
+[ -n "$leaf" ] || { spine_fail "the subject names no leaf; see TASK-TREE-OWNERSHIP"; exit 1; }
+tree="${leaf%%.*}"; file="docs/tasks/$tree.md"
+spine_read "$file" > "$T/after.md" || { spine_fail "$file is not in this change's snapshot; see TASK-TREE-OWNERSHIP"; exit 1; }
+bounds="$(spine_leaf_bounds "$T/after.md" "$leaf")"
+[ -n "$bounds" ] || { spine_fail "$file has no section for leaf $leaf; see TASK-TREE-OWNERSHIP"; exit 1; }
+start="${bounds% *}"; end="${bounds#* }"
+spine_added_lines "$file" | sort -un > "$T/added.nums"
+
+# ── result signatures: what a tool PRINTS, never what it is called ───────────────────────────
+DEFAULT_SIG='\brc=[0-9]+|\bexit(ed)?[ =:](code )?[0-9]+|[0-9]+ (pass|passed|ok)[ ,/]+[0-9]+ (fail|failed)|test result: (ok|FAILED)|running [0-9]+ tests?|error\[E[0-9]{4}\]|could not compile|clippy::[a-z_]{3,}|panicked at|assertion (failed|`)|\bE2BIG\b|\bENOSPC\b|\bEACCES\b|\bARG_MAX\b|PIPESTATUS|^evidence: rc='
+SIG="$DEFAULT_SIG"
+lines="$(spine_config_file evidence_tokens.txt)"
+if [ -n "$lines" ]; then
   if ! spine_re_from_lines "$lines"; then
-    # only .doctrine/ and .md touched → judge with the AFTER file (the repair itself), else refuse
     if [ -z "$(spine_touched_paths | grep -vE '^\.doctrine/|\.md$' || true)" ]; then
-      lines="$(spine_read ".doctrine/$1" | grep -vE '^[[:space:]]*(#|$)' || true)"
-      spine_re_from_lines "$lines" || spine_refuse ".doctrine/$1 still holds an invalid regular expression ('$SPINE_BAD_RE')"
+      lines="$(spine_read .doctrine/evidence_tokens.txt | grep -vE '^[[:space:]]*(#|$)' || true)"
+      spine_re_from_lines "$lines" || spine_refuse ".doctrine/evidence_tokens.txt still holds an invalid regular expression ('$SPINE_BAD_RE')"
     else
-      spine_refuse ".doctrine/$1 as of the last commit holds an invalid regular expression ('$SPINE_BAD_RE'); repair it in a change that touches only .doctrine/ and documentation"
+      spine_refuse ".doctrine/evidence_tokens.txt as of the last commit holds an invalid regular expression ('$SPINE_BAD_RE'); repair it in a change that touches only .doctrine/ and documentation"
     fi
   fi
-  LOADED_RE="${SPINE_RE:-$2}"
-}
-load_re code_paths.txt "$default_code_re"; code_re="$LOADED_RE"
-
-spine_touched_paths > "$T/touched.txt"
-[ -s "$T/touched.txt" ] || { spine_ok "NOT EVALUATED — no change"; exit 0; }
-# grep a FILE, never `printf | grep -q` (under pipefail the producer takes SIGPIPE and the pipeline
-# reports FAILURE ON SUCCESS once the input is large — a silent fail-open).
-grep -E "$code_re" "$T/touched.txt" > "$T/code.txt" 2>/dev/null || true
-[ -s "$T/code.txt" ] || { spine_ok "OK — no code path in this change"; exit 0; }
-
-# A tree file is TOP-LEVEL docs/tasks/<TREE>.md only (BK-15); TEMPLATE.md is the blank form.
-spine_changed_paths | grep -E '^docs/tasks/[^/]+\.md$' | grep -vE '(^|/)TEMPLATE\.md$' > "$T/leaves.txt" || true
-if [ ! -s "$T/leaves.txt" ]; then
-  {
-    echo "TASK-ACCEPTANCE: a CODE change is present but NO owning task-tree leaf (docs/tasks/<TREE>.md) is."
-    echo "  code paths:"; sed 's/^/    /' "$T/code.txt"
-    echo "  Stage the docs/tasks/<TREE>.md that owns this change, carrying the acceptance checklist."
-  } >&2
-  exit 1
+  [ -z "$SPINE_RE" ] || SIG="$SIG|$SPINE_RE"
 fi
 
-# ── evidence signatures ──────────────────────────────────────────────────────────────────────
-# Universal defaults: standard build-flow forensics any project has, plus generic result shapes
-# (`exit=N`, `rc=N`, `N pass / N fail`) because that is what tools actually print.
-DEFAULT_SIG='error\[E[0-9]{4}\]|could not compile|clippy::[a-z_]{3,}|panicked at|assertion (failed|`)|test result: (ok|FAILED)|running [0-9]+ tests?|cargo (test|build|bench|flamegraph)|flamegraph|self-time|call-graph|/usr/bin/sample|\bspindump\b|\bperf (record|stat)\b|\bvalgrind\b|git (ls-files|log -S|log --all -S|rev-list|fsck|reflog|diff-tree|merge-base|cat-file|show )|\bshellcheck\b|bash -n |sh -n |make -n |make --dry-run|\bE2BIG\b|\bENOSPC\b|\bEACCES\b|\bARG_MAX\b|exit(ed)?[ =:](code )?[0-9]+|\brc=[0-9]+|PIPESTATUS|[0-9]+ (pass|passed|ok)[ ,/]+[0-9]+ (fail|failed)|version [0-9]{4,}|[0-9]+\.[0-9]+\.[0-9]+'
-SIG="$DEFAULT_SIG"
-load_re evidence_tokens.txt ""; extra="$LOADED_RE"
-[ -n "$extra" ] && SIG="$SIG|$extra"
+# the leaf's section, with absolute line numbers
+sed -n "${start},${end}p" "$T/after.md" | awk -v s="$start" '{ printf "%d\t%s\n", NR+s-1, $0 }' > "$T/section.tsv"
 
 fail=0
-while IFS= read -r leaf; do
-  [ -n "$leaf" ] || continue
-  spine_read "$leaf" > "$T/leaf.md" || continue
-  for spec in 'ROOT CAUSE:root.?cause' 'ADDRESSED:addressed' 'NO REGRESSION:no.?regress'; do
-    label="${spec%%:*}"; kw="${spec#*:}"
-    # A box's BULLET = the "- [x] ..." line plus its indented continuation lines. POSIX awk only:
-    # no IGNORECASE (a gawk extension BSD awk silently ignores); tolower() is POSIX.
-    awk -v kw="$kw" '
-      BEGIN{ inbox=0 }
-      {
-        line = $0
-        isbox = (line ~ /^[[:space:]]*-[[:space:]]*\[[xX ]\]/)
-        if (isbox) {
-          if (inbox) exit
-          if (match(tolower(line), kw)) { inbox=1; print; next }
-          next
-        }
-        if (inbox) {
-          if (line ~ /^[[:space:]]+/ || line ~ /^[[:space:]]*$/) { print; next }
-          exit
-        }
-      }
-    ' "$T/leaf.md" > "$T/box.txt"
-    if [ ! -s "$T/box.txt" ]; then
-      spine_fail "$leaf has no '$label' box in its acceptance checklist."; fail=1; continue
-    fi
-    if ! head -1 "$T/box.txt" | grep -qE '\[[xX]\]'; then
-      spine_fail "$leaf — the '$label' box is present but NOT ticked."; fail=1; continue
-    fi
-    if ! grep -qE "$SIG" "$T/box.txt"; then
-      {
-        echo "TASK-ACCEPTANCE: $leaf — the '$label' box is ticked but carries no tool-output evidence"
-        echo "  INSIDE ITS OWN BULLET. A tick is a claim; the box asks for output from a command you ran."
-        echo "  Add the invocation and its real output to that bullet, or declare your project's own"
-        echo "  signatures in .doctrine/evidence_tokens.txt (one extended regular expression per line)."
-      } >&2
-      fail=1
-    fi
-  done
-done < "$T/leaves.txt"
+for label in 'ROOT CAUSE' 'ADDRESSED' 'NO REGRESSION'; do
+  # the box lines carrying this label at the START of the bold text
+  awk -F'\t' -v L="$label" '$2 ~ ("^[[:space:]]*-[[:space:]]*\\[[xX ]\\][[:space:]]*\\*\\*" L) { print $1 }' "$T/section.tsv" > "$T/boxes.nums"
+  n="$(wc -l < "$T/boxes.nums" | tr -d ' ')"
+  if [ "$n" -eq 0 ]; then spine_fail "leaf $leaf has no '$label' box (a box is '- [x] **${label}…**', label first)"; fail=1; continue; fi
+  if [ "$n" -gt 1 ]; then spine_fail "leaf $leaf has $n '$label' boxes — exactly one per label"; fail=1; continue; fi
+  box="$(cat "$T/boxes.nums")"
+  # the bullet: the box line plus its indented / blank continuation lines, up to the next flush line
+  awk -F'\t' -v b="$box" '
+    $1 == b { print; inb = 1; next }
+    inb { if ($2 ~ /^[[:space:]]+[^[:space:]]/ && $2 !~ /^[[:space:]]*-[[:space:]]*\[[xX ]\]/) print; else if ($2 ~ /^[[:space:]]*$/) print; else exit }
+  ' "$T/section.tsv" > "$T/bullet.tsv"
+  if ! sed -n "${box}p" "$T/after.md" | grep -qE '\[[xX]\]'; then
+    spine_fail "leaf $leaf — the '$label' box is present but NOT ticked"; fail=1; continue
+  fi
+  # fresh: at least one bullet line is added in this change
+  if ! awk -F'\t' 'NR==FNR { a[$1]=1; next } ($1 in a) { f=1 } END { exit (f ? 0 : 1) }' "$T/added.nums" "$T/bullet.tsv"; then
+    spine_fail "leaf $leaf — the '$label' box carries no line added in this change: evidence must be NEW here, not inherited from an earlier commit"; fail=1; continue
+  fi
+  # evidence: a result signature INSIDE a code span (or a fenced block) of the bullet.
+  # ⛔ The bullet is FLATTENED first: Markdown lets an inline code span wrap onto the next line, and
+  #    a per-line scan then sees an unclosed backtick, loses the span and shifts the parity of every
+  #    span after it — measured on this repository's own leaf `.3`, whose wrapped
+  #    `arms: … (of 37)` span hid the `rc=0` beside it.
+  cut -f2- "$T/bullet.tsv" | awk '
+    /^[[:space:]]*```/ { fence = !fence; next }
+    fence { print; next }
+    { line = $0; sub(/^[[:space:]]+/, "", line); s = s (s == "" ? "" : " ") line }
+    END { while (match(s, /`[^`]+`/)) { print substr(s, RSTART+1, RLENGTH-2); s = substr(s, RSTART+RLENGTH) } }
+  ' > "$T/spans.txt"
+  if ! grep -qE "$SIG" "$T/spans.txt"; then
+    {
+      echo "TASK-ACCEPTANCE: leaf $leaf — the '$label' box is ticked but no tool output sits INSIDE a code span of its bullet."
+      echo "  A tick is a claim. Cite the command and its result in backticks, e.g. \`scripts/gate\` → \`=== all doctrines green ===\` (\`rc=0\`),"
+      echo "  or paste the line \`scripts/evidence -- <command>\` prints. Prose, a version number or a tool's name is not evidence."
+      echo "  Declare your own tools' result shapes in .doctrine/evidence_tokens.txt (one extended regular expression per line)."
+    } >&2
+    fail=1
+  fi
+done
 
 [ "$fail" -eq 0 ] || exit 1
-spine_ok "OK (every code-change leaf carries a ticked, evidence-backed checklist)"
+spine_ok "OK — leaf $leaf: three boxes ticked, each with new tool output in its own bullet"
 exit 0

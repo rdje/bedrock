@@ -1,5 +1,38 @@
 # CHANGELOG.md
 
+## 0.14.0 — 2026-09-30 — the ownership contract as code: a leaf owns a commit only if that commit's evidence is in it
+
+`BEDROCK-REVIEW-0004` (leaf `REVIEW-2026-09.4`). The contract in `docs/decisions/decision_ownership_contract.md`,
+implemented and enforced at `commit-msg` time and per commit in CI.
+
+- ✅ **Deny-by-default governance** (NT-03, BK-05, BK-07, BR-07): every path is governed except documentation
+  (Markdown/text, licence files, images, `.gitignore`, and what `.doctrine/docs_paths.txt` declares); the spine
+  set — hooks, workflows, `.doctrine/`, `scripts/check_*`, `scripts/lib`, `DOCTRINE_VERSION` — is governed
+  whatever a project declares. Dart, Perl, Julia, C, a hook, a workflow: all refused without a leaf, with zero
+  configuration. `.doctrine/code_paths.txt` is retired and refused if present.
+- ✅ **The leaf is bound by the subject** (BR-02, BK-01): a governed commit names exactly one `(leaf <TREE>.<n>)`;
+  the tree file is in the commit; the leaf's section gains lines; a leaf already `done` may own nothing — open
+  a child leaf. An open leaf may own several commits.
+- ✅ **Evidence is new and in a code span** (BK-03, NT-04): labels anchored (`- [x] **ROOT CAUSE…`), one per
+  leaf; each box gains a line in this commit; a result signature (`rc=0`, `exit 1`, `12 passed / 0 failed`, a
+  declared token) sits inside backticks. Prose, a bare version number or a tool's name is not evidence.
+  `scripts/evidence -- <command>` prints a tool-neutral `evidence: rc=N cmd="…"` line for any ecosystem.
+- ✅ **Exceptions are trailers** (BK-08): `Spine-Exception: <reason>` is the only bypass, honoured by every check,
+  stored in history, listed and counted by CI. `SPINE_ALLOW_UNOWNED` is gone.
+- ✅ **Agents are data** (BK-11, NT-09): trailers are read with `git interpret-trailers`; an agent is recognised by
+  `.doctrine/agent_identities` (addresses, exact product names), never by a human's first name. The subject must
+  start with a work-unit id (`PROJ-AREA-0007`); `hello` no longer passes (BR-21). Merge subjects are exempt.
+- 📊 **The replay** (BK-02): the contract over this repository's 19 commits → 18 fail it (11 on evidence shape,
+  4 on the done-leaf rule, 18 on inventory documents that did not exist yet); `7b6d898` onward is green.
+  Recorded in the leaf; nothing rewritten.
+- ⚠️ **Shape change for every child** (a migration ships with `REVIEW-2026-09.6`):
+  1. the acceptance checklist moves **inside each leaf** (`docs/tasks/TEMPLATE.md`), labels first in the bold;
+  2. a governed commit's subject **must** carry `(leaf <TREE>.<n>)` and start with a work-unit id;
+  3. evidence goes inside backticks; declare your tools' result shapes in `.doctrine/evidence_tokens.txt`;
+  4. delete `.doctrine/code_paths.txt`; declare extra documentation in `.doctrine/docs_paths.txt`;
+  5. a follow-up to a done leaf is a child leaf.
+- Conformance suite: `arms: 40 pass / 6 xfail / 0 fail / 0 xpass (of 46)`; probe fixtures rewritten to the new shape.
+
 ## 0.13.0 — 2026-09-30 — every check reads the change through one library, and an error is never a pass
 
 `BEDROCK-REVIEW-0003` (leaf `REVIEW-2026-09.3`).

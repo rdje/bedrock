@@ -1,0 +1,12 @@
+# .doctrine/docs_paths.txt — extra DOCUMENTATION paths, one extended regular expression per line.
+#
+# Governance is deny-by-default: every path is governed (needs an owning leaf with evidence) except
+# documentation. Built in: Markdown/text/reStructuredText/AsciiDoc, LICENSE/NOTICE/COPYING/AUTHORS/
+# CHANGELOG files, .gitignore, images. Declare here what else is documentation in THIS project —
+# a docs site's assets, literate sources that are really prose, fixtures that are pure text.
+# The spine set (hooks, workflows, .doctrine/, scripts/check_*, scripts/lib, DOCTRINE_VERSION) is
+# governed whatever is declared here. Read as of the last commit; an invalid line is refused.
+#
+# Examples:
+#   ^docs/site/
+#   \.(csv|json)$
