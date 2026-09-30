@@ -1,5 +1,11 @@
 # CHANGELOG.md
 
+## 1.0.3 — 2026-09-30 — the macOS self-test leg runs in the template only
+
+`BEDROCK-REVIEW-0013` (leaf `REVIEW-2026-09.9.3`). A project created from bedrock inherited the Linux + macOS
+matrix; macOS minutes cost ten times the Linux rate in a private repository, and outside the template that
+leg runs no suite. The matrix is now Linux and macOS in a repository named `bedrock`, Linux only elsewhere.
+
 ## 1.0.2 — 2026-09-30 — a child's CI is green on its first push
 
 `BEDROCK-REVIEW-0012` (leaf `REVIEW-2026-09.9.2`). 1.0.1 was the first fully green run on GitHub (`enforce`,

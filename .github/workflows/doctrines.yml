@@ -44,10 +44,12 @@ jobs:
     # over every script, shellcheck, and the conformance suite that builds children (no pack, each
     # pack, each harness) and runs the review's scenarios against the tree under test — on Linux
     # AND macOS, because macOS (stock bash 3.2, BSD sed and awk) is where GNU-only assumptions break.
+    # The macOS leg runs in the template only: a project created from it would pay ten times the Linux
+    # rate for macOS minutes in a private repository, for a suite that does not apply there.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: ${{ fromJSON(github.event.repository.name == 'bedrock' && '["ubuntu-latest","macos-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (pinned by commit)
