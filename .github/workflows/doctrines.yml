@@ -70,10 +70,12 @@ jobs:
           bash docs/tasks/artifacts/task_acceptance/run_task_acceptance_probes.sh
           bash docs/tasks/artifacts/waiver_routing/run_waiver_routing_probes.sh
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch, pinned by commit
+        if: hashFiles('MAINTAINING.md') != ''
         with:                                                                   # the Rust pack's arm runs cargo in a generated child
           toolchain: stable
           components: rustfmt, clippy
-      - name: Conformance suite (the review's scenarios against this tree)
+      - name: Conformance suite (the template's own test; not applicable in a project created from it)
+        if: hashFiles('MAINTAINING.md') != ''
         run: |
           git config --global user.email ci@example.invalid
           git config --global user.name ci

@@ -127,6 +127,15 @@ bedrock_itself_green_in_ci_mode         req    NT-14
 ci_range_respects_contract_epoch        req    BR-04
 "
 
+# ⛔ THE SUITE IS THE TEMPLATE'S TEST: every arm builds a child from a PRISTINE copy of bedrock (its
+#   maintainer files, its packs). In a project created from bedrock neither exists, so the suite does not
+#   apply there — it says so and exits 0 rather than fail for a reason that is not a defect. A project
+#   proves its own spine with `scripts/gate`, each check's `--self-test`, and the probe drivers.
+if [ ! -f MAINTAINING.md ] || [ ! -d packs ]; then
+  printf 'spine_tests: NOT APPLICABLE — this is a project created from bedrock, not the template; the conformance suite builds children from the pristine template. Run scripts/gate here.\n'
+  exit 0
+fi
+
 if [ "$LIST" = 1 ]; then
   printf '%s\n' "$ARMS" | awk 'NF==3 { printf "  %-40s %-6s %s\n", $1, $2, $3 }'
   exit 0

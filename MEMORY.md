@@ -8,6 +8,6 @@
 
 - next_action: `BEDROCK-MAINTENANCE.4` — the enhancement loop after 1.0.0; first candidate: evidence re-run in CI (`evidence: rc=N cmd=…` lines re-executed, `rc` compared). Read `MAINTAINING.md` first, then the candidate list in `docs/tasks/BEDROCK-MAINTENANCE.md`.
 - active_work_unit: `BEDROCK-MAINTENANCE` → frontier leaf `BEDROCK-MAINTENANCE.4` (`pending`); the review tree `REVIEW-2026-09` is done.
-- latest_commit: `BEDROCK-REVIEW-0011`.
+- latest_commit: `BEDROCK-REVIEW-0012`.
 - in_flight_uncommitted: none.
 - blockers: none.

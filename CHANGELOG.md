@@ -1,5 +1,17 @@
 # CHANGELOG.md
 
+## 1.0.2 — 2026-09-30 — a child's CI is green on its first push
+
+`BEDROCK-REVIEW-0012` (leaf `REVIEW-2026-09.9.2`). 1.0.1 was the first fully green run on GitHub (`enforce`,
+the Linux and the macOS self-test).
+
+- 🔴 The conformance suite builds children from the pristine template, so inside a project created from
+  bedrock it failed (`no such pack: lang/rust`), and the workflow every child inherits ran it. ✅ Outside the
+  template the suite now says `NOT APPLICABLE` and exits 0, and the workflow's suite and toolchain steps run
+  only where `MAINTAINING.md` exists. A child's CI still runs the enforcer per commit, every `--self-test`,
+  the probe drivers, the syntax pass and shellcheck.
+- Conformance suite (in bedrock): `arms: 86 pass / 0 xfail / 0 fail / 0 xpass (of 86)`.
+
 ## 1.0.1 — 2026-09-30 — what the first push showed: CI judges from the contract epoch on
 
 `BEDROCK-REVIEW-0011` (leaf `REVIEW-2026-09.9.1`). The first GitHub run of 1.0.0 was red in two jobs, both
