@@ -1,9 +1,18 @@
 name: doctrines
 # E4 enforcement: the SAME doctrine enforcer the pre-commit hook runs, so a locally
-# --no-verify'd commit still fails here.
+# --no-verify'd commit still fails here — plus the enforcer's OWN tests, so a regression in a
+# check is caught by CI and not by whoever remembers to run --self-test by hand (BK-19).
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctrines-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   enforce:
@@ -16,3 +25,44 @@ jobs:
         run: chmod +x scripts/*.sh knowledge-map/scripts/*.sh .githooks/pre-commit .githooks/commit-msg || true
       - name: Run the doctrine enforcer
         run: scripts/check_doctrines.sh
+
+  enforcer-selftest:
+    # The enforcer judging itself: every check's --self-test, both probe drivers, a syntax pass
+    # over every script, shellcheck, and the conformance suite that builds a child and runs the
+    # review's scenarios against the tree under test.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Make spine scripts executable
+        run: chmod +x scripts/*.sh scripts/tests/*.sh knowledge-map/scripts/*.sh .githooks/pre-commit .githooks/commit-msg docs/tasks/artifacts/*/*.sh || true
+      - name: Syntax — every shell script parses
+        run: |
+          set -e
+          for f in $(git ls-files '*.sh') .githooks/pre-commit .githooks/commit-msg; do bash -n "$f"; done
+          echo "bash -n: $(git ls-files '*.sh' | wc -l) scripts + 2 hooks parse"
+      - name: Each check's --self-test
+        run: |
+          set -e
+          for c in scripts/check_gap_claims.sh scripts/check_lesson_promotion.sh scripts/check_live_doc_currency.sh scripts/check_routing_evidence.sh scripts/check_table_arity.sh; do
+            bash "$c" --self-test
+          done
+      - name: Probe drivers
+        run: |
+          set -e
+          bash docs/tasks/artifacts/task_acceptance/run_task_acceptance_probes.sh
+          bash docs/tasks/artifacts/waiver_routing/run_waiver_routing_probes.sh
+      - name: Conformance suite (the review's scenarios against this tree)
+        run: |
+          git config --global user.email ci@example.invalid
+          git config --global user.name ci
+          bash scripts/tests/spine_tests.sh
+      - name: shellcheck — errors block
+        run: |
+          sudo apt-get install -y -qq shellcheck >/dev/null
+          shellcheck --version | head -2
+          shellcheck -S error $(git ls-files '*.sh') .githooks/pre-commit .githooks/commit-msg
+      - name: shellcheck — full report (advisory until a baseline is checked in)
+        continue-on-error: true
+        run: shellcheck -f gcc $(git ls-files '*.sh') .githooks/pre-commit .githooks/commit-msg | grep -oE '\[SC[0-9]+\]' | sort | uniq -c | sort -rn

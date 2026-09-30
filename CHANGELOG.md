@@ -1,5 +1,22 @@
 # CHANGELOG.md
 
+## 0.12.0 — 2026-09-30 — the conformance suite: the review's scenarios as arms, and CI tests the enforcer
+
+`BEDROCK-REVIEW-0002` (leaf `REVIEW-2026-09.2`).
+
+- ✅ **`scripts/tests/spine_tests.sh`** builds a child from the working tree the way a user would (one-commit
+  copy, `bootstrap.sh demo`, the printed first commit) and runs 31 arms: the review's §10 reproductions and
+  §9 additions. A RED arm must be refused **by the named check**; a GREEN control must pass.
+- ⭐ **Open items are `xfail`, never deleted.** The run is green while they fail as expected and turns red the
+  moment one starts passing (`XPASS`), so the leaf that fixes an item has to promote its arm to `req` in the
+  same commit. Today: `arms: 2 pass / 29 xfail / 0 fail / 0 xpass`.
+- ✅ **CI gains `enforcer-selftest`** (BK-19): a syntax pass over every script, the five `--self-test`s, both
+  probe drivers, the suite, and shellcheck (errors block; the full report is advisory until a baseline is
+  checked in). `permissions: contents: read`, `concurrency` and `workflow_dispatch` added while there.
+- ⚠️ The harness reported one `XPASS` on its first run and it was the harness's own defect: the driver names
+  every check on its ✅ line, so "refused by X" matched any failure. Fixed; recorded in the leaf.
+- Portability: the suite runs identically under bash 5.3 and stock macOS `/bin/bash` 3.2.
+
 ## 0.11.0 — 2026-09-30 — the consolidated review: decisions, licence, and the tree that closes it
 
 `BEDROCK-REVIEW-0001` (leaf `REVIEW-2026-09.1`, phase 0 of `BEDROCK-MAINTENANCE.3`). An external
