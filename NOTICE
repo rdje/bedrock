@@ -24,9 +24,9 @@ What this means for a project created from this template
    with the spine's gates, or building it in a directory that contains the spine, does not make
    that project a derivative work of the spine.
 
-3. SEED files — content the template creates for you to own and rewrite (starter code under a
-   language pack, ROADMAP.md, README.md, the live documents, a task-tree or decision record
-   copied from its template, VISIBILITY.md) — are provided under the Zero-Clause BSD licence
+3. SEED files — content the template creates for you to own and rewrite (a pack's starter files
+   such as the Rust crate or the mdBook skeleton, ROADMAP.md, README.md, the live documents, a
+   task-tree or decision record copied from its template, VISIBILITY.md) — are provided under the Zero-Clause BSD licence
    (0BSD) reproduced below, so you may keep, change or relicense them without any obligation.
 
 The class of every shipped path (spine, seed-once, project-owned) is declared by the

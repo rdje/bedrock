@@ -49,8 +49,11 @@ bounds="$(spine_leaf_bounds "$T/after.md" "$leaf")"
 start="${bounds% *}"; end="${bounds#* }"
 spine_added_lines "$file" | sort -un > "$T/added.nums"
 
-# ── result signatures: what a tool PRINTS, never what it is called ───────────────────────────
-DEFAULT_SIG='\brc=[0-9]+|\bexit(ed)?[ =:](code )?[0-9]+|[0-9]+ (pass|passed|ok)[ ,/]+[0-9]+ (fail|failed)|test result: (ok|FAILED)|running [0-9]+ tests?|error\[E[0-9]{4}\]|could not compile|clippy::[a-z_]{3,}|panicked at|assertion (failed|`)|\bE2BIG\b|\bENOSPC\b|\bEACCES\b|\bARG_MAX\b|PIPESTATUS|^evidence: rc='
+# ── result signatures: what a tool PRINTS, never what it is called — and no language's own output
+#    in the spine (NT-04, NT-09): a language pack appends its compiler's and test runner's shapes to
+#    .doctrine/evidence_tokens.txt at install. The defaults are tool-neutral result shapes and the
+#    errno names every platform prints.
+DEFAULT_SIG='\brc=[0-9]+|\bexit(ed)?[ =:](code )?[0-9]+|[0-9]+ (pass|passed|ok)[ ,/]+[0-9]+ (fail|failed)|\b(all|no) tests? (passed|failed)\b|\bE2BIG\b|\bENOSPC\b|\bEACCES\b|\bENOENT\b|\bARG_MAX\b|PIPESTATUS|^evidence: rc='
 SIG="$DEFAULT_SIG"
 lines="$(spine_config_file evidence_tokens.txt)"
 if [ -n "$lines" ]; then

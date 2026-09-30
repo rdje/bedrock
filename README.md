@@ -1,10 +1,10 @@
 # bedrock — a project discipline-spine template
 
-**bedrock** is a starting point for a new project that ships with a battle-tested
-*discipline spine* already wired in: durable memory, task-tree tracking, a strict commit
-workflow, mechanical doctrine enforcement, a knowledge map, and an mdBook — all
-project-neutral. Copy it, drop in your roadmap, and grow the project with that spine as its
-backbone.
+**bedrock** is a starting point for a new project in **any language, under any AI harness or
+none**, with a battle-tested *discipline spine* already wired in: durable memory, task-tree
+tracking, a strict commit workflow, mechanical doctrine enforcement, and a knowledge map. A
+language, a docs tool or a harness file is an opt-in **pack**. Create a project from it, drop
+in your roadmap, and grow the project with that spine as its backbone.
 
 ## Why a spine
 
@@ -25,38 +25,33 @@ Cursor, a custom runner — or a human, identically.
 | `TOOLBOX.md` | the tools-first diagnostic doctrine |
 | `VISIBILITY.md` | the repository's declared visibility posture — **public**, and what that means for confidential material |
 | `KNOWLEDGE_MAP.md` + `knowledge-map/` | a derived, drift-proof orientation map |
-| `docs/book/` | an mdBook skeleton — the public docs surface |
 | `.githooks/` + `.github/workflows/` | the E3 (hook) + E4 (CI) enforcement layers |
+| `scripts/gate` · `scripts/run <verb>` · `scripts/handoff` | the enforcer; the project's declared commands; the session-end check |
 | `MEMORY.md` · `CHANGELOG.md` · `DEV_NOTES.md` · `LIVE_STATUS.md` | the seeded live-docs |
 | `ROADMAP.md` | **the one file you replace** — your project's roadmap |
-| `Cargo.toml` · `crates/` · `Makefile` | a minimal Rust workspace + `make check`/`make gate` |
+| `packs/` | opt-in: `lang/rust`, `docs/mdbook`, harness adapters (`claude`, `gemini`, `cursor`, `copilot`, `windsurf`) — see `packs/README.md` |
 
 ## Use it
 
-**Option A — `cargo generate` (Rust-native):**
+**The stress-free way** — clone bedrock once, then let it ask you the questions:
 
 ```bash
-cargo generate --git <this-repo-url> --name <project>
+git clone https://github.com/rdje/bedrock && cd bedrock && scripts/new_project.sh
 ```
 
-**Option B — GitHub "Use this template"** (enable the *Template repository* setting).
+It asks for a name, a title, a work-unit prefix, the visibility, a language pack, a docs pack and
+harness adapters (Enter accepts each default, every choice is listed), shows a summary, then
+creates the repository — on GitHub from this template when `gh` is logged in, otherwise locally —
+bootstraps it with your answers, makes the first commit through the hooks and offers the push.
 
-(`gh repo create <name> --template rdje/bedrock --clone` does the copy and the clone in one step.)
+**Or from GitHub's "Use this template"** button: clone your new repository, `cd` into it, and run
+`./scripts/bootstrap.sh` on a terminal — the same questions — then **commit with the exact command
+it prints**. Flags answer in advance: `./scripts/bootstrap.sh <name> --lang rust --harness claude --yes`.
 
-Then, either way, `cd <project>` and finalize with one command:
-
-1. `./scripts/bootstrap.sh <project>` — validates the name, de-templates, records the identity in
-   `.bedrock/project`, installs the git hooks, generates the Knowledge Map, seeds the leaf that owns
-   this step, **stages everything and judges it with the enforcer** — then **commit with the exact
-   command it prints**. The canonical post-copy step for both paths (option A needs `cargo install
-   cargo-generate`).
-2. Replace `ROADMAP.md` with your project's roadmap, then create your first task-tree
-   (`cp docs/tasks/TEMPLATE.md docs/tasks/<TREE-ID>.md`) and register it in `docs/TASK_TREE.md`.
-3. Grow the project one task-tree leaf at a time, committed via `COMMIT.md`; end every session
-   with `scripts/handoff`.
-
-Anyone who clones the project later runs only `./scripts/bootstrap.sh --contributor` (or
-`make hooks`) — never the naming bootstrap.
+Then: replace `ROADMAP.md` with your roadmap, create your first task-tree from
+`docs/tasks/TEMPLATE.md` and register it in `docs/TASK_TREE.md`, grow the project one leaf at a
+time via `COMMIT.md`, and end every session with `scripts/handoff`. Anyone who clones the project
+later runs only `./scripts/bootstrap.sh --contributor` — never the naming bootstrap.
 
 ## Keep the spine current
 

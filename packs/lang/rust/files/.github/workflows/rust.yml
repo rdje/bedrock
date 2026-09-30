@@ -1,0 +1,24 @@
+name: rust
+# Shipped by the Rust pack (packs/lang/rust). The toolchain is pinned by rust-toolchain.toml.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: The project's declared check (fmt --check, clippy -D warnings, test)
+        run: bash scripts/run check

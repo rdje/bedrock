@@ -1,0 +1,2 @@
+# mdbook pack
+docs = mdbook build docs/book

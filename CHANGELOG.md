@@ -1,5 +1,36 @@
 # CHANGELOG.md
 
+## 0.19.0 — 2026-09-30 — the neutral spine and the packs; the guided setup; new_project.sh
+
+`BEDROCK-REVIEW-0009` (leaf `REVIEW-2026-09.8`), per `docs/decisions/decision_neutral_spine_and_packs.md`.
+
+- ✅ **The default child contains no language, no docs tool and no harness file** (NT-01). Rust
+  (`packs/lang/rust`: workspace, starter crate named after the project, rustfmt, clippy, tests, a pinned
+  toolchain, `rust.yml`, a `Makefile`), mdBook (`packs/docs/mdbook`) and six harnesses
+  (`packs/harness/claude` — the default — `codex`, `pi`, `kimi`, `qwen`, `gemini`) are opt-in packs.
+  Codex, Pi and Kimi read `AGENTS.md` natively and ship only their hand-off exclusions; Claude, Qwen and
+  Gemini get a one-line `@AGENTS.md` adapter. Unselected packs are never copied (BR-19).
+- ✅ **Entry points are scripts** (NT-05): `scripts/gate` (the enforcer), `scripts/run <verb>` (the project's
+  verbs from `.doctrine/commands`; a pack appends its own; an undeclared verb is refused), `scripts/handoff`.
+  `cargo-generate.toml` is gone (BR-22).
+- ✅ **No language or harness in spine logic** (NT-09): result signatures, agent identities, harness adapter
+  files and hand-off exclusions are data under `.doctrine/`, appended by packs.
+- ✅ **The guided setup**: `scripts/bootstrap.sh` on a terminal asks name, title, prefix, visibility, language
+  pack, docs pack and harness packs — every choice listed, a default accepted with Enter (harness default:
+  claude), invalid input re-asked, a summary and a confirmation before anything is written; flags and
+  `--yes` are the non-interactive path.
+- ✅ **`scripts/new_project.sh`**, run from a clone of bedrock: the same questions, then the repository is
+  created — on GitHub through `gh` from this template, or locally — cloned, bootstrapped with the answers,
+  committed through the hooks, and pushed if wanted. Nobody types `gh repo create`.
+- ✅ The updater syncs installed packs (`sync` files fast-forward, `seed` files are the project's) and
+  `--add-pack <kind/name>` installs one later; migration 0006 records the packs an older child already has.
+- Conformance suite: `arms: 84 pass / 0 xfail / 0 fail / 0 xpass (of 84)` under bash 5.3 and 3.2.
+- ⚠️ **For existing children:** your Rust files, `Makefile` and `docs/book/` stay yours (the manifest no
+  longer lists them; migration 0006 records `packs = rust,…` in `.bedrock/project`); `.doctrine/commands`,
+  `handoff_ignore` and `harness_adapters` are seeded; `make gate` becomes `scripts/gate` and `make check`
+  becomes `scripts/run check` (add your verbs to `.doctrine/commands`). If your `CLAUDE.md` is still the
+  full instruction body, migration 0004 moves it to `AGENTS.md`.
+
 ## 0.18.0 — 2026-09-30 — the remaining check defects; no review scenario is open
 
 `BEDROCK-REVIEW-0008` (leaf `REVIEW-2026-09.7`).

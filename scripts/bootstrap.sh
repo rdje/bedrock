@@ -2,10 +2,15 @@
 # scripts/bootstrap.sh — first-time setup for a project created from bedrock (REVIEW-2026-09.5).
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-#   scripts/bootstrap.sh <project-name> [--title "<display title>"] [--prefix <WORK-UNIT-PREFIX>]
-#       initialise a NEW project from a pristine copy of the template: validate, de-template, set the
-#       name, install the hooks, regenerate the Knowledge Map, seed the leaf that owns this very step,
-#       STAGE everything, judge the staged index with the enforcer, and print the first commit.
+#   scripts/bootstrap.sh [<project-name>] [--title "<t>"] [--prefix <P>] [--visibility public|private]
+#                        [--lang <pack>|none] [--docs <pack>|none] [--harness <a,b>|none] [--yes] [--ask]
+#       initialise a NEW project from a pristine copy of the template. On a terminal without --yes it
+#       ASKS — name, title, prefix, visibility, language pack, docs pack, harness adapters — showing
+#       the choices and a default accepted with Enter, then a summary and a confirmation. Flags answer
+#       questions in advance; --yes takes every default without asking; --ask asks even when piped.
+#       Then: validate, de-template, install the selected packs, record the identity, install the
+#       hooks, regenerate the Knowledge Map, seed the leaf that owns this step, STAGE everything, judge
+#       the staged index with the enforcer, and print the first commit.
 #   scripts/bootstrap.sh --contributor     in an initialised project: install the hooks, nothing else
 #   scripts/bootstrap.sh --maintainer      in bedrock itself: hooks, map, enforcer; no de-templating
 #   scripts/bootstrap.sh                   in an initialised project = --contributor;
@@ -34,19 +39,28 @@ cd "$ROOT" || exit 2
 die() { printf 'bootstrap: %s\n' "$*" >&2; exit 2; }
 
 # ── arguments ─────────────────────────────────────────────────────────────────────────────────
-mode=""; name=""; title=""; prefix=""
+. "$(dirname "${BASH_SOURCE[0]}")/lib/setup_questions.sh"
+mode=""; name=""; title=""; prefix=""; YES=0; ASK=0
+NAME=""; TITLE=""; PREFIX=""; VISIBILITY=""; LANG_PACK=""; DOCS_PACK=""; HARNESS_PACKS=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --contributor) mode=contributor ;;
     --maintainer)  mode=maintainer ;;
-    --title)  shift; title="${1:-}" ;;
-    --prefix) shift; prefix="${1:-}" ;;
-    -h|--help) sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --title)  shift; TITLE="${1:-}" ;;
+    --prefix) shift; PREFIX="${1:-}" ;;
+    --visibility) shift; VISIBILITY="${1:-}" ;;
+    --lang) shift; LANG_PACK="${1:-none}" ;;
+    --docs) shift; DOCS_PACK="${1:-none}" ;;
+    --harness) shift; HARNESS_PACKS="${1:-none}" ;;
+    --yes) YES=1 ;;
+    --ask) ASK=1 ;;
+    -h|--help) sed -n '2,19p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) die "unknown option $1" ;;
     *) [ -z "$name" ] || die "one project name only (got '$name' and '$1')"; name="$1" ;;
   esac
   shift
 done
+NAME="$name"
 
 # ── preflight (nothing is written before this block ends) ───────────────────────────────────
 for t in git awk sed grep; do command -v "$t" >/dev/null 2>&1 || die "required tool missing: $t"; done
@@ -54,12 +68,15 @@ for t in git awk sed grep; do command -v "$t" >/dev/null 2>&1 || die "required t
 initialised=0; [ -f .bedrock/project ] && initialised=1
 pristine=0;    [ -f MAINTAINING.md ] && pristine=1
 
+interactive=0
+if [ "$ASK" = 1 ]; then interactive=1; elif [ "$YES" = 1 ]; then interactive=0; elif [ -t 0 ]; then interactive=1; fi
 if [ -z "$mode" ]; then
   if [ -n "$name" ]; then mode=init
   elif [ "$initialised" = 1 ]; then mode=contributor
+  elif [ "$pristine" = 1 ] && [ "$interactive" = 1 ]; then mode=init
   elif [ "$pristine" = 1 ]; then
-    { echo "bootstrap: this is an uninitialised copy of the bedrock template. Give it a name:"
-      echo "    scripts/bootstrap.sh <project-name>          (make bootstrap NAME=<project-name>)"
+    { echo "bootstrap: this is an uninitialised copy of the bedrock template. Give it a name, or run it on a terminal to be asked:"
+      echo "    scripts/bootstrap.sh <project-name> [--lang rust] [--docs mdbook] [--harness claude] [--yes]"
       echo "  Maintaining bedrock itself?  scripts/bootstrap.sh --maintainer"; } >&2
     exit 2
   else die "neither an initialised project (.bedrock/project) nor a pristine template copy (MAINTAINING.md); nothing to do"; fi
@@ -79,15 +96,23 @@ case "$mode" in
     bash scripts/check_doctrines.sh; exit ;;
 esac
 
-# init mode: validate everything, then check the ground
-printf '%s' "$name" | grep -Eq '^[A-Za-z][A-Za-z0-9_-]{0,63}$' \
-  || die "project name '$name' is not valid: a letter, then letters, digits, '-' or '_' (max 64) — it names the crate, the identity file and the work-unit prefix"
-[ -n "$title" ] || title="$name"
-case "$title" in *'`'*|*'\'*) die "the title may not contain a backquote or a backslash" ;; esac
-[ "${#title}" -le 120 ] || die "the title is longer than 120 characters"
-[ -n "$prefix" ] || prefix="$(printf '%s' "$name" | tr '[:lower:]_' '[:upper:]-' | tr -cd 'A-Z0-9-' | sed 's/^-*//; s/-*$//; s/--*/-/g')"
-printf '%s' "$prefix" | grep -Eq '^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$' \
-  || die "work-unit prefix '$prefix' is not valid: uppercase words joined by '-' (pass --prefix)"
+# init mode: the questions (interactive) or the defaults, then validate everything, then check the ground
+if [ "$interactive" = 1 ] && [ "$pristine" = 1 ] && [ "$initialised" = 0 ]; then
+  setup_questions "$ROOT" "${name:-$(basename "$ROOT")}"
+  setup_summary
+  ask_yes_no "Proceed with this setup? Nothing has been written yet" y || { q_say "bootstrap: stopped; nothing written"; exit 2; }
+else
+  [ -n "$NAME" ] || NAME="$(basename "$ROOT")"
+fi
+name="$NAME"; title="${TITLE:-$NAME}"; prefix="${PREFIX:-$(derive_prefix "$NAME")}"; VISIBILITY="${VISIBILITY:-public}"
+[ "$LANG_PACK" = none ] && LANG_PACK=""; [ "$DOCS_PACK" = none ] && DOCS_PACK=""; [ "$HARNESS_PACKS" = none ] && HARNESS_PACKS=""
+valid_name "$name"   || die "project name '$name' is not valid"
+valid_title "$title" || die "the title is not valid"
+valid_prefix "$prefix" || die "work-unit prefix '$prefix' is not valid (pass --prefix)"
+case "$VISIBILITY" in public|private) ;; *) die "--visibility is public or private" ;; esac
+for p in ${LANG_PACK:+lang/$LANG_PACK} ${DOCS_PACK:+docs/$DOCS_PACK} $(printf '%s' "$HARNESS_PACKS" | tr ',' ' ' | sed 's/[^ ]*/harness\/&/g'); do
+  [ -f "packs/$p/pack" ] || die "no such pack: $p (available: $(ls -d packs/*/*/ 2>/dev/null | sed 's|packs/||; s|/$||' | tr '\n' ' '))"
+done
 
 if [ "$initialised" = 1 ]; then
   cur="$(sed -n 's/^name = //p' .bedrock/project)"
@@ -192,28 +217,51 @@ summarize the snapshot in every commit-workflow completion message.
 SEED
 echo "✓ de-templated: maintainer files, reviews and decision records removed; live docs reset"
 
-# ── 1) the name, literally ───────────────────────────────────────────────────────────────────
-crate_line=""
-if [ -f crates/app/Cargo.toml ]; then
-  before="$(count_literal crates/app/Cargo.toml 'name = "app"')"
-  replace_literal crates/app/Cargo.toml 'name = "app"' "name = \"$name\""
-  after="$(count_literal crates/app/Cargo.toml 'name = "app"')"
-  grep -q "^name = \"$name\"\$" crates/app/Cargo.toml || die "crate rename did not take"
-  crate_line="crate renamed: \`grep -c '^name = \"app\"' crates/app/Cargo.toml\` → \`$before\` before, \`$after\` after (\`rc=1\`, grep's no-match status); \`grep -c '^name = \"$name\"'\` → \`1\` (\`rc=0\`)."
-  echo "✓ crate renamed to '$name'"
-fi
+# ── 1) the packs: copy the selected ones in (collisions refused), append their fragments, run their hooks;
+#       then packs/ leaves the project — an unselected pack is never copied (decision_neutral_spine_and_packs)
+crate_line=""; packs_installed=""; pack_lines=""
+install_pack() { # $1 = kind/name
+  local d="packs/$1" f rel hook out
+  if [ -d "$d/files" ]; then
+    ( cd "$d/files" && find . -type f ) | sed 's|^\./||' | while IFS= read -r rel; do
+      if [ -e "$rel" ]; then echo "bootstrap: pack $1 would overwrite $rel — refused" >&2; exit 3; fi
+    done || die "pack $1 collides with existing files"
+    ( cd "$d/files" && find . -type f ) | sed 's|^\./||' | while IFS= read -r rel; do mkdir -p "$(dirname "$rel")"; cp -p "$d/files/$rel" "$rel"; done
+  fi
+  for f in gitignore commands evidence_tokens docs_paths handoff_ignore; do
+    [ -f "$d/$f" ] || continue
+    case "$f" in gitignore) t=.gitignore ;; commands) t=.doctrine/commands ;; evidence_tokens) t=.doctrine/evidence_tokens.txt ;; docs_paths) t=.doctrine/docs_paths.txt ;; handoff_ignore) t=.doctrine/handoff_ignore ;; esac
+    { printf '\n'; cat "$d/$f"; } >> "$t"
+  done
+  hook="$(sed -n 's/^install = //p' "$d/pack" | head -1)"
+  if [ -n "$hook" ] && [ -f "$d/$hook" ]; then
+    out="$(bash "$d/$hook" "$name" "$title" 2>&1)" || { printf '%s\n' "$out" >&2; die "pack $1's install hook failed"; }
+    printf '%s\n' "$out"
+    pack_lines="$pack_lines $(printf '%s' "$out" | tr '\n' ' ')"
+  fi
+  packs_installed="${packs_installed:+$packs_installed,}${1##*/}"
+  echo "✓ pack installed: $1"
+}
+[ -z "$LANG_PACK" ] || install_pack "lang/$LANG_PACK"
+[ -z "$DOCS_PACK" ] || install_pack "docs/$DOCS_PACK"
+for h in $(printf '%s' "$HARNESS_PACKS" | tr ',' ' '); do install_pack "harness/$h"; done
+rm -rf packs
 replace_literal ROADMAP.md "# ROADMAP — _(PROJECT NAME)_" "# ROADMAP — $title"
+if [ "$VISIBILITY" = private ] && [ -f VISIBILITY.md ]; then
+  replace_literal VISIBILITY.md "> **Declared posture: PUBLIC.**" "> **Declared posture: PRIVATE.** (declared at setup on $today; record the reason and the authority in \`docs/decisions/\`.)"
+fi
 mkdir -p .bedrock
 cat > .bedrock/project <<SEED
 # .bedrock/project — this project's identity, written by scripts/bootstrap.sh (do not edit by hand).
 name = $name
 title = $title
 prefix = $prefix
+visibility = $VISIBILITY
 created = $today
 source = $source_version
-packs =
+packs = $packs_installed
 SEED
-echo "✓ identity recorded in .bedrock/project (name=$name, prefix=$prefix)"
+echo "✓ identity recorded in .bedrock/project (name=$name, prefix=$prefix, packs=${packs_installed:-none})"
 
 # ── 2) hooks and modes ───────────────────────────────────────────────────────────────────────
 git config core.hooksPath .githooks || die "git config failed"
@@ -266,13 +314,13 @@ commit will.
 
 - ID: \`BOOTSTRAP.1\`
   Status: \`done\`
-  Goal: de-template, set the name, record the identity, install the hooks, regenerate the Knowledge Map, judge the staged first commit.
+  Goal: de-template, install the selected packs (${packs_installed:-none}), record the identity, install the hooks, regenerate the Knowledge Map, judge the staged first commit.
 
   ### Acceptance Checklist (enforced by \`TASK-ACCEPTANCE\`)
 
   - [x] **ROOT CAUSE (WHY + WHERE)** — a copy of bedrock carries the template's maintainer files, its live-doc
     history and the starter's placeholder name: \`ls MAINTAINING.md\` → present before this run (\`rc=0\`),
-    absent after (\`rc=2\`); the de-template step removed them. ${crate_line}
+    absent after (\`rc=2\`); the de-template step removed them; packs installed: ${packs_installed:-none}.${pack_lines}
   - [x] **ADDRESSED (verified)** — identity written: \`sed -n 's/^name = //p' .bedrock/project\` → \`$name\`
     (\`rc=0\`); hooks installed: \`git config core.hooksPath\` → \`$hooks_path\` (\`rc=0\`); the Knowledge Map
     regenerated; the enforcer over the STAGED index with this commit's subject: __GATE__

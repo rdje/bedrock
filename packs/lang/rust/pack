@@ -1,0 +1,19 @@
+# packs/lang/rust/pack — the Rust language pack (a cargo workspace with rustfmt, clippy and tests).
+# Plain key = value, readable with POSIX tools. Installed by scripts/bootstrap.sh --lang rust or
+# scripts/update_scaffold.sh --add-pack rust; recorded in .bedrock/project `packs =`.
+name = rust
+kind = lang
+order = 1
+default = no
+title = Rust — a cargo workspace with a starter binary crate, rustfmt, clippy (deny warnings) and tests
+# files/ is copied into the project root. `seed` paths become the project's own (never synced again);
+# `sync` paths are pack-owned and follow the spine's fast-forward rule on update.
+seed = Cargo.toml crates/ rust-toolchain.toml Makefile
+sync = .github/workflows/rust.yml
+# fragments appended to project files at install
+gitignore = gitignore
+commands = commands
+evidence_tokens = evidence_tokens
+docs_paths =
+# the install hook runs with cwd = the project root and the project name as $1; it prints evidence lines
+install = install.sh

@@ -57,7 +57,7 @@ CLAIM_RE='nothing (checks|checked|reads|compares|measures|measured|watches|enfor
 # and `grep -w` are in the list because they are the commonest census spelling; a BARE `grep` is
 # not, because "verified by grep" is a claim, not tool output. The FLAG is what makes it an
 # invocation.
-CENSUS_RE='git grep|grep -r|grep -c|grep -l|grep -o|grep -n|grep -w|git ls-files|git log -s|git log --grep|git log --oneline|rg -|--dump-|--report-|--self-test|--lint|scripts/check_|make |comm -|wc -l|sort -u|uniq -c|sed -n|git show|git diff|cargo |a search of|searched (the|all|every)|census:'
+CENSUS_RE='git grep|grep -r|grep -c|grep -l|grep -o|grep -n|grep -w|git ls-files|git log -s|git log --grep|git log --oneline|rg -|--dump-|--report-|--self-test|--lint|scripts/check_|scripts/run |comm -|wc -l|sort -u|uniq -c|sed -n|git show|git diff|find .|a search of|searched (the|all|every)|census:'
 
 # Section boundaries are ANY ATX heading, deliberately: "nearest heading above" needs no leaf-id
 # syntax and cannot mis-parse one.
@@ -149,7 +149,7 @@ if [ "$mode" = "--self-test" ]; then
   # 9 prose carrying a token is NOT a census; 10 the same token inside a code span is
   printf '### `.3` — gap\n- **THE GAP** — nothing checks the retry budget; make sure we revisit.\n' > "$work/prose.md"; printf '2\n' > "$work/prose.nums"
   classify "$work/prose.nums" "$work/prose.md" | grep -q '^BLOCKED' && arm ok "a census token in PROSE does not discharge" || arm bad "'make sure' in prose must not discharge"
-  printf '### `.3` — gap\n- **THE GAP** — nothing checks the retry budget; `make -n check` → 0 targets touch it.\n' > "$work/span.md"; printf '2\n' > "$work/span.nums"
+  printf '### `.3` — gap\n- **THE GAP** — nothing checks the retry budget; `git grep -c retry_budget -- src` → 0.\n' > "$work/span.md"; printf '2\n' > "$work/span.nums"
   [ -z "$(classify "$work/span.nums" "$work/span.md")" ] && arm ok "the same token inside a code span discharges" || arm bad "a census in a code span must discharge"
   ok "--self-test: arms=${passed}/${arms}"
   [ "$passed" = "$arms" ] || exit 1

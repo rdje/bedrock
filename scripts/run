@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# scripts/run — run one of the PROJECT'S declared verbs (NT-05): the spine names no build tool.
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+#   scripts/run <verb> [args…]        e.g. scripts/run check · scripts/run test · scripts/run docs
+#   scripts/run --list                the verbs this project declares
+#
+# Verbs live in .doctrine/commands as `verb = command` (packs append theirs at install). A verb that
+# is not declared is REFUSED (exit 2) with the list — never silently a no-op.
+set -uo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || exit 2
+cd "$ROOT" || exit 2
+F=".doctrine/commands"
+verbs() { [ -f "$F" ] && grep -vE '^[[:space:]]*(#|$)' "$F" | awk -F'=' '{ v=$1; sub(/^[ \t]+/,"",v); sub(/[ \t]+$/,"",v); c=$0; sub(/^[^=]*=[ \t]*/,"",c); printf "  %-10s %s\n", v, c }'; }
+case "${1:-}" in
+  ""|-h|--help) sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; echo; echo "declared here:"; verbs; exit 2 ;;
+  --list) verbs; exit 0 ;;
+esac
+verb="$1"; shift
+cmd="$( [ -f "$F" ] && grep -vE '^[[:space:]]*(#|$)' "$F" | awk -F'=' -v v="$verb" '{ k=$1; sub(/^[ \t]+/,"",k); sub(/[ \t]+$/,"",k); if (k==v) { c=$0; sub(/^[^=]*=[ \t]*/,"",c); print c; exit } }')"
+if [ -z "$cmd" ]; then
+  { echo "run: REFUSED — this project declares no '$verb' verb in $F. Declared:"; verbs
+    echo "  Add a line '$verb = <command>' to $F (a governed change), or install the pack that provides it."; } >&2
+  exit 2
+fi
+printf 'run: %s → %s\n' "$verb" "$cmd" >&2
+exec bash -c "$cmd" "run:$verb" "$@"

@@ -7,7 +7,10 @@ turns a portable standard into a fork of it — that is what these seams exist t
 | file | consumed by | meaning |
 |---|---|---|
 | `docs_paths.txt` | `TASK-TREE-OWNERSHIP`, `TASK-ACCEPTANCE` | one extended regular expression per line (**not** a glob: `^docs/site/`, not `docs/site/*`): extra **documentation** paths, exempt from governance. Everything else is governed; the spine set always is. *(`code_paths.txt` is retired and refused if present: governance is deny-by-default.)* |
-| `agent_identities` | `COMMIT-MESSAGE` | `address <ERE>` / `name <ERE>` lines: who counts as an AGENT in an attribution trailer. Built in: the bot addresses. |
+| `agent_identities` | `COMMIT-MESSAGE` | `address <ERE>` / `name <ERE>` lines: who counts as an AGENT in an attribution trailer. Nothing is built into the check; every identity is data here. |
+| `commands` | `scripts/run` | `verb = command` lines — the project's own `check`, `test`, `lint`, `fmt`, `build`, `docs`. Packs append theirs at install. An undeclared verb is refused. |
+| `handoff_ignore` | `scripts/handoff` | shell globs of session processes the hand-off census ignores (harness packs append theirs). Read from the working tree. |
+| `harness_adapters` | `MEMORY-ARCH` | the files a harness auto-reads instead of `AGENTS.md`; each one present must point at `AGENTS.md`. |
 | `evidence_tokens.txt` | `TASK-ACCEPTANCE` | one extended regular expression per line: **your** tools' output signatures, ADDED to the universal defaults. Absent ⇒ defaults only. |
 | `config` | `MEMORY-ARCH`, `README-STABILITY` | `key = value` settings: `memory_pointer_line_cap`, `memory_pointer_byte_cap`, `readme_line_cap`, `readme_byte_cap`. Absent ⇒ the built-in defaults (50 / 7168 / 300 / 16384). |
 

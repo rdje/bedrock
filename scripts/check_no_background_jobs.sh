@@ -87,9 +87,15 @@ while IFS= read -r line; do
   case "$pid" in ''|*[!0-9]*) continue ;; esac
   case "$EXCLUDE" in *" $pid "*) continue ;; esac
   cmd="${line#* }"; cmd="${cmd#* }"
-  case "$cmd" in
-    *check_no_background_jobs.sh*|*.claude/shell-snapshots*|*/.codex/*|*/.cursor/*) continue ;;
-  esac
+  # exclusions are DATA: .doctrine/handoff_ignore, one shell glob per line (harness packs append theirs)
+  skip=0
+  while IFS= read -r pat; do
+    [ -n "$pat" ] || continue
+    case "$cmd" in $pat) skip=1; break ;; esac
+  done <<IGN
+$(grep -vhE '^[[:space:]]*(#|$)' "$REPO_ROOT/.doctrine/handoff_ignore" 2>/dev/null; echo '*check_no_background_jobs.sh*')
+IGN
+  [ "$skip" = 1 ] && continue
 
   h="$(handles_of "$pid")"; h="${h:-0}"
   incwd=0; cwd_in_repo "$pid" && incwd=1

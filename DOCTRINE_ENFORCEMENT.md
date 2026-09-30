@@ -8,8 +8,8 @@ every human, identically.
 
 - **E1 — discovery.** The doctrine docs: this file, `README.md`, `MEMORY_ARCHITECTURE.md`,
   `TOOLBOX.md`, `COMMIT.md`, and `docs/decisions/`. Where an agent learns the rules.
-- **E2 — self-check.** `scripts/check_doctrines.sh` (the driver) + each registered
-  `scripts/check_*.sh`. The single source of truth for "which doctrine is enforced by
+- **E2 — self-check.** `scripts/gate` → `scripts/check_doctrines.sh` (the driver) + each
+  registered `scripts/check_*.sh`. The single source of truth for "which doctrine is enforced by
   what". Runnable by hand anytime.
 - **E3 — git hook.** `.githooks/pre-commit` calls the enforcer on the index; `.githooks/commit-msg`
   calls it again with the message. Activate once per clone: `git config core.hooksPath .githooks`.

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# scripts/gate — the spine's entry point to the doctrine enforcer (what `make gate` used to be).
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#   scripts/gate                      judge the index against HEAD
+#   scripts/gate --message <file>     the same, with a commit message (binding included)
+#   scripts/gate --commit <rev>       judge one commit (CI)
+exec bash "$(dirname "${BASH_SOURCE[0]}")/check_doctrines.sh" "$@"

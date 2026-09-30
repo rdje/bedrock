@@ -1,0 +1,4 @@
+# Rust build output (rust pack)
+/target
+**/*.rs.bk
+# Cargo.lock is deliberately NOT ignored: a binary/application project commits it for reproducible builds.

@@ -40,7 +40,8 @@ Pure documentation edits (Markdown, text, licence files, images, or paths declar
 - `DEV_NOTES.md` — detailed technical notes: root cause, implementation, validation.
 - `docs/decisions/` — add/supersede a decision record (+ its INDEX entry) when a durable
   cross-cutting fact/decision was established.
-- `docs/book/` (mdBook) — update when a user-facing surface it already covers changes.
+- the declared docs surface (`scripts/run docs`, e.g. the mdBook pack's `docs/book/`) — update
+  when a user-facing surface it already covers changes.
 - `git_message_brief.txt` — MUST stay untracked; used with `git commit -F`; cleared to 0
   bytes after commit.
 - Generated artifacts (`generated/`, `target/`) — NOT tracked; regenerate locally, never
@@ -51,10 +52,10 @@ Pure documentation edits (Markdown, text, licence files, images, or paths declar
 ## Required commit workflow (exact order)
 
 1. Ensure the task is complete and tested.
-2. Run the project's declared checks when its sources changed (for the Rust starter: `make
-   check`, i.e. `cargo fmt --all --check && cargo clippy --all-targets -- -D warnings && cargo
-   test`). Strict lint must pass. Capture results with `scripts/evidence -- <command>` when you
-   want a line CI can re-run.
+2. Run the project's declared checks when its sources changed: `scripts/run check` (the verbs
+   live in `.doctrine/commands`; a language pack declares its own — for Rust, fmt, clippy with
+   warnings denied, and the tests). Strict lint must pass. Capture results with
+   `scripts/evidence -- <command>` when you want a line CI can re-run.
 3. Update every relevant tracked doc (`MEMORY.md`, `CHANGELOG.md`, `DEV_NOTES.md`,
    `LIVE_STATUS.md`, `README.md`, the owning `docs/tasks/<TREE>.md` — its leaf gains this
    commit's row and evidence — `docs/decisions/`, the docs surface as applicable). Treat
@@ -97,8 +98,8 @@ cat > git_message_brief.txt <<'EOF'
 - <brief bullet 2>
 EOF
 
-# 2) run checks when Rust changed
-make check
+# 2) run the project's declared checks when its sources changed
+scripts/run check
 
 # 3) stage intended files only
 git add <tracked-file-1> <tracked-file-2> ...

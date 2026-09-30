@@ -4,4 +4,4 @@
 
 This file exists only because Claude Code auto-reads it. The complete, harness-neutral
 instructions are in [`AGENTS.md`](AGENTS.md): read that file and follow it exactly. Nothing
-here overrides it, and a project that does not use Claude Code may delete this file.
+here overrides it.

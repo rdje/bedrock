@@ -1,0 +1,14 @@
+# packs/harness/gemini/pack — Gemini CLI harness pack.
+name = gemini
+kind = harness
+order = 6
+default = no
+title = Gemini CLI — GEMINI.md, a one-line adapter importing AGENTS.md
+seed =
+sync = GEMINI.md
+gitignore =
+commands =
+evidence_tokens =
+docs_paths =
+handoff_ignore = handoff_ignore
+install =

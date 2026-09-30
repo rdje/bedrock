@@ -1,0 +1,10 @@
+# .doctrine/commands — the PROJECT'S verbs, run with `scripts/run <verb>` (one `verb = command` per line).
+#
+# The spine names no build tool (it is language-neutral); a pack appends its verbs at install, and
+# you declare the rest. Conventional verbs, so every agent and CI job can call them without knowing
+# the language: check · test · lint · fmt · build · docs. `scripts/run` refuses an undeclared verb.
+#
+# Examples (declare yours):
+#   check = make -C build test
+#   test = prove -lr t
+#   docs = mkdocs build

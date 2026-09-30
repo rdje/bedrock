@@ -1,0 +1,4 @@
+# Pin a version and bump it through a leaf: `stable` lets a new Rust release turn CI red with no change of yours.
+[toolchain]
+channel = "1.90.0"
+components = ["rustfmt", "clippy"]

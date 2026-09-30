@@ -3,7 +3,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
 #   scripts/update_scaffold.sh <bedrock-repo-url-or-local-path> [--ref <tag|sha|branch>] [--plan]
-#                              [--merge] [--force] [--no-self-replace]
+#                              [--merge] [--force] [--add-pack <kind/name>] [--no-self-replace]
+#   INSTALLED PACKS (.bedrock/project `packs =`) are synced too: a pack's `sync` files follow the spine
+#   rule, its `seed` files are the project's own. `--add-pack lang/rust` installs a pack from the source
+#   (collisions refused); unselected packs are never copied.
 #
 # THE RULES (docs/decisions/decision_updater_ownership_classes.md):
 #   • The file list is the MANIFEST OF THE SOURCE (`.bedrock/manifest`), never this copy's (BK-09). A
@@ -33,7 +36,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || exit 2
 cd "$ROOT" || exit 2
 die() { printf 'update: %s\n' "$*" >&2; exit 2; }
 ORIG_ARGS=("$@")
-SRC=""; REF=""; PLAN=0; MERGE=0; FORCE=0; NOSELF=0
+SRC=""; REF=""; PLAN=0; MERGE=0; FORCE=0; NOSELF=0; ADDPACK=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --ref) shift; REF="${1:-}" ;;
@@ -41,6 +44,7 @@ while [ $# -gt 0 ]; do
     --merge) MERGE=1 ;;
     --force) FORCE=1 ;;
     --no-self-replace) NOSELF=1 ;;
+    --add-pack) shift; ADDPACK="${1:-}" ;;
     -h|--help) sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) die "unknown option $1" ;;
     *) [ -z "$SRC" ] || die "one source only"; SRC="$1" ;;
@@ -160,6 +164,39 @@ apply_seed() {
     SEEDED="$SEEDED $f"; n_seed=$((n_seed+1)); echo "  seeded         $f (yours to edit from now on)"
   fi
 }
+# pack files: the child path maps to packs/<kind>/<name>/files/<path> in the source; `sync` follows the
+# spine rule (unmodified → fast-forward), `seed` is the project's own
+pack_field() { sed -n "s/^$2 = //p" "$B/packs/$1/pack" 2>/dev/null | head -1; }
+apply_pack() { # $1 = kind/name
+  local d="$B/packs/$1" rel kind
+  [ -f "$d/pack" ] || { echo "  (pack $1 is not shipped by this source)"; return 0; }
+  ( cd "$d/files" 2>/dev/null && find . -type f ) | sed 's|^\./||' | sort | while IFS= read -r rel; do
+    kind=seed
+    for s in $(pack_field "$1" sync); do case "$rel" in "$s"|"${s%/}"/*) kind=sync ;; esac; done
+    if [ "$kind" = sync ]; then PACK_SRC="$d/files" apply_spine_from "$rel" "packs/$1/files/$rel"; else apply_seed_from "$rel" "$d/files/$rel"; fi
+  done
+}
+apply_spine_from() { # $1 = child path, $2 = source-relative path (for the base lookup)
+  local f="$1" srcrel="$2" src="$B/$2"
+  [ -f "$src" ] || return 0
+  if [ ! -f "$f" ]; then
+    [ "$PLAN" = 1 ] && { echo "  would seed     $f"; return 0; }
+    mkdir -p "$(dirname "$f")"; cp "$src" "$f"; echo "  seeded         $f"; return 0
+  fi
+  cmp -s "$src" "$f" && return 0
+  local c ok=0
+  for c in $BASE_CANDS; do git -C "$SRC_GIT" show "$c:$srcrel" > "$tmp/cand" 2>/dev/null || continue; cmp -s "$tmp/cand" "$f" && { ok=1; break; }; done
+  if [ "$ok" = 1 ]; then
+    [ "$PLAN" = 1 ] && { echo "  would update   $f (unmodified pack file)"; return 0; }
+    cp "$src" "$f"; echo "  updated        $f (pack file, unmodified here)"; return 0
+  fi
+  [ "$PLAN" = 1 ] && { echo "  would differ   $f"; return 0; }
+  mkdir -p ".bedrock-incoming/$(dirname "$f")"; cp "$src" ".bedrock-incoming/$f"; echo "  DIFFERS        $f — yours is UNTOUCHED; theirs is .bedrock-incoming/$f"
+}
+apply_seed_from() { local f="$1" src="$2"; [ -f "$src" ] || return 0; [ -f "$f" ] && return 0; [ "$PLAN" = 1 ] && { echo "  would seed     $f"; return 0; }; mkdir -p "$(dirname "$f")"; cp -p "$src" "$f"; echo "  seeded         $f (yours to edit from now on)"; }
+installed_packs="$(sed -n 's/^packs = //p' .bedrock/project 2>/dev/null | head -1 | tr ',' ' ')"
+pack_dir_of() { local n="$1" k; for k in lang docs harness; do [ -f "$B/packs/$k/$n/pack" ] && { echo "$k/$n"; return; }; done; }
+
 echo "update: $old_version → $new_version (source $(git -C "$SRC_GIT" rev-parse --short "$sha"), base $( [ -n "$base_rev" ] && git -C "$SRC_GIT" rev-parse --short "$base_rev" || echo unresolved))$( [ "$PLAN" = 1 ] && echo ' — PLAN ONLY, nothing written')"
 grep -vE '^[[:space:]]*(#|$)' "$B/.bedrock/manifest" | while read -r path cls _; do
   case "$cls" in
@@ -171,6 +208,26 @@ grep -vE '^[[:space:]]*(#|$)' "$B/.bedrock/manifest" | while read -r path cls _;
     *)  [ "$cls" = spine ] && apply_spine "$path" || apply_seed "$path" ;;
   esac
 done > "$tmp/actions.log"
+for pk in $installed_packs; do d="$(pack_dir_of "$pk")"; [ -n "$d" ] && apply_pack "$d" >> "$tmp/actions.log"; done
+if [ -n "$ADDPACK" ]; then
+  d="$ADDPACK"; case "$d" in */*) ;; *) d="$(pack_dir_of "$ADDPACK")" ;; esac
+  [ -n "$d" ] && [ -f "$B/packs/$d/pack" ] || die "no such pack in the source: $ADDPACK (available: $(ls -d "$B"/packs/*/*/ | sed "s|$B/packs/||; s|/$||" | tr '\n' ' '))"
+  case " $installed_packs " in *" ${d##*/} "*) die "pack ${d##*/} is already installed" ;; esac
+  if [ "$PLAN" != 1 ]; then
+    ( cd "$B/packs/$d/files" 2>/dev/null && find . -type f ) | sed 's|^\./||' | while IFS= read -r rel; do if [ -e "$rel" ]; then echo "update: pack $d would overwrite $rel — refused" >&2; exit 3; fi; done || die "pack $d collides with existing files"
+    ( cd "$B/packs/$d/files" 2>/dev/null && find . -type f ) | sed 's|^\./||' | while IFS= read -r rel; do mkdir -p "$(dirname "$rel")"; cp -p "$B/packs/$d/files/$rel" "$rel"; done
+    for fr in gitignore commands evidence_tokens docs_paths handoff_ignore; do
+      [ -f "$B/packs/$d/$fr" ] || continue
+      case "$fr" in gitignore) t=.gitignore ;; commands) t=.doctrine/commands ;; evidence_tokens) t=.doctrine/evidence_tokens.txt ;; docs_paths) t=.doctrine/docs_paths.txt ;; handoff_ignore) t=.doctrine/handoff_ignore ;; esac
+      { printf '\n'; cat "$B/packs/$d/$fr"; } >> "$t"
+    done
+    hook="$(pack_field "$d" install)"; pname="$(sed -n 's/^name = //p' .bedrock/project | head -1)"
+    [ -n "$hook" ] && [ -f "$B/packs/$d/$hook" ] && { bash "$B/packs/$d/$hook" "${pname:-project}" 2>&1 | sed 's/^/  /' || die "pack $d's install hook failed"; }
+    t=".bedrock/project.update.$$"; cp -p .bedrock/project "$t"
+    awk -v p="${d##*/}" '/^packs = / { sub(/[[:space:]]*$/, ""); $0 = $0 (($0 ~ /= *$/) ? "" : ",") p } { print }' .bedrock/project > "$t" && mv "$t" .bedrock/project
+    echo "  installed      pack $d (recorded in .bedrock/project)" >> "$tmp/actions.log"
+  else echo "  would install  pack $d" >> "$tmp/actions.log"; fi
+fi
 cat "$tmp/actions.log"
 # counters were incremented in a subshell (the pipeline): recount from the log
 n_seed="$(grep -c '^  \(seeded\|would seed\)' "$tmp/actions.log" || true)"; n_ff="$(grep -c '^  \(updated\|would update\)' "$tmp/actions.log" || true)"

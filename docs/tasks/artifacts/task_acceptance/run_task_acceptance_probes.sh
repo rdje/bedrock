@@ -57,10 +57,10 @@ leaf_with() { # $1 $2 $3 = the three box bodies
   - [x] **NO REGRESSION** — $3
 EOF
 }
-good_leaf() {
-  leaf_with '`cargo build` → `error[E0432]` at crates/app/src/main.rs:4.' \
-            'before: `test result: FAILED`; after: `test result: ok`.' \
-            '`cargo test` → `test result: ok. 42 passed; 0 failed`.'
+good_leaf() { # tool-neutral result shapes: the spine's defaults name no language's compiler (NT-04)
+  leaf_with '`scripts/run build` → `error: unresolved import` at crates/app/src/main.rs:4 (`rc=101`).' \
+            'before: `scripts/run test` → `1 failed / 0 passed`; after: `42 passed / 0 failed` (`rc=0`).' \
+            '`scripts/run check` → `42 passed / 0 failed` (`rc=0`).'
 }
 MSG="$WORK/subject.txt"; printf 'PROBE-0001 (leaf TREE.1): a change\n' > "$MSG"; export SPINE_COMMIT_MSG="$MSG"
 

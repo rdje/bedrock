@@ -64,6 +64,9 @@ jobs:
           set -e
           bash docs/tasks/artifacts/task_acceptance/run_task_acceptance_probes.sh
           bash docs/tasks/artifacts/waiver_routing/run_waiver_routing_probes.sh
+      - uses: dtolnay/rust-toolchain@stable   # the Rust pack's arm runs cargo in a generated child
+        with:
+          components: rustfmt, clippy
       - name: Conformance suite (the review's scenarios against this tree)
         run: |
           git config --global user.email ci@example.invalid

@@ -1,0 +1,10 @@
+# Starter crate — named after your project by the Rust pack's install hook; replace with your real crate(s).
+[package]
+name = "app"
+version = "0.1.0"
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]

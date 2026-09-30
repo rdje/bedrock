@@ -1,0 +1,14 @@
+# packs/harness/codex/pack — Codex CLI harness pack.
+name = codex
+kind = harness
+order = 2
+default = no
+title = Codex CLI — reads AGENTS.md natively; no adapter file, only its hand-off exclusions
+seed =
+sync = 
+gitignore =
+commands =
+evidence_tokens =
+docs_paths =
+handoff_ignore = handoff_ignore
+install =

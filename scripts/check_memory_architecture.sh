@@ -16,8 +16,9 @@
 # AGENTS.md, DOCTRINE_ENFORCEMENT.md, TOOLBOX.md and COMMIT.md in one commit left all checks green.
 #
 # ⭐ AGENTS.md IS THE CANONICAL AGENT ENTRY (NT-08): it is required and must route the reader to
-# MEMORY_ARCHITECTURE.md and README.md. A harness file (CLAUDE.md, GEMINI.md, .cursorrules, …) is an
-# OPTIONAL adapter: absent is fine; present, it must point at AGENTS.md. No vendor file is mandatory.
+# MEMORY_ARCHITECTURE.md and README.md. A harness adapter file (listed in .doctrine/harness_adapters)
+# is OPTIONAL: absent is fine; present, it must point at AGENTS.md. No vendor file is mandatory, and
+# no vendor is named in this script (NT-09).
 set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib/spine.sh"; spine_init MEMORY-ARCH
 errs=0
@@ -63,7 +64,8 @@ if spine_read AGENTS.md > "$T/agents"; then
   grep -q 'MEMORY_ARCHITECTURE.md' "$T/agents" || fail "AGENTS.md does not point at MEMORY_ARCHITECTURE.md"
   grep -q 'README.md' "$T/agents" || fail "AGENTS.md does not point at README.md"
 fi
-for a in CLAUDE.md GEMINI.md .cursorrules .windsurfrules .github/copilot-instructions.md; do
+# the adapters are DATA (.doctrine/harness_adapters, read as of the last commit); no harness is named here
+for a in $(spine_config_file harness_adapters); do
   spine_after_has "$a" || continue
   spine_read "$a" | grep -q 'AGENTS.md' || fail "$a is a harness adapter and must point at AGENTS.md (the canonical instructions)"
 done

@@ -1,0 +1,8 @@
+# rust pack — what cargo, rustc and clippy print (result shapes for TASK-ACCEPTANCE boxes)
+test result: (ok|FAILED)
+running [0-9]+ tests?
+error\[E[0-9]{4}\]
+could not compile
+clippy::[a-z_]{3,}
+panicked at
+assertion (failed|`)

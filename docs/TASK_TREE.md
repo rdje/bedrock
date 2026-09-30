@@ -52,7 +52,7 @@ may own several commits; a `done` leaf owns none — a follow-up is a child leaf
 | Tree | Status | Frontier (next leaf) | Owner |
 | --- | --- | --- | --- |
 | [`BEDROCK-MAINTENANCE`](tasks/BEDROCK-MAINTENANCE.md) | `active` | `.3` — the 2026-09-30 review, executed in `REVIEW-2026-09` | repo-local |
-| [`REVIEW-2026-09`](tasks/REVIEW-2026-09.md) | `active` | `.8` — the neutral spine, the packs, the guided setup | repo-local |
+| [`REVIEW-2026-09`](tasks/REVIEW-2026-09.md) | `active` | `.9` — the maintainer's guide, reconciled documents, neutrality in CI, 1.0.0 | repo-local |
 
 > _Note: `BEDROCK-MAINTENANCE` is bedrock's own maintenance tree (see `MAINTAINING.md`). A
 > project generated from bedrock (via `scripts/bootstrap.sh`) starts with no trees — that

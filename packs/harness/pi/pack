@@ -1,0 +1,14 @@
+# packs/harness/pi/pack — Pi coding agent harness pack.
+name = pi
+kind = harness
+order = 3
+default = no
+title = Pi coding agent — reads AGENTS.md natively; no adapter file, only its hand-off exclusions
+seed =
+sync = 
+gitignore =
+commands =
+evidence_tokens =
+docs_paths =
+handoff_ignore = handoff_ignore
+install =

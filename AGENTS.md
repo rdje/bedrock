@@ -40,11 +40,13 @@ human is working. Follow it exactly.
 - **Commit per `COMMIT.md`** after each completed leaf, with the work-unit id in the
   subject. A code change must pass the `TOOLBOX.md` / `DOCTRINE_ENFORCEMENT.md` acceptance
   checklist (root cause + addressed + no regression) in its task leaf.
-- **Activate the hooks once per clone:** `git config core.hooksPath .githooks`. The
-  pre-commit hook runs `scripts/check_doctrines.sh` (the general enforcer); CI runs the
-  same. These are git-level and harness-agnostic.
-- **Keep the roadmap, the code, and the docs (README + mdBook) aligned** — locked
-  together, no drift, for past, present, and future changes.
+- **Activate the hooks once per clone:** `scripts/bootstrap.sh --contributor` (it runs
+  `git config core.hooksPath .githooks`). The hooks run `scripts/gate` (the general enforcer);
+  CI runs the same per commit. These are git-level and harness-agnostic.
+- **Run the project's own commands through `scripts/run <verb>`** (`check`, `test`, `lint`,
+  `fmt`, `build`, `docs` — declared in `.doctrine/commands`); the spine names no build tool.
+- **Keep the roadmap, the code, and the docs (README + the declared docs surface) aligned** —
+  locked together, no drift, for past, present, and future changes.
 - **End every session with `scripts/handoff`** and make it print `handoff: OK` — before `/exit`,
   `/clear`, a pause or a handover. It refuses while a project-owned background job runs (a job
   that outlives its session rewrites tracked files under the next one, with its log gone; kill

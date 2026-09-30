@@ -197,9 +197,10 @@ starts fresh.
   conformance suite), `scripts/handoff` (the session-end check), `.githooks/`, `.github/workflows/`,
   `.doctrine/` (project seams).
 - Tools-first: `TOOLBOX.md`. Knowledge map: `KNOWLEDGE_MAP.md` (derived), `knowledge-map/`.
-- Docs surface: `docs/book/` (mdBook). Live-docs: `CHANGELOG.md`, `DEV_NOTES.md`,
-  `LIVE_STATUS.md`. Rust: `Cargo.toml`, `crates/`, `Makefile`, `rust-toolchain.toml` — these
-  and the mdBook skeleton move to `packs/` under `REVIEW-2026-09.8`.
+- Live-docs: `CHANGELOG.md`, `DEV_NOTES.md`, `LIVE_STATUS.md`. Entry points: `scripts/gate`,
+  `scripts/run`, `scripts/handoff`, `scripts/evidence`, `scripts/new_project.sh`.
+- Packs (`packs/`, opt-in, never part of the spine): `lang/rust`, `docs/mdbook`,
+  `harness/{claude,gemini,cursor,copilot,windsurf}` — see `packs/README.md`.
 - Consumer entry: `ROADMAP.md`. Versioning: `DOCTRINE_VERSION`. Sync: `scripts/update_scaffold.sh`.
 - Licence: `LICENSE` (LGPL-2.1-or-later), `NOTICE` (what applies to a child; 0BSD for seed files).
 - **bedrock-only (removed by bootstrap, never shipped):** `MAINTAINING.md`,
@@ -209,5 +210,6 @@ starts fresh.
 ## Working on bedrock
 
 Use bedrock's own discipline on bedrock: create/extend a `BEDROCK-MAINTENANCE` leaf before
-changing spine files, run `make gate` (the enforcer), commit via `COMMIT.md`. The enforcer
+changing spine files, run `scripts/gate` (the enforcer) and `scripts/tests/spine_tests.sh` (the
+conformance suite), commit via `COMMIT.md`. The enforcer
 must stay green — bedrock has to practice what it preaches.

@@ -1,0 +1,5 @@
+# .doctrine/handoff_ignore — processes the hand-off census (scripts/check_no_background_jobs.sh) IGNORES,
+# one shell glob per line matched against the full command line. Harness packs append the session
+# processes of their harness, which hold a repository cwd but are never project work. Read from the
+# working tree (the census is a session check, not a commit gate).
+*check_no_background_jobs.sh*

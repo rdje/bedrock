@@ -1,17 +1,17 @@
-# Rust build output
-/target
-**/*.rs.bk
-
 # Commit workflow scratch (must stay untracked — see COMMIT.md)
 git_message_brief.txt
 
 # Generated artifacts are regenerated locally, never tracked (see COMMIT.md)
 /generated
 
+# What the scaffold updater parks beside your files (review, take what you want, delete)
+.bedrock-incoming/
+
 # Logs & OS cruft
 *.log
 .DS_Store
 
-# Note: Cargo.lock is intentionally NOT ignored — binary/application projects should
-# commit it for reproducible builds. If this becomes a library-only workspace, add it.
-.bedrock-incoming/
+# Common build-output directories (a language pack ignores its own; these are conventional across ecosystems)
+/target
+/build
+/dist

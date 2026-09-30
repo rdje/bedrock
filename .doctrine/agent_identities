@@ -2,7 +2,11 @@
 # (COMMIT-MESSAGE). Read as of the last commit. One entry per line:
 #   address <ERE>   matched, case-insensitively, against the e-mail in `Name <e-mail>`
 #   name <ERE>      matched, case-insensitively, against the WHOLE name (anchored)
-# Built in already: noreply@anthropic.com, noreply@openai.com, noreply@google.com,
-# copilot@users.noreply.github.com. A HUMAN named Claude, Gemini or Cursor is never an agent:
-# match products exactly, or a product followed by a model family and a version.
+# Nothing is built into the check: every agent identity is data here (NT-09). A HUMAN named Claude,
+# Gemini or Cursor is never an agent: match products exactly, or a product followed by a model
+# family and a version; match agents' mail addresses, never a human's.
+address noreply@anthropic\.com$
+address noreply@openai\.com$
+address noreply@google\.com$
+address copilot@users\.noreply\.github\.com$
 name ^(Claude( Code)?|Claude (Opus|Sonnet|Haiku|Fable|Mythos)( [0-9][0-9.]*)?|Codex|ChatGPT|GitHub Copilot|Copilot|Gemini( CLI)?|Cursor|Aider|Windsurf|Devin|Amp)$

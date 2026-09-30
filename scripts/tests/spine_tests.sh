@@ -112,6 +112,17 @@ waiver_historical_not_rejudged          req    BR-17
 lesson_decline_per_lesson               req    BR-18
 lesson_promoted_via_knowledge           req    BR-18
 knowledge_map_shows_tree_status         req    BK-12
+child_no_packs_bootstraps_and_gates     req    NT-01
+unselected_packs_not_copied             req    NT-01
+rust_pack_child_runs_check              req    NT-05
+run_refuses_undeclared_verb             req    NT-05
+harness_adapters_point_to_agents        req    NT-08
+mdbook_pack_child                       req    NT-06
+wizard_answers_piped                    req    SETUP
+wizard_invalid_answer_reasked           req    SETUP
+wizard_decline_writes_nothing           req    SETUP
+new_project_local                       req    SETUP
+add_pack_later                          req    NT-01
 "
 
 if [ "$LIST" = 1 ]; then
@@ -136,7 +147,7 @@ build_base() {
     && git config core.hooksPath .githooks \
     && chmod +x scripts/*.sh knowledge-map/scripts/*.sh .githooks/* 2>/dev/null \
     && git add -A && git -c core.hooksPath=/dev/null commit -qm "Initial commit" \
-    && ./scripts/bootstrap.sh demo > "$WORK/bootstrap.log" 2>&1 \
+    && ./scripts/bootstrap.sh demo --lang rust --harness claude --yes > "$WORK/bootstrap.log" 2>&1 \
     && git add -A \
     && printf '%s\n' 'DEMO-BOOTSTRAP-0001 (leaf BOOTSTRAP.1): bootstrapped from bedrock' > git_message_brief.txt \
     && git commit -q -F git_message_brief.txt > "$WORK/first_commit.log" 2>&1 \
@@ -241,7 +252,7 @@ fresh_copy() { # rebuild $T as a fresh, un-bootstrapped one-commit copy of the t
 arm_bootstrap_first_commit_as_printed() {
   # a fresh, un-bootstrapped copy; run bootstrap; execute the printed commit block verbatim
   fresh_copy || return 1
-  ./scripts/bootstrap.sh demo > "$T/.boot.log" 2>&1 || return 1
+  ./scripts/bootstrap.sh demo --yes > "$T/.boot.log" 2>&1 || return 1
   # the printed block: the lines between "Commit the bootstrap itself" and the next blank line
   printed="$(awk '/Commit the bootstrap itself/ { on=1; next } on && /^[[:space:]]*$/ { exit } on && /^[[:space:]]+(git|printf)/ { print }' "$T/.boot.log")"
   [ -n "$printed" ] || return 1
@@ -253,7 +264,7 @@ arm_bootstrap_bad_names_refused() {
   for n in 'x&y' 'a/b' 'my.proj' 'Stitch CAD'; do
     fresh_copy >/dev/null 2>&1 || return 1
     before="$(git status --porcelain | wc -l | tr -d ' ')"
-    ./scripts/bootstrap.sh "$n" >/dev/null 2>&1; rc=$?
+    ./scripts/bootstrap.sh "$n" --yes >/dev/null 2>&1; rc=$?
     after="$(git status --porcelain | wc -l | tr -d ' ')"
     # refused with exit 2 and NOTHING written
     if [ "$rc" -eq 2 ] && [ "$after" = "$before" ]; then ok=$((ok+1)); fi
@@ -270,7 +281,7 @@ arm_bootstrap_under_bsd_sed() {
   if /usr/bin/sed --version >/dev/null 2>&1; then return 0; fi   # GNU sed there: nothing to test
   [ -x /usr/bin/sed ] || return 0
   fresh_copy >/dev/null 2>&1 || return 1
-  PATH="/usr/bin:/bin:/usr/sbin:/sbin" ./scripts/bootstrap.sh demo > "$T/.boot.log" 2>&1; rc=$?
+  PATH="/usr/bin:/bin:/usr/sbin:/sbin" ./scripts/bootstrap.sh demo --lang rust --yes > "$T/.boot.log" 2>&1; rc=$?
   [ "$rc" -eq 0 ] && grep -q '^name = "demo"' crates/app/Cargo.toml && ! ls docs/TASK_TREE.md-e >/dev/null 2>&1 \
     && printf '%s\n' 'DEMO-BOOTSTRAP-0001 (leaf BOOTSTRAP.1): bootstrapped from bedrock' > "$T/.m" \
     && PATH="/usr/bin:/bin:/usr/sbin:/sbin" git commit -q -F "$T/.m" >/dev/null 2>&1
@@ -574,17 +585,17 @@ arm_handoff_ok_then_resume_from_fresh_clone() {
 
 arm_bootstrap_rerun_same_name_idempotent() {
   # the base child is already 'demo': a rerun with the same name changes nothing and exits 0
-  ./scripts/bootstrap.sh demo > "$T/.boot.log" 2>&1; rc=$?
+  ./scripts/bootstrap.sh demo --yes > "$T/.boot.log" 2>&1; rc=$?
   [ "$rc" -eq 0 ] && [ -z "$(git status --porcelain --untracked-files=all)" ]
 }
 arm_bootstrap_rerun_other_name_refused() {
-  ./scripts/bootstrap.sh other > "$T/.boot.log" 2>&1; rc=$?
+  ./scripts/bootstrap.sh other --yes > "$T/.boot.log" 2>&1; rc=$?
   [ "$rc" -eq 2 ] && [ -z "$(git status --porcelain --untracked-files=all)" ] && grep -q '^name = "demo"' crates/app/Cargo.toml
 }
 arm_bootstrap_dirty_tree_refused() {
   fresh_copy >/dev/null 2>&1 || return 1
   printf '\n- an uncommitted note\n' >> MEMORY.md
-  ./scripts/bootstrap.sh demo > "$T/.boot.log" 2>&1; rc=$?
+  ./scripts/bootstrap.sh demo --yes > "$T/.boot.log" 2>&1; rc=$?
   [ "$rc" -eq 2 ] && grep -q 'an uncommitted note' MEMORY.md && [ -f MAINTAINING.md ]
 }
 arm_bootstrap_contributor_mode() {
@@ -609,7 +620,7 @@ arm_bootstrap_fresh_git_init_allowed() {
   rm -rf "$T"; mkdir -p "$T"
   ( cd "$SUITE_ROOT" && git ls-files -co --exclude-standard -z | tar --null -T - -cf - | tar -x -C "$T" )
   cd "$T" && git init -q -b main . && git config user.email t@example.invalid && git config user.name tester
-  ./scripts/bootstrap.sh demo > "$T/.boot.log" 2>&1 || return 1
+  ./scripts/bootstrap.sh demo --lang rust --yes > "$T/.boot.log" 2>&1 || return 1
   printf '%s\n' 'DEMO-BOOTSTRAP-0001 (leaf BOOTSTRAP.1): bootstrapped from bedrock' > "$T/.m" && git commit -q -F "$T/.m" >/dev/null 2>&1
 }
 
@@ -720,11 +731,76 @@ arm_knowledge_map_shows_tree_status() {
   bash knowledge-map/scripts/gen_knowledge_map.sh > "$T/.map" && grep -qE 'BOOTSTRAP\.md\) — `done`' "$T/.map"
 }
 
+# ── pack and setup arms (REVIEW-2026-09.8) ────────────────────────────────────────────────────
+arm_child_no_packs_bootstraps_and_gates() {
+  fresh_copy >/dev/null 2>&1 || return 1
+  ./scripts/bootstrap.sh plain --yes > "$T/.boot.log" 2>&1 || return 1
+  printf '%s\n' 'PLAIN-BOOTSTRAP-0001 (leaf BOOTSTRAP.1): bootstrapped from bedrock' > "$T/.m" && git commit -q -F "$T/.m" >/dev/null 2>&1 || return 1
+  [ ! -f Cargo.toml ] && [ ! -d packs ] && [ ! -f CLAUDE.md ] && [ ! -d docs/book ] && grep -q '^packs = $' .bedrock/project && gate_ci HEAD && green
+}
+arm_unselected_packs_not_copied() {
+  [ ! -d packs ] && [ ! -d docs/book ] && [ ! -f GEMINI.md ] && grep -q '^packs = rust,claude$' .bedrock/project
+}
+arm_rust_pack_child_runs_check() {
+  command -v cargo >/dev/null 2>&1 || return 0          # no toolchain here: nothing to run
+  grep -q '^name = "demo"' crates/app/Cargo.toml && grep -q '^check = cargo' .doctrine/commands || return 1
+  OUT="$(bash scripts/run check 2>&1)"; RC=$?; green
+}
+arm_run_refuses_undeclared_verb() {
+  OUT="$(bash scripts/run deploy 2>&1)"; RC=$?; [ "$RC" -eq 2 ] && has "no 'deploy' verb"
+}
+arm_harness_adapters_point_to_agents() {
+  fresh_copy >/dev/null 2>&1 || return 1
+  ./scripts/bootstrap.sh multi --harness claude,codex,qwen --yes > "$T/.boot.log" 2>&1 || return 1
+  grep -q AGENTS.md CLAUDE.md && grep -q AGENTS.md QWEN.md && [ ! -f CODEX.md ] && grep -q '^packs = claude,codex,qwen$' .bedrock/project \
+    && grep -q 'shell-snapshots' .doctrine/handoff_ignore && grep -q '/.codex/' .doctrine/handoff_ignore
+}
+arm_mdbook_pack_child() {
+  fresh_copy >/dev/null 2>&1 || return 1
+  ./scripts/bootstrap.sh booky --title "Booky Docs" --docs mdbook --yes > "$T/.boot.log" 2>&1 || return 1
+  grep -q '^title = "Booky Docs"' docs/book/book.toml && grep -q '^docs = mdbook' .doctrine/commands && grep -q '^\^docs/book/' .doctrine/docs_paths.txt || return 1
+  command -v mdbook >/dev/null 2>&1 || return 0
+  OUT="$(bash scripts/run docs 2>&1)"; RC=$?; green
+}
+arm_wizard_answers_piped() {
+  # the guided setup with answers piped in: name, title (default), prefix (default), visibility 2 (private),
+  # language 2 (rust), docs 1 (none), harness "1,2" (claude, codex — the packs' declared order), confirm y
+  fresh_copy >/dev/null 2>&1 || return 1
+  printf 'wiz\n\n\n2\n2\n1\n1,2\ny\n' | ./scripts/bootstrap.sh --ask > "$T/.boot.log" 2>"$WORK/$name.err" || { tail -5 "$WORK/$name.err"; return 1; }
+  grep -q '^name = wiz$' .bedrock/project && grep -q '^prefix = WIZ$' .bedrock/project && grep -q '^visibility = private$' .bedrock/project \
+    && grep -q '^packs = rust,claude,codex$' .bedrock/project && grep -q 'Declared posture: PRIVATE' VISIBILITY.md \
+    && grep -q '1/7  Project name \[' "$WORK/$name.err" && grep -q '(default)' "$WORK/$name.err"
+}
+arm_wizard_invalid_answer_reasked() {
+  fresh_copy >/dev/null 2>&1 || return 1
+  # the harness default is claude (declared by the pack): Enter on question 7 selects it
+  printf 'bad name!\nok-name\n\n\n\n\n\n\ny\n' | ./scripts/bootstrap.sh --ask > "$T/.boot.log" 2>"$WORK/$name.err" || return 1
+  grep -q '^name = ok-name$' .bedrock/project && grep -q 'try again' "$WORK/$name.err" && grep -q '^packs = claude$' .bedrock/project && [ -f CLAUDE.md ]
+}
+arm_wizard_decline_writes_nothing() {
+  fresh_copy >/dev/null 2>&1 || return 1
+  printf 'nope\n\n\n\n\n\n\nn\n' | ./scripts/bootstrap.sh --ask > "$T/.boot.log" 2>&1; rc=$?
+  [ "$rc" -eq 2 ] && [ -f MAINTAINING.md ] && [ -z "$(git status --porcelain --untracked-files=all)" ]
+}
+arm_new_project_local() {
+  # from bedrock itself (the source clone): questions answered by flags, a local repository, first commit made
+  rm -rf "$T/np"
+  ( cd "$SRC_REPO" && bash scripts/new_project.sh --name npdemo --dest "$T/np" --local --lang rust --harness claude --yes ) > "$T/.np.log" 2>&1 || { tail -5 "$T/.np.log"; return 1; }
+  cd "$T/np" && [ -f .bedrock/project ] && git log --oneline -1 | grep -q 'NPDEMO-BOOTSTRAP-0001' && [ ! -d packs ] \
+    && git config core.hooksPath | grep -q githooks && gate_ci HEAD && green && bash scripts/handoff >/dev/null 2>&1
+}
+arm_add_pack_later() {
+  ./scripts/update_scaffold.sh "$SRC_REPO" --add-pack docs/mdbook > "$T/.update.log" 2>&1 || { tail -5 "$T/.update.log"; return 1; }
+  [ -f docs/book/book.toml ] && grep -q '^packs = rust,claude,mdbook$' .bedrock/project && grep -q '^docs = mdbook' .doctrine/commands \
+    && grep -q 'installed      pack docs/mdbook' "$T/.update.log"
+}
+
 # ── the runner ────────────────────────────────────────────────────────────────────────────────
 # The SOURCE the updater arms sync from: a clone of this repository (full history, for the merge
 # base) with the WORKING TREE committed on top, so an uncommitted change is what gets tested.
 build_source() {
   git clone -q "$SUITE_ROOT" "$WORK/src" 2>/dev/null || return 1
+  ( cd "$WORK/src" && git ls-files -z | xargs -0 rm -f ) || return 1        # so a file the working tree DELETED is gone too
   git ls-files -co --exclude-standard -z | tar --null -T - -cf - | tar -x -C "$WORK/src" || return 1
   ( cd "$WORK/src" && git config user.email t@example.invalid && git config user.name tester \
     && git add -A && git -c core.hooksPath=/dev/null commit -q --allow-empty -m "SUITE-0000: the working tree under test" ) || return 1
@@ -739,7 +815,7 @@ while read -r name expect id; do
   [ -z "$ONLY" ] || [ "$name" = "$ONLY" ] || continue
   n=$((n+1))
   T="$WORK/$name"; rm -rf "$T"; cp -R "$BASE" "$T"
-  ( cd "$T" && "arm_$name"; rc=$?; printf '\n--- last captured output ---\n%s\n' "$OUT"; exit $rc ) > "$WORK/$name.log" 2>&1; ok=$?
+  ( cd "$T" && name="$name" "arm_$name"; rc=$?; printf '\n--- last captured output ---\n%s\n' "$OUT"; exit $rc ) > "$WORK/$name.log" 2>&1; ok=$?
   case "$expect:$ok" in
     req:0)   pass=$((pass+1));   printf '  ✓ pass   %-40s %s\n' "$name" "$id" ;;
     req:*)   fail=$((fail+1));   printf '  ✗ FAIL   %-40s %s — required, and the spine does not comply\n' "$name" "$id"

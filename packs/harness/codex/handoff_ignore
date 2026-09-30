@@ -1,0 +1,2 @@
+# codex harness — session processes that hold a repository cwd but are not project work
+*/.codex/*

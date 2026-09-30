@@ -9,24 +9,26 @@
 #               present → never touched.
 #   project     the project's own content. Never touched by the updater.
 #   maintainer  bedrock-only: removed by bootstrap, never shipped.
+#   pack        opt-in: copied into a project only when selected (packs/README.md); its `files/` are seed
+#               or sync per the pack's own manifest; the directory itself never ships.
 # A directory entry (trailing /) classifies everything beneath it.
 .bedrock/manifest                                                   spine       0.17.0
 .doctrine/README.md                                                 spine       0.4.0
 .doctrine/agent_identities                                          seed        0.14.0
+.doctrine/commands                                                  seed        0.19.0
 .doctrine/config                                                    seed        0.13.0
 .doctrine/docs_paths.txt                                            seed        0.14.0
 .doctrine/evidence_tokens.txt                                       seed        0.4.0
+.doctrine/handoff_ignore                                            seed        0.19.0
+.doctrine/harness_adapters                                          seed        0.19.0
 .githooks/commit-msg                                                spine       0.1.0
 .githooks/pre-commit                                                spine       0.1.0
 .github/workflows/doctrines.yml                                     spine       0.1.0
-.github/workflows/rust.yml                                          seed        0.1.0
 .gitignore                                                          seed        0.1.0
 AGENTS.md                                                           spine       0.1.0
 CHANGELOG.md                                                        project     0.1.0
-CLAUDE.md                                                           project     0.1.0
 COMMIT.md                                                           spine       0.1.0
 Cargo.lock                                                          spine       0.1.0
-Cargo.toml                                                          seed        0.1.0
 DEV_NOTES.md                                                        project     0.1.0
 DOCTRINE_ENFORCEMENT.md                                             spine       0.1.0
 DOCTRINE_VERSION                                                    spine       0.1.0
@@ -36,18 +38,14 @@ LIVE_STATUS.md                                                      project     
 MAINTAINING.md                                                      maintainer  0.1.0
 MEMORY.md                                                           project     0.1.0
 MEMORY_ARCHITECTURE.md                                              spine       0.1.0
-Makefile                                                            seed        0.1.0
 NOTICE                                                              spine       0.11.0
 README.md                                                           project     0.1.0
 README_POLICY.md                                                    seed        0.1.0
 ROADMAP.md                                                          project     0.1.0
 TOOLBOX.md                                                          seed        0.1.0
 VISIBILITY.md                                                       seed        0.8.0
-cargo-generate.toml                                                 seed        0.1.0
-crates/                                                             seed        0.1.0
 docs/TASK_TREE.md                                                   seed        0.1.0
 docs/TASK_TREE_README.md                                            spine       0.1.0
-docs/book/                                                          seed        0.1.0
 docs/decisions/INDEX.md                                             project     0.1.0
 docs/decisions/TEMPLATE.md                                          spine       0.1.0
 docs/decisions/decision_context_continuity.md                       maintainer  0.1.0
@@ -66,7 +64,15 @@ knowledge-map/scripts/check_knowledge_map.sh                        spine       
 knowledge-map/scripts/gen_knowledge_map.sh                          spine       0.1.0
 knowledge-map/subsystems.md                                         project     0.1.0
 migrations/                                                         spine       0.17.0
-rust-toolchain.toml                                                 seed        0.1.0
+packs/README.md                                                     maintainer       0.19.0
+packs/docs/mdbook/                                                  pack        0.19.0
+packs/harness/claude/                                                 pack        0.19.0
+packs/harness/codex/                                                  pack        0.19.0
+packs/harness/gemini/                                                 pack        0.19.0
+packs/harness/kimi/                                                   pack        0.19.0
+packs/harness/pi/                                                     pack        0.19.0
+packs/harness/qwen/                                                   pack        0.19.0
+packs/lang/rust/                                                    pack        0.19.0
 scripts/bootstrap.sh                                                spine       0.1.0
 scripts/check_commit_message.sh                                     spine       0.13.0
 scripts/check_docpaths.sh                                           spine       0.1.0
@@ -86,7 +92,11 @@ scripts/check_task_acceptance.sh                                    spine       
 scripts/check_task_tree_ownership.sh                                spine       0.1.0
 scripts/check_waiver_routing.sh                                     spine       0.1.0
 scripts/evidence                                                    spine       0.14.0
+scripts/gate                                                        spine       0.19.0
 scripts/handoff                                                     spine       0.15.0
+scripts/lib/setup_questions.sh                                      spine       0.19.0
 scripts/lib/spine.sh                                                spine       0.13.0
+scripts/new_project.sh                                              spine       0.19.0
+scripts/run                                                         spine       0.19.0
 scripts/tests/spine_tests.sh                                        spine       0.12.0
 scripts/update_scaffold.sh                                          spine       0.1.0

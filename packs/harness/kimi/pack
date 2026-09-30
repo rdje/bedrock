@@ -1,0 +1,14 @@
+# packs/harness/kimi/pack — Kimi Code CLI harness pack.
+name = kimi
+kind = harness
+order = 4
+default = no
+title = Kimi Code CLI — reads AGENTS.md natively; no adapter file, only its hand-off exclusions
+seed =
+sync = 
+gitignore =
+commands =
+evidence_tokens =
+docs_paths =
+handoff_ignore = handoff_ignore
+install =

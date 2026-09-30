@@ -39,8 +39,8 @@ if [ "${SPINE_MERGE:-0}" != 1 ]; then
   fi
 fi
 
-# agent identities: built-in bot addresses, plus the project's data file (as of the last commit)
-ADDR_RE='noreply@anthropic\.com$|noreply@openai\.com$|noreply@google\.com$|copilot@users\.noreply\.github\.com$'
+# agent identities: DATA ONLY — .doctrine/agent_identities as of the last commit (NT-09; no vendor here)
+ADDR_RE=''
 NAME_RE=''
 ids="$(spine_config_file agent_identities)"
 if [ -n "$ids" ]; then
@@ -49,7 +49,7 @@ if [ -n "$ids" ]; then
     kind="${line%% *}"; re="${line#* }"; re="${re#"${re%%[! ]*}"}"
     spine_re_valid "$re" || spine_refuse ".doctrine/agent_identities holds an invalid regular expression: '$re'"
     case "$kind" in
-      address) ADDR_RE="$ADDR_RE|$re" ;;
+      address) ADDR_RE="${ADDR_RE:+$ADDR_RE|}$re" ;;
       name)    NAME_RE="${NAME_RE:+$NAME_RE|}$re" ;;
       *) spine_refuse ".doctrine/agent_identities: a line is 'address <ERE>' or 'name <ERE>', not '$line'" ;;
     esac
@@ -64,7 +64,7 @@ while IFS=$'\t' read -r key value; do
   email="$(printf '%s' "$value" | grep -oE '<[^>]*>' | tr -d '<>' | tr 'A-Z' 'a-z')"
   name="$(printf '%s' "$value" | sed 's/[[:space:]]*<.*$//')"
   hit=0
-  [ -n "$email" ] && printf '%s\n' "$email" | grep -qiE "$ADDR_RE" && hit=1
+  [ -n "$email" ] && [ -n "$ADDR_RE" ] && printf '%s\n' "$email" | grep -qiE "$ADDR_RE" && hit=1
   [ -n "$NAME_RE" ] && printf '%s\n' "$name" | grep -qiE "^($NAME_RE)$" && hit=1
   if [ "$hit" = 1 ]; then
     spine_fail "the message attributes an AGENT in a trailer, which this repository forbids (COMMIT.md): $key: $value"

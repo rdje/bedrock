@@ -1,0 +1,13 @@
+# packs/docs/mdbook/pack — the mdBook docs pack (the public documentation surface).
+name = mdbook
+kind = docs
+order = 1
+default = no
+title = mdBook — a book skeleton under docs/book, built with `scripts/run docs`
+seed = docs/book/
+sync =
+gitignore = gitignore
+commands = commands
+evidence_tokens =
+docs_paths = docs_paths
+install = install.sh

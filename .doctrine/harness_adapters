@@ -1,0 +1,10 @@
+# .doctrine/harness_adapters — files a harness auto-reads instead of AGENTS.md, one path per line.
+# MEMORY-ARCH requires each one PRESENT here to point at AGENTS.md (the canonical instructions); an
+# absent adapter is fine. Harness packs append their file at install. Keeping this list as data means
+# no spine script names a harness (NT-09).
+CLAUDE.md
+QWEN.md
+GEMINI.md
+.cursorrules
+.windsurfrules
+.github/copilot-instructions.md
