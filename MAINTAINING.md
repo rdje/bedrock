@@ -19,6 +19,24 @@ proves a project resumable from the repository alone — all wired together and
 A child project keeps working when its harness or model is switched at any hand-off, and resumes
 with full context after any session end ([`decision_context_continuity`](docs/decisions/decision_context_continuity.md)).
 
+## What bedrock is for — the bar every enhancement is measured against
+
+The maintainer's own words (2026-07-30 and 2026-09-30): bedrock *"shall be usable for any project,
+any harness, any coding language — project-, harness- and language-neutral, agnostic — and serve as
+a common basis for **SOTA, sign-off and production-grade** doctrine-based, policy-based, rule-based
+projects with a **very high level of maintainability**"*; a project spawned from it *"can change or
+switch the harness and the AI model at any hand-off-ready state with no harm, with 100 % context
+continuity across `/exit`, `/clear` and crashes — almost a guaranteed feature"*; and *"the next
+agent shall be able to keep enhancing bedrock by adding new doctrines, new packs, new SOTA,
+sign-off and production-grade features to make it even greater."*
+
+So an enhancement is judged by one question before any other: **does it raise that bar for every
+project created from bedrock, on day one, without naming a language, a tool or a harness in the
+spine?** If yes, it is a doctrine, a seam or a spine tool. If it needs a language, a tool or a
+harness, it is a pack. If it helps only one project, it stays in that project. The admission test
+below makes this mechanical; the ranked backlog in `docs/tasks/BEDROCK-MAINTENANCE.md` (leaf `.4`)
+is that question applied to what is known today.
+
 ## The architecture, in one screen
 
 | Layer | Where | What to know before touching it |
