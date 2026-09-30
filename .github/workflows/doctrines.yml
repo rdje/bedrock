@@ -18,7 +18,7 @@ jobs:
   enforce:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (pinned by commit)
         with:
           fetch-depth: 0
       - name: Refuse an uninitialised copy of the template
@@ -41,11 +41,16 @@ jobs:
 
   enforcer-selftest:
     # The enforcer judging itself: every check's --self-test, both probe drivers, a syntax pass
-    # over every script, shellcheck, and the conformance suite that builds a child and runs the
-    # review's scenarios against the tree under test.
-    runs-on: ubuntu-latest
+    # over every script, shellcheck, and the conformance suite that builds children (no pack, each
+    # pack, each harness) and runs the review's scenarios against the tree under test — on Linux
+    # AND macOS, because macOS (stock bash 3.2, BSD sed and awk) is where GNU-only assumptions break.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (pinned by commit)
         with:
           fetch-depth: 0
       - name: Syntax — every shell script parses
@@ -64,8 +69,9 @@ jobs:
           set -e
           bash docs/tasks/artifacts/task_acceptance/run_task_acceptance_probes.sh
           bash docs/tasks/artifacts/waiver_routing/run_waiver_routing_probes.sh
-      - uses: dtolnay/rust-toolchain@stable   # the Rust pack's arm runs cargo in a generated child
-        with:
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch, pinned by commit
+        with:                                                                   # the Rust pack's arm runs cargo in a generated child
+          toolchain: stable
           components: rustfmt, clippy
       - name: Conformance suite (the review's scenarios against this tree)
         run: |
@@ -73,10 +79,12 @@ jobs:
           git config --global user.name ci
           bash scripts/tests/spine_tests.sh
       - name: shellcheck — errors block
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y -qq shellcheck >/dev/null
           shellcheck --version | head -2
           shellcheck -S error $(git ls-files '*.sh') .githooks/pre-commit .githooks/commit-msg
       - name: shellcheck — full report (advisory until a baseline is checked in)
+        if: runner.os == 'Linux'
         continue-on-error: true
         run: shellcheck -f gcc $(git ls-files '*.sh') .githooks/pre-commit .githooks/commit-msg | grep -oE '\[SC[0-9]+\]' | sort | uniq -c | sort -rn

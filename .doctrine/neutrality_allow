@@ -1,0 +1,7 @@
+# .doctrine/neutrality_allow — spine logic paths ALLOWED to name a language, tool or harness, with the reason.
+# <path regular expression><TAB><reason>. Reviewed: an entry without a defensible reason is a defect.
+scripts/tests/spine_tests\.sh	the conformance suite exercises the packs and adapters by name; it tests them, it does not implement them
+docs/tasks/artifacts/.*\.sh	probe drivers build fixtures with whatever tools the test machine has
+migrations/0004-.*\.sh	migrates the pre-0.13 layout, whose canonical file was CLAUDE.md
+migrations/0006-.*\.sh	detects the packs an older child already carries by their files
+\.github/workflows/doctrines\.yml	bedrock's own CI installs a toolchain so the Rust pack arm runs; a child's copy inherits the step harmlessly

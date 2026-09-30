@@ -16,9 +16,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (pinned by commit)
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable branch, pinned by commit
         with:
+          toolchain: stable   # rust-toolchain.toml pins the exact version rustup uses
           components: rustfmt, clippy
       - name: The project's declared check (fmt --check, clippy -D warnings, test)
         run: bash scripts/run check

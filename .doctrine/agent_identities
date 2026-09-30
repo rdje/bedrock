@@ -5,6 +5,9 @@
 # Nothing is built into the check: every agent identity is data here (NT-09). A HUMAN named Claude,
 # Gemini or Cursor is never an agent: match products exactly, or a product followed by a model
 # family and a version; match agents' mail addresses, never a human's.
+# `line <ERE>`: a BODY line some harnesses add as attribution (matched case-insensitively against each line)
+line ^(🤖 )?generated with (\[|[A-Za-z])
+line ^claude-session:
 address noreply@anthropic\.com$
 address noreply@openai\.com$
 address noreply@google\.com$

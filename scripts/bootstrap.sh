@@ -76,7 +76,7 @@ if [ -z "$mode" ]; then
   elif [ "$pristine" = 1 ] && [ "$interactive" = 1 ]; then mode=init
   elif [ "$pristine" = 1 ]; then
     { echo "bootstrap: this is an uninitialised copy of the bedrock template. Give it a name, or run it on a terminal to be asked:"
-      echo "    scripts/bootstrap.sh <project-name> [--lang rust] [--docs mdbook] [--harness claude] [--yes]"
+      echo "    scripts/bootstrap.sh <project-name> [--lang <pack>] [--docs <pack>] [--harness <pack,…>] [--yes]   (packs: ls packs/*/)"
       echo "  Maintaining bedrock itself?  scripts/bootstrap.sh --maintainer"; } >&2
     exit 2
   else die "neither an initialised project (.bedrock/project) nor a pristine template copy (MAINTAINING.md); nothing to do"; fi

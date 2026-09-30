@@ -57,6 +57,7 @@ contract, which the driver reports:
 | `GAP-CLAIM-CENSUS` | a task leaf that **ADDS** a *"nothing checks X"* claim records the CENSUS it rests on in the same heading section (a command that enumerates a population, **inside a code span or fenced block**, or `census: not run (<why>)`). Such a sentence is a universally quantified claim over the whole tree, false the moment one reader exists; staged-diff-scoped (81 pre-existing claims upstream would otherwise teach bypass); `--all` reports the backlog, advisory | `scripts/check_gap_claims.sh` |
 | `COMMIT-MESSAGE` | the subject starts with a work-unit id (`PROJ-AREA-0007`) and no attribution trailer names an agent — recognised by `.doctrine/agent_identities` (addresses and exact product names), never by a human's first name; evaluated wherever a message exists (the `commit-msg` hook, and CI per commit) | `scripts/check_commit_message.sh` |
 | `MANIFEST` | `.bedrock/manifest` classifies every shipped path (`spine` / `seed` / `project` / `maintainer`), so the updater knows what it may touch; every `spine` path it names exists, so a half-installed spine is a breach. In bedrock itself, every tracked path must be classified | `scripts/check_manifest.sh` |
+| `NEUTRALITY` | no spine logic file (scripts, hooks, workflows, migrations; comments stripped) names a language, a build or docs tool, or a harness — the terms in `.doctrine/neutrality_terms`, exceptions with a reason in `.doctrine/neutrality_allow`. The neutrality contract as a gate; evaluated in bedrock itself only | `scripts/check_neutrality.sh` |
 | `RESUME-POINTER` | `MEMORY.md` is **true** for the commit being made: `latest_commit` names it when the change is governed, `active_work_unit` names an existing tree, the frontier leaf exists and is open, `next_action` is set. This is what makes a project resumable by any agent, in any harness, after any session end (`decision_context_continuity`); `scripts/handoff` applies the same rules to `HEAD` at session end | `scripts/check_resume_pointer.sh` |
 | `TABLE-ARITY-RATCHET` | a changed `.md` may not RAISE the number of table rows whose cell count disagrees with their header — GFM silently DROPS extra cells and PADS missing ones, so the page looks fine and the reader loses the rightmost column (26 of 197 rows of a shipped contract upstream, every enforcer green). Per-file ratchet against the before-snapshot, by GFM's own rules (an unescaped pipe splits even inside a code span; escaped pipes never; outer pipes optional; header/delimiter mismatch is not a table); POSIX awk, a 13-arm `--self-test` | `scripts/check_table_arity.sh` |
 | `KNOWLEDGE-MAP` | the derived Knowledge Map is in sync (if the subsystem exists) | `knowledge-map/scripts/check_knowledge_map.sh` |
@@ -79,8 +80,9 @@ own build gates, format checks, invariant proofs, etc.
 ## The task-acceptance checklist (every governed change's leaf must pass)
 
 A governed change cannot commit until its owning leaf records these, in that leaf's own section
-and in the same commit; the first three are hard-gated (`TASK-ACCEPTANCE`), the rest are the
-discipline:
+and in the same commit. **Three are hard-gated** by `TASK-ACCEPTANCE` (ROOT CAUSE, ADDRESSED, NO
+REGRESSION — ticked, label first, tool output inside a code span, new in the commit); the other
+three are the discipline the template asks for and review enforces:
 
 - [ ] **REPRODUCE / ISSUE** — the problem, shown (not asserted).
 - [ ] **ROOT CAUSE (WHY + WHERE)** — tool-backed and pinpointed (`TOOLBOX.md`).

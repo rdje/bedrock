@@ -123,6 +123,7 @@ wizard_invalid_answer_reasked           req    SETUP
 wizard_decline_writes_nothing           req    SETUP
 new_project_local                       req    SETUP
 add_pack_later                          req    NT-01
+bedrock_itself_green_in_ci_mode         req    NT-14
 "
 
 if [ "$LIST" = 1 ]; then
@@ -793,6 +794,15 @@ arm_add_pack_later() {
   ./scripts/update_scaffold.sh "$SRC_REPO" --add-pack docs/mdbook > "$T/.update.log" 2>&1 || { tail -5 "$T/.update.log"; return 1; }
   [ -f docs/book/book.toml ] && grep -q '^packs = rust,claude,mdbook$' .bedrock/project && grep -q '^docs = mdbook' .doctrine/commands \
     && grep -q 'installed      pack docs/mdbook' "$T/.update.log"
+}
+
+arm_bedrock_itself_green_in_ci_mode() {
+  # the template practises what it preaches: the tree under test (the suite's synthetic tip) passes its own
+  # tree invariants — NEUTRALITY (no language or harness in spine logic), MANIFEST (every path classified,
+  # every spine path present) and MEMORY-ARCH (the inventory) — judged as CI judges a commit
+  ( cd "$SRC_REPO" && for c in scripts/check_neutrality.sh scripts/check_manifest.sh scripts/check_memory_architecture.sh; do
+      SPINE_AFTER=HEAD SPINE_BEFORE=HEAD^ bash "$c" || exit 1; done ) > "$T/.self.log" 2>&1; rc=$?
+  [ "$rc" -eq 0 ] && grep -q 'NEUTRALITY: OK' "$T/.self.log" && grep -q 'MANIFEST: OK' "$T/.self.log"
 }
 
 # ── the runner ────────────────────────────────────────────────────────────────────────────────

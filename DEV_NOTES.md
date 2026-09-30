@@ -1,5 +1,9 @@
 # DEV_NOTES.md
 
+Detailed technical notes — root cause, implementation, validation — per slice. The
+engineering-continuity surface (not the public docs). Newest first. These are bedrock's own
+notes; a child starts with a fresh file.
+
 ## _(2026-09-04)_ — a template's trial must include the first commit
 
 - Every gate was green on the generated project and the first commit still failed: the doctrines judge STAGED
@@ -16,8 +20,6 @@
 - The neutrality bar is measured, not felt: `grep -ciE 'grammar|parser|…'` over each ported script → 0, after the
   generic uses of "corpus" and "grammar" were re-worded ("tree", "syntax") so the count means what it says.
 
-Detailed technical notes — root cause, implementation, validation — per slice. The
-engineering-continuity surface (not the public docs; that's `docs/book/`). Newest first.
 
 ## _(YYYY-MM-DD)_ — bootstrap
 

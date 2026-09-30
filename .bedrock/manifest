@@ -21,6 +21,8 @@
 .doctrine/evidence_tokens.txt                                       seed        0.4.0
 .doctrine/handoff_ignore                                            seed        0.19.0
 .doctrine/harness_adapters                                          seed        0.19.0
+.doctrine/neutrality_allow                                            spine       1.0.0
+.doctrine/neutrality_terms                                            spine       1.0.0
 .githooks/commit-msg                                                spine       0.1.0
 .githooks/pre-commit                                                spine       0.1.0
 .github/workflows/doctrines.yml                                     spine       0.1.0
@@ -44,6 +46,7 @@ README_POLICY.md                                                    seed        
 ROADMAP.md                                                          project     0.1.0
 TOOLBOX.md                                                          seed        0.1.0
 VISIBILITY.md                                                       seed        0.8.0
+docs/REPOSITORY_SETTINGS.md                                           spine       1.0.0
 docs/TASK_TREE.md                                                   seed        0.1.0
 docs/TASK_TREE_README.md                                            spine       0.1.0
 docs/decisions/INDEX.md                                             project     0.1.0
@@ -83,6 +86,7 @@ scripts/check_lesson_promotion.sh                                   spine       
 scripts/check_live_doc_currency.sh                                  spine       0.1.0
 scripts/check_manifest.sh                                           spine       0.17.0
 scripts/check_memory_architecture.sh                                spine       0.1.0
+scripts/check_neutrality.sh                                           spine       1.0.0
 scripts/check_no_background_jobs.sh                                 spine       0.1.0
 scripts/check_readme_stability.sh                                   spine       0.1.0
 scripts/check_resume_pointer.sh                                     spine       0.15.0

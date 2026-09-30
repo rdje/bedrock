@@ -12,7 +12,7 @@
 ## Task-trees
 
 - [`BEDROCK-MAINTENANCE.md`](docs/tasks/BEDROCK-MAINTENANCE.md) — `active`
-- [`REVIEW-2026-09.md`](docs/tasks/REVIEW-2026-09.md) — `active`
+- [`REVIEW-2026-09.md`](docs/tasks/REVIEW-2026-09.md) — `done`
 
 ## Knowledge (question-shaped, promoted lessons)
 

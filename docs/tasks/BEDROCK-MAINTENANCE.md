@@ -27,7 +27,7 @@ process.
 - ID: `BEDROCK-MAINTENANCE`
   Status: `active`
   Goal: SOTA neutral self-enforcing spine
-  Children: `.1`, `.2`, `.3`
+  Children: `.1`, `.2`, `.3`, `.4`
 
 - ID: `BEDROCK-MAINTENANCE.1`
   Status: `done`
@@ -736,7 +736,7 @@ process.
   `--force`.
 
 - ID: `BEDROCK-MAINTENANCE.3`
-  Status: `active`
+  Status: `done`
   Goal: close the consolidated external review of 2026-09-30 (`docs/reviews/2026-09-30-consolidated-review.md`:
   59 items, `BK`/`BR`/`NT`), under three decisions recorded the same day — the spine is project-, harness- and
   language-neutral with Rust, mdBook and harness files as opt-in packs; a leaf owns a commit only if that
@@ -744,14 +744,47 @@ process.
   `docs/tasks/REVIEW-2026-09.md` (leaves `REVIEW-2026-09.1` … `.9`), because nine large leaves would double
   this file. Its frontier is the authoritative one while it is active.
   Acceptance: the review's §9 test matrix green in a conformance suite CI runs; every item closed or recorded.
-  Verification: per leaf, in `docs/tasks/REVIEW-2026-09.md`.
-  Commit: `BEDROCK-REVIEW-0001` onward.
+  Verification: per leaf, in `docs/tasks/REVIEW-2026-09.md` — `arms: 85 pass / 0 xfail` under bash 5.3 and 3.2 at 1.0.0.
+  Commit: `BEDROCK-REVIEW-0001` … `BEDROCK-REVIEW-0010`.
+
+- ID: `BEDROCK-MAINTENANCE.4`
+  Status: `pending`
+  Goal: the standing enhancement loop after 1.0.0 — the backlog below, each item its own leaf, each
+  passing the admission test (`MAINTAINING.md`: Q0 pack gate, Q1 value, Q2 nouns) and landing with a
+  suite arm. Candidates, ranked by what they buy any project on day one:
+  1. **Evidence re-run in CI** — the un-fakeable leg: for every `evidence: rc=N cmd="…"` line a commit
+     adds, CI re-runs `cmd` in the child and compares `rc`; a mismatch is a breach. Closes the honest
+     limit every acceptance check states.
+  2. **A derived resume pointer** — `scripts/pointer` regenerates `MEMORY.md`'s current-state block
+     from `git log` and the frontier rows, so layer A cannot drift (MEMORY_ARCHITECTURE §6).
+  3. **More language packs** — Python (pytest, ruff), Go, Dart, Julia, Perl, C/CMake: each a `packs/lang/`
+     directory, its verbs, its result shapes, a suite arm; the spine needs no change.
+  4. **More docs packs** — mkdocs, Documenter.jl, dartdoc, POD.
+  5. **`GATE-REACHABILITY`** — *a check nothing invokes is indistinguishable from one that does not
+     exist*: enumerate what the hooks, the driver and the workflows invoke and refuse a registered
+     check that none reaches (needs the enumeration seam the old backlog names).
+  6. **`VISIBILITY-CONSISTENCY`** — no tracked document contradicts the posture `VISIBILITY.md` declares.
+  7. **A release ritual as a script** — `scripts/release`: bump, changelog entry with the
+     "for existing children" paragraph, suite under both bashes, tag; refuses when a migration is
+     missing for a shape change.
+  8. **A dependency-freshness doctrine behind a project seam** — the project declares the command that
+     lists outdated dependencies; the gate ratchets the count.
+  9. **Signed commits and tags** as a declared posture in `VISIBILITY.md`'s sibling, verified in CI.
+  10. **The cross-repo behavioural differential** — run bedrock's check and a child's hardened copy of
+      it against one fixture and compare verdicts (the trigger `MAINTAINING.md` still calls owed).
+  11. **A `docs/knowledge` authoring tool** — `scripts/knowledge new "<question>"` seeds a
+      question-shaped record with `answers:` so promotion is one command.
+  12. **Shellcheck baseline** checked in, then blocking in CI (the report is advisory today).
+  Acceptance: each item lands as its own leaf with an arm; the suite stays green under both bashes.
+  Verification: pending
+  Commit: pending
 
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
 | --- | --- | --- | --- |
-| 1 | `BEDROCK-MAINTENANCE.3` | `active` | the 2026-09-30 review — frontier in `docs/tasks/REVIEW-2026-09.md` |
+| 1 | `BEDROCK-MAINTENANCE.4` | `pending` | the enhancement loop after 1.0.0 — pick the next candidate from its list (evidence re-run in CI first) |
+| — | `BEDROCK-MAINTENANCE.3` | `done` | the 2026-09-30 review closed in `docs/tasks/REVIEW-2026-09.md` (0.11.0 → 1.0.0) |
 | 2 | `BEDROCK-MAINTENANCE.2` | `active` | the ongoing transfer loop; pick a backlog item below |
 | — | `BEDROCK-MAINTENANCE.2.1` | `done` | README Stability Policy + the layer-A byte cap (0.2.0) |
 | — | `BEDROCK-MAINTENANCE.2.2` | `done` | `WAIVER-ROUTING` ported + the neutrality bar written down (0.3.0) |

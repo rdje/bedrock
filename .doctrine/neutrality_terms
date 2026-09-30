@@ -1,0 +1,25 @@
+# .doctrine/neutrality_terms — words that mark spine LOGIC as bound to a language, tool or harness
+# (NEUTRALITY gate, bedrock itself only). One extended regular expression per line; case-insensitive.
+# Add a name when a new pack arrives, so the spine cannot quietly grow a branch for it.
+\bcargo\b
+\bclippy\b
+\brustc\b
+\brustfmt\b
+\bmdbook\b
+\bpython3?\b
+\bpytest\b
+\bnpm\b
+\bmaven\b
+\bgradle\b
+\bcmake\b
+\bclaude\b
+\bcodex\b
+\bcursor\b
+\bgemini\b
+\bcopilot\b
+\bkimi\b
+\bqwen\b
+\bwindsurf\b
+\baider\b
+\banthropic\b
+\bopenai\b

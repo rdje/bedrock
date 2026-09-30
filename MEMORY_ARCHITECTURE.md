@@ -201,13 +201,14 @@ stop carrying it forward.
 
 ## 7. The tool-neutral bootstrap entrypoint
 
-Each harness auto-reads a *different* file: `CLAUDE.md`, `AGENTS.md`, `.cursorrules`,
-`.github/copilot-instructions.md`, `GEMINI.md`, `.windsurfrules`, … Do **not**
-duplicate the system into each — they drift. Instead:
+Each harness auto-reads a *different* file: `AGENTS.md` (the common convention — Codex, Pi,
+Kimi, Copilot's agent and others read it natively), `CLAUDE.md`, `QWEN.md`, `GEMINI.md`, … Do
+**not** duplicate the system into each — they drift. Instead:
 
-- Put the system of record in **`README.md`** (every tool and human opens it) and in
-  **this file**.
-- Make each harness bootstrap file a **one-line pointer** to them.
+- Put the **complete** agent instructions in **`AGENTS.md`**, which routes to `README.md` and
+  to **this file**. It is the canonical instruction file and the only required one.
+- Make each other harness file a **one-line adapter** that imports or points at `AGENTS.md`
+  (a pack provides it; `MEMORY-ARCH` verifies every adapter present points there).
 
 A new agent in any harness, reading its native bootstrap file, is then routed to the
 same place. Discovery is solved once, for all tools.
@@ -270,11 +271,13 @@ bootstrap): `pre-commit` runs the self-check (a non-compliant tree can't commit)
 limit:* hooks are local and a determined user can `--no-verify` or skip `hooksPath` —
 they catch the common case cheaply; they are not the backstop.
 
-**E4 — CI gate (the un-bypassable backstop).** A CI job runs the **same** self-check
-script and validates that every commit subject on the branch carries a work-unit id.
-CI is server-side: `--no-verify` doesn't reach it. A non-compliant branch **fails the
-build and cannot merge**. This is what makes non-compliance genuinely hard — the work
-does not land until it is compliant.
+**E4 — CI gate (the un-bypassable backstop).** A CI job runs the **same** enforcer on
+**every commit the push or pull request introduces**, each judged against its parent with its
+real message, so a subject without a work-unit id or an unowned change is refused there even
+when the hook was bypassed. CI is server-side: `--no-verify` doesn't reach it. A non-compliant
+branch **fails the build**, and — once the platform's branch protection requires that check
+(`docs/REPOSITORY_SETTINGS.md`) — **cannot merge**. This is what makes non-compliance genuinely
+hard — the work does not land until it is compliant.
 
 **Why layered, not a single wall:** discovery (E1) makes the rules unmissable; the
 self-check (E2) makes them executable; hooks (E3) make violations fail *fast*; CI (E4)
@@ -300,9 +303,10 @@ if [ -f MEMORY.md ]; then
   [ "$n" -le "$CAP" ] || note "MEMORY.md is $n lines (> cap $CAP) — demote content to task-trees/decisions"
   [ "$b" -le "$BYTE_CAP" ] || note "MEMORY.md is $b bytes (> cap $BYTE_CAP) — long lines bypass the line cap; demote content, do NOT raise the cap"
 fi
-for f in AGENTS.md CLAUDE.md; do
-  [ -f "$f" ] || { note "$f bootstrap pointer is missing"; continue; }
-  grep -q "MEMORY_ARCHITECTURE.md" "$f" || note "$f does not point at MEMORY_ARCHITECTURE.md"
+[ -f AGENTS.md ] || note "AGENTS.md (the canonical agent instructions) is missing"
+[ -f AGENTS.md ] && { grep -q "MEMORY_ARCHITECTURE.md" AGENTS.md || note "AGENTS.md does not point at MEMORY_ARCHITECTURE.md"; }
+for f in CLAUDE.md QWEN.md GEMINI.md; do   # optional adapters: present → must point at AGENTS.md
+  [ -f "$f" ] && { grep -q "AGENTS.md" "$f" || note "$f is an adapter and must point at AGENTS.md"; }
 done
 [ -d docs/decisions ] || note "docs/decisions/ (layer C) is missing"
 exit $fail

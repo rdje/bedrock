@@ -1,21 +1,111 @@
-# MAINTAINING bedrock — read this if you are improving the TEMPLATE itself
+# MAINTAINING bedrock — the maintainer's guide (read this if you are improving the TEMPLATE itself)
 
 > **You are here to work on bedrock the template, not to start a new project from it.**
-> (Starting a new project? Run `scripts/bootstrap.sh <name>` — it resets this repo's
-> maintainer files to a clean consumer seed and removes this guide.)
+> (Starting a new project? `scripts/new_project.sh` from this clone, or `scripts/bootstrap.sh`
+> in a copy made with GitHub's *Use this template*.)
 >
-> This document exists because **no memory of building bedrock survives a session**. It is
-> the baton-hand-off: read it and you have full context on what bedrock is, where it came
-> from, and how to evolve it — with nothing lost.
+> This document is the baton hand-off: **no memory of building bedrock survives a session**, so
+> everything the next agent — any model, any harness — needs to keep enhancing bedrock is here or
+> reachable from here. Then resume from `MEMORY.md` → `docs/tasks/BEDROCK-MAINTENANCE.md`.
 
 ## What bedrock is
 
 bedrock is a **project-, harness- and language-neutral discipline spine** for new projects:
 durable 4-layer memory, task-tree tracking, a strict commit workflow, mechanical doctrine
-enforcement (git hooks + CI) and a derived knowledge map — all wired together and
+enforcement (git hooks + CI, per commit), a derived knowledge map, and a hand-off check that
+proves a project resumable from the repository alone — all wired together and
 **self-enforcing on a fresh clone**. A language, a docs tool or a harness file is an opt-in
-**pack**, never part of the spine ([`decision_neutral_spine_and_packs`](docs/decisions/decision_neutral_spine_and_packs.md)). A new project copies bedrock, drops its roadmap
-into `ROADMAP.md`, runs `bootstrap.sh`, and grows with that spine as its backbone.
+**pack**, never part of the spine ([`decision_neutral_spine_and_packs`](docs/decisions/decision_neutral_spine_and_packs.md)).
+A child project keeps working when its harness or model is switched at any hand-off, and resumes
+with full context after any session end ([`decision_context_continuity`](docs/decisions/decision_context_continuity.md)).
+
+## The architecture, in one screen
+
+| Layer | Where | What to know before touching it |
+| --- | --- | --- |
+| **The library** | `scripts/lib/spine.sh` | every check sources it: fail-closed prelude, the exit contract `0 holds · 1 breach · 2 REFUSED`, the change context (`before`/`after`; the index or a commit, never the worktree), reads through `spine_read`, changes through `spine_changes` (deletions and renames included), `.doctrine/` read from `before`, scratch outside the worktree, message parsing, leaf-section parsing, the resume-pointer parsers. Never call `spine_refuse` inside `$( )` — it ends the subshell only. |
+| **The driver** | `scripts/check_doctrines.sh` (`scripts/gate`) | the registry of checks; `--message` (commit-msg hook), `--commit <rev>` / `--range a..b` (CI, per commit); reports `⏸ not evaluated`, `⚠️ EXCEPTION`, `⛔ REFUSED` |
+| **The ownership contract** | `check_task_tree_ownership.sh`, `check_task_acceptance.sh`, `check_commit_message.sh`, `check_resume_pointer.sh` | [`decision_ownership_contract`](docs/decisions/decision_ownership_contract.md): deny-by-default governance, the leaf bound by `(leaf <ID>)` in the subject, evidence new in the diff and inside code spans, a done leaf owns nothing, `Spine-Exception:` trailers, `MEMORY.md` true for every governed commit. All message-time checks. |
+| **The project seams** | `.doctrine/` | data, never code: `config`, `docs_paths.txt`, `evidence_tokens.txt`, `commands`, `agent_identities`, `handoff_ignore`, `harness_adapters`, `neutrality_terms`, `neutrality_allow`. Packs append; projects declare. A spine script that needs a language or harness name is a defect (`NEUTRALITY` gate). |
+| **The manifest** | `.bedrock/manifest` (`MANIFEST` gate) | every shipped path classified `spine` / `seed` / `project` / `maintainer` / `pack`; the updater's ground truth, read from the SOURCE. An unclassified path is refused. |
+| **The updater** | `scripts/update_scaffold.sh` | [`decision_updater_ownership_classes`](docs/decisions/decision_updater_ownership_classes.md): replaces itself first, fast-forwards an unmodified spine file, never touches a modified one, runs `migrations/`, seeds an `UPDATE-<version>` leaf, writes `DOCTRINE_VERSION` only after the gate passes; `--plan`, `--add-pack`. |
+| **The packs** | `packs/<kind>/<name>/` | `pack` manifest (`key = value`: `order`, `default`, `seed`, `sync`, fragments, `install`), `files/`, fragments, an install hook that prints measured evidence. See `packs/README.md`. |
+| **The setup** | `scripts/bootstrap.sh`, `scripts/new_project.sh`, `scripts/lib/setup_questions.sh` | the guided questions (choices listed, defaults on Enter, re-ask, summary, confirmation), flags as the non-interactive path, validation before any write, literal edits, evidence measured over the staged first commit. |
+| **The conformance suite** | `scripts/tests/spine_tests.sh` | THE regression harness: builds children from the working tree (no pack, packs, old bedrock versions), runs every scenario as a `req` or `xfail` arm; an `xfail` that starts passing fails the run. Run it before every commit that touches a script; CI runs it on Linux and macOS. |
+| **The session end** | `scripts/handoff` | census of background jobs, a clean tree, the pointer true against the latest governed commit, unpushed commits listed. |
+
+The three decisions above, plus [`decision_licence`](docs/decisions/decision_licence.md), are the
+contract; the review that produced them is `docs/reviews/2026-09-30-consolidated-review.md`.
+
+## Recipes
+
+Every recipe starts the same way: open a leaf under `docs/tasks/BEDROCK-MAINTENANCE.md` (or a
+tree of its own for a large change, as `REVIEW-2026-09` was), and ends the same way: the suite
+green, the leaf's checklist carrying the measured evidence, `DOCTRINE_VERSION` bumped,
+`CHANGELOG.md` telling existing children what changed and what to do, `scripts/handoff` → `OK`.
+
+### Add a doctrine (a new check)
+
+1. **Pass the admission test** below (Q0, Q1, Q2 — in that order). Write, in one sentence with no
+   project's nouns, what the check prevents.
+2. Write `scripts/check_<name>.sh`: source `scripts/lib/spine.sh`, `spine_init <ID>`, read the
+   change through `spine_changed_paths` / `spine_read` / `spine_added_lines`, honour the exit
+   contract, put a `--self-test` in it (RED and GREEN arms, the founding case pinned verbatim).
+   Header: what it prevents, the measured incident behind it, the honest limit.
+3. Register it in the driver's `DOCTRINES` array and mirror the row in `DOCTRINE_ENFORCEMENT.md`.
+4. Add `req` arms to `scripts/tests/spine_tests.sh` (the RED case refused **by the named check**,
+   the GREEN control passing); wire the `--self-test` into the CI job's list.
+5. Classify the script in `.bedrock/manifest` (`spine`). If it needs project data, add a
+   `.doctrine/<file>` seed (class `seed`) and document it in `.doctrine/README.md`.
+6. If it changes the SHAPE of content earlier templates created, ship a migration.
+
+### Add a pack (a language, a docs tool, a harness)
+
+1. `packs/<kind>/<name>/pack`: `name`, `kind`, `order`, `default`, `title`, `seed` (paths the
+   project will own), `sync` (pack-owned paths the updater fast-forwards), the fragment file
+   names, `install`.
+2. `files/` — copied into the project root at install; keep starter code minimal and named after
+   the project by the install hook, which prints measured evidence lines (`rc=…` in code spans).
+3. Fragments: `commands` (the verbs `scripts/run` exposes), `evidence_tokens` (what the
+   language's tools print), `gitignore`, `docs_paths`, `handoff_ignore` (a harness's session
+   processes). A harness that reads `AGENTS.md` natively ships no adapter file — verify against
+   the harness's current documentation and say so in the title.
+4. Classify `packs/<kind>/<name>/` as `pack` in the manifest; add its terms to
+   `.doctrine/neutrality_terms`; add a suite arm that bootstraps a child with the pack, runs its
+   `check` verb when the toolchain is present, and proves an unowned change in its language is
+   refused; add its toolchain to the CI self-test job if the arm needs it.
+5. Migration 0006 detects packs older children already carry — extend it if the pack has a
+   recognisable footprint.
+
+### Add a migration
+
+`migrations/NNNN-<slug>.sh` with `# since: <version>` (the version whose change it accompanies),
+idempotent, printing what it changed, exiting nonzero on failure. Test it in a suite arm built
+from the last bedrock commit that did not have the change (`old_child <rev>`).
+
+### Cut a release
+
+Bump `DOCTRINE_VERSION` (the manifest's `since` column names the version that added a path);
+write the `CHANGELOG.md` entry with a **"for existing children"** paragraph (what changes for them,
+what to run); run the suite under bash 5 and `/bin/bash` 3.2; `scripts/handoff`. Tag the commit.
+Children upgrade with `scripts/update_scaffold.sh <bedrock> --ref <tag>`.
+
+### Port an improvement from a child (transfer runs both ways)
+
+See "How to transfer" and "Transfer runs BOTH WAYS" below; the mechanical part is: does the
+child's version of an invariant beat bedrock's? Then it comes here, neutralised, with its own
+suite arm — and the child's leaf notes that the fix is owed upstream.
+
+### Run everything
+
+```bash
+scripts/gate                          # the enforcer on the index
+scripts/tests/spine_tests.sh          # the suite (≈ 5 min); --only <arm>, --list, --keep
+/bin/bash scripts/tests/spine_tests.sh   # the same under stock bash 3.2 (macOS)
+for c in scripts/check_*.sh; do bash "$c" --self-test 2>/dev/null; done
+bash docs/tasks/artifacts/*/run_*_probes.sh
+scripts/handoff
+```
 
 ## Provenance & relationship to PGEN (the most important context)
 
@@ -176,40 +266,35 @@ bedrock is **both** a template *and* a real project (its project = "maintain the
 So this repo's own layer-A/B/C memory describes the maintenance work:
 
 - `MEMORY.md` — bedrock's resume pointer (points here + to the maintenance tree).
-- `docs/tasks/BEDROCK-MAINTENANCE.md` — the living maintenance task-tree (frontier + backlog).
-- `docs/decisions/reference_bedrock_provenance.md` — the durable provenance/boundary facts.
-- `ROADMAP.md` — kept as the **consumer** placeholder (the canonical "replace me" file);
-  bedrock's own roadmap is the maintenance tree above.
+- `docs/tasks/BEDROCK-MAINTENANCE.md` — the living maintenance task-tree (frontier + backlog of
+  candidate enhancements for the next agent).
+- `docs/tasks/REVIEW-2026-09.md` — the tree that closed the 2026-09-30 review (done).
+- `docs/decisions/` — the contract (four decision records) and the provenance record.
+- `docs/reviews/` — external reviews, kept so their item ids can be cited.
+- `ROADMAP.md` — kept as the **consumer** placeholder (the canonical "replace me" file).
 
-`scripts/bootstrap.sh` de-templates for a consumer: it resets `MEMORY.md` to a clean seed
-and removes this guide + the maintenance tree + the provenance record, so a new project
-starts fresh.
+`scripts/bootstrap.sh` de-templates for a consumer: it removes every `maintainer`-class path
+(this guide, both maintainer trees, the reviews, every decision record) and resets the live docs.
 
 ## File inventory (the spine)
 
-- Agent entry: `AGENTS.md` (canonical, complete); `CLAUDE.md` is an optional adapter pointing at it.
-  Memory: `MEMORY_ARCHITECTURE.md`, `MEMORY.md`.
-- Task-trees: `docs/TASK_TREE.md`, `docs/TASK_TREE_README.md`, `docs/tasks/`.
-- Decisions: `docs/decisions/` (+ `INDEX.md`). Commit: `COMMIT.md`.
-- Enforcement: `DOCTRINE_ENFORCEMENT.md`, `scripts/lib/spine.sh` (the library every check reads
-  the change through), `scripts/check_doctrines.sh` (+ universal `check_*.sh`),
-  `scripts/check_doctrines.project.sh` (project slot), `scripts/tests/spine_tests.sh` (the
-  conformance suite), `scripts/handoff` (the session-end check), `.githooks/`, `.github/workflows/`,
-  `.doctrine/` (project seams).
-- Tools-first: `TOOLBOX.md`. Knowledge map: `KNOWLEDGE_MAP.md` (derived), `knowledge-map/`.
-- Live-docs: `CHANGELOG.md`, `DEV_NOTES.md`, `LIVE_STATUS.md`. Entry points: `scripts/gate`,
-  `scripts/run`, `scripts/handoff`, `scripts/evidence`, `scripts/new_project.sh`.
-- Packs (`packs/`, opt-in, never part of the spine): `lang/rust`, `docs/mdbook`,
-  `harness/{claude,gemini,cursor,copilot,windsurf}` — see `packs/README.md`.
-- Consumer entry: `ROADMAP.md`. Versioning: `DOCTRINE_VERSION`. Sync: `scripts/update_scaffold.sh`.
-- Licence: `LICENSE` (LGPL-2.1-or-later), `NOTICE` (what applies to a child; 0BSD for seed files).
-- **bedrock-only (removed by bootstrap, never shipped):** `MAINTAINING.md`,
-  `docs/tasks/BEDROCK-MAINTENANCE.md`, `docs/tasks/REVIEW-2026-09.md`, every
-  `docs/decisions/*.md` record, `docs/reviews/`.
+The authoritative inventory is `.bedrock/manifest` (the `MANIFEST` gate keeps it complete). In
+words: agent entry `AGENTS.md` (canonical; harness adapters come from packs); memory
+`MEMORY_ARCHITECTURE.md`, `MEMORY.md`; task-trees `docs/TASK_TREE.md`, `docs/TASK_TREE_README.md`,
+`docs/tasks/` (+ `TEMPLATE.md`); decisions `docs/decisions/` (+ `INDEX.md`, `TEMPLATE.md`); commit
+`COMMIT.md`; enforcement `DOCTRINE_ENFORCEMENT.md`, `scripts/lib/spine.sh`, `scripts/gate` →
+`scripts/check_doctrines.sh` + `scripts/check_*.sh`, `scripts/check_doctrines.project.sh` (project
+slot), `scripts/tests/spine_tests.sh`, `.githooks/`, `.github/workflows/doctrines.yml`, `.doctrine/`;
+tools-first `TOOLBOX.md`; knowledge map `KNOWLEDGE_MAP.md` (derived), `knowledge-map/`; live docs
+`CHANGELOG.md`, `DEV_NOTES.md`, `LIVE_STATUS.md`; posture `VISIBILITY.md`; settings
+`docs/REPOSITORY_SETTINGS.md`; licence `LICENSE`, `NOTICE`; entry points `scripts/run`,
+`scripts/evidence`, `scripts/handoff`, `scripts/bootstrap.sh`, `scripts/new_project.sh`,
+`scripts/update_scaffold.sh`; versioning `DOCTRINE_VERSION`, `.bedrock/manifest`, `migrations/`;
+packs `packs/`.
 
 ## Working on bedrock
 
 Use bedrock's own discipline on bedrock: create/extend a `BEDROCK-MAINTENANCE` leaf before
-changing spine files, run `scripts/gate` (the enforcer) and `scripts/tests/spine_tests.sh` (the
-conformance suite), commit via `COMMIT.md`. The enforcer
-must stay green — bedrock has to practice what it preaches.
+changing spine files, run `scripts/gate` and `scripts/tests/spine_tests.sh`, commit via
+`COMMIT.md`, end with `scripts/handoff`. The enforcer must stay green — bedrock has to practice
+what it preaches, and since `7b6d898` every commit is judged by the same contract a child's is.

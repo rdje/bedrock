@@ -1,9 +1,10 @@
 # ROADMAP — _(PROJECT NAME)_
 
 > ⛒ **DROP-IN FILE.** This is the one file that makes the project *yours*. Replace
-> everything below with your project's real roadmap, then run `scripts/bootstrap.sh` to seed
-> the first task-tree(s) from it. Everything else in this repo is the reusable discipline
-> spine — the project grows from here with that spine as its backbone.
+> everything below with your project's real roadmap, then create your first task-tree from it
+> (`cp docs/tasks/TEMPLATE.md docs/tasks/<TREE-ID>.md`, register it in `docs/TASK_TREE.md`,
+> point `MEMORY.md` at it). Everything else in this repo is the reusable discipline spine —
+> the project grows from here with that spine as its backbone.
 
 <!-- BEDROCK-MAINTAINER-NOTE:START (removed by scripts/bootstrap.sh de-template) -->
 > _(bedrock maintainers: this file stays the **consumer** placeholder. bedrock's own roadmap

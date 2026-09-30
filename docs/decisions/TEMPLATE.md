@@ -18,4 +18,4 @@ chosen path. For a `feedback` record, capture the "why" behind the guidance.
 ## How to apply
 
 The concrete rule going forward — what to do (or not do) as a result. Link related records
-with `[[their-slug]]`.
+with a relative Markdown link, `[their-slug](their-slug.md)`, which renders everywhere.

@@ -42,6 +42,7 @@ fi
 # agent identities: DATA ONLY — .doctrine/agent_identities as of the last commit (NT-09; no vendor here)
 ADDR_RE=''
 NAME_RE=''
+LINE_RE=''
 ids="$(spine_config_file agent_identities)"
 if [ -n "$ids" ]; then
   while IFS= read -r line; do
@@ -51,7 +52,8 @@ if [ -n "$ids" ]; then
     case "$kind" in
       address) ADDR_RE="${ADDR_RE:+$ADDR_RE|}$re" ;;
       name)    NAME_RE="${NAME_RE:+$NAME_RE|}$re" ;;
-      *) spine_refuse ".doctrine/agent_identities: a line is 'address <ERE>' or 'name <ERE>', not '$line'" ;;
+      line)    LINE_RE="${LINE_RE:+$LINE_RE|}$re" ;;
+      *) spine_refuse ".doctrine/agent_identities: a line is 'address <ERE>', 'name <ERE>' or 'line <ERE>', not '$line'" ;;
     esac
   done <<IDS
 $ids
@@ -72,9 +74,9 @@ while IFS=$'\t' read -r key value; do
     fail=1
   fi
 done < "$T/trailers.tsv"
-# non-trailer attribution shapes some harnesses add as body text
-if grep -iEq '^(🤖 )?generated with (\[|[A-Za-z])|^claude-session:' "$T/msg"; then
-  spine_fail "the message carries a harness attribution line ('Generated with …' / 'claude-session:'), which this repository forbids (COMMIT.md)"
+# non-trailer attribution shapes some harnesses add as body text: `line <ERE>` entries of the data file
+if [ -n "$LINE_RE" ] && grep -iEq "$LINE_RE" "$T/msg"; then
+  spine_fail "the message carries a harness attribution line, which this repository forbids (COMMIT.md): $(grep -iE "$LINE_RE" "$T/msg" | head -1)"
   fail=1
 fi
 

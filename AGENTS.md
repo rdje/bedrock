@@ -63,6 +63,9 @@ human is working. Follow it exactly.
 > One rule above all: **information that exists only in the live conversation is not yet
 > saved — route it to a layer and commit it before the turn ends.**
 
+The platform settings that turn a red CI run into a blocked merge are in
+`docs/REPOSITORY_SETTINGS.md`; set them once per repository.
+
 ## First time in a fresh copy of the template
 
 Run `scripts/bootstrap.sh <project-name>` once. It de-templates the copy, sets the project

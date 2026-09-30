@@ -1,5 +1,29 @@
 # CHANGELOG.md
 
+## 1.0.0 — 2026-09-30 — the review is closed: the maintainer's guide, the NEUTRALITY gate, CI on Linux and macOS
+
+`BEDROCK-REVIEW-0010` (leaf `REVIEW-2026-09.9`, the last of the tree). Every item of the consolidated review
+of 2026-09-30 (59 items) is closed; the conformance suite runs 85 arms, all required, all passing under bash
+5.3 and stock bash 3.2.
+
+- ✅ **`MAINTAINING.md` is the maintainer's guide**: the architecture in one screen, and recipes to add a
+  doctrine, a pack, a migration, cut a release, port an improvement, run everything — so the next agent, any
+  model, any harness, can keep enhancing bedrock. `BEDROCK-MAINTENANCE.4` lists twelve ranked candidates.
+- ✅ **`NEUTRALITY` gate** (NT-14): no spine logic file names a language, a tool or a harness; terms and
+  reviewed exceptions are data (`.doctrine/neutrality_terms`, `.doctrine/neutrality_allow`).
+- ✅ **CI**: actions pinned by commit, the self-test job on Linux **and macOS** (NT-13, BK-23); the platform
+  settings a child must enable — required checks, branch protection, the template flag — are in
+  `docs/REPOSITORY_SETTINGS.md`.
+- ✅ **Documents reconciled** (BK-21, BR-13, BR-22): `MEMORY_ARCHITECTURE.md` §7 (`AGENTS.md` canonical, adapters
+  from packs) and §9 (CI per commit, merge blocking through settings) describe what exists; `ROADMAP.md` and
+  `LIVE_STATUS.md` no longer promise a seeded tree; `DOCTRINE_ENFORCEMENT.md` says which three checklist items
+  are gated; the decision template uses links that render; bedrock's `DEV_NOTES.md` starts with its intro.
+- Conformance suite: `arms: 85 pass / 0 xfail / 0 fail / 0 xpass (of 85)`.
+- ⚠️ **For existing children upgrading across 0.11 → 1.0.0:** copy `scripts/update_scaffold.sh` once, then
+  `scripts/update_scaffold.sh <bedrock> --ref v1.0.0 --plan`, read the plan, run it without `--plan`, review
+  `.bedrock-incoming/`, commit with the printed command, set the repository settings, and run `scripts/handoff`.
+  Each release from 0.11.0 to 0.19.0 lists what changed for you; the migrations 0001–0006 do the mechanical part.
+
 ## 0.19.0 — 2026-09-30 — the neutral spine and the packs; the guided setup; new_project.sh
 
 `BEDROCK-REVIEW-0009` (leaf `REVIEW-2026-09.8`), per `docs/decisions/decision_neutral_spine_and_packs.md`.

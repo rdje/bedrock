@@ -75,7 +75,8 @@ detail to its canonical home rather than growing this file.
 
 - Nothing changes without a **task-tree leaf** first.
 - Record durable facts/decisions in `docs/decisions/`.
-- Commit per `COMMIT.md`; the hooks + CI enforce the doctrines.
+- Commit per `COMMIT.md`; the hooks + CI enforce the doctrines per commit (make CI required:
+  `docs/REPOSITORY_SETTINGS.md`).
 - Keep **roadmap ↔ code ↔ docs** in lockstep, always.
 
 ## Licence
