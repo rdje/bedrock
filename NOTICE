@@ -1,0 +1,52 @@
+NOTICE — how this repository, and every project created from it, is licensed
+
+bedrock — the discipline spine: its scripts, hooks, checks, CI workflows, doctrine documents
+and templates — is licensed under the GNU Lesser General Public License, version 2.1, or (at
+your option) any later version. The full text is in LICENSE. SPDX: LGPL-2.1-or-later.
+
+Copyright (C) 2026 Richard DJE and the bedrock contributors.
+
+The model is the one FFmpeg uses: anyone may use the spine, in any project, for any purpose,
+including commercial and closed-source projects. Improvements to THE SPINE'S OWN FILES must be
+shared under the same licence, and the copyright notices stay.
+
+What this means for a project created from this template
+---------------------------------------------------------
+
+1. SPINE files — the files the template copies into your project so the gates run there
+   (scripts/, .githooks/, .github/workflows/, .doctrine/README.md, the doctrine documents such
+   as MEMORY_ARCHITECTURE.md, DOCTRINE_ENFORCEMENT.md, TOOLBOX.md, COMMIT.md, README_POLICY.md,
+   and the templates under docs/) — remain under LGPL-2.1-or-later. You may keep, change and
+   redistribute them; a modified spine file keeps this licence and its notices.
+
+2. YOUR project's own code, documentation and content are NOT covered by this licence. Choose
+   any licence for them. It is the copyright holder's stated intent that governing a project
+   with the spine's gates, or building it in a directory that contains the spine, does not make
+   that project a derivative work of the spine.
+
+3. SEED files — content the template creates for you to own and rewrite (starter code under a
+   language pack, ROADMAP.md, README.md, the live documents, a task-tree or decision record
+   copied from its template, VISIBILITY.md) — are provided under the Zero-Clause BSD licence
+   (0BSD) reproduced below, so you may keep, change or relicense them without any obligation.
+
+The class of every shipped path (spine, seed-once, project-owned) is declared by the
+template's manifest and honoured by scripts/update_scaffold.sh; the licence of a file follows
+its class. Where a file's class is not declared, treat it as a spine file.
+
+This notice describes the licensor's intent in plain words. It is not legal advice, and the
+licence texts govern.
+
+Zero-Clause BSD (0BSD) — for the seed files
+--------------------------------------------
+
+Copyright (C) 2026 Richard DJE
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or
+without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.

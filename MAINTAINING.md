@@ -10,10 +10,11 @@
 
 ## What bedrock is
 
-bedrock is a **project-neutral, harness-agnostic discipline spine** for new Rust projects:
+bedrock is a **project-, harness- and language-neutral discipline spine** for new projects:
 durable 4-layer memory, task-tree tracking, a strict commit workflow, mechanical doctrine
-enforcement (git hooks + CI), a derived knowledge map, and an mdBook — all wired together
-and **self-enforcing on a fresh clone**. A new project copies bedrock, drops its roadmap
+enforcement (git hooks + CI) and a derived knowledge map — all wired together and
+**self-enforcing on a fresh clone**. A language, a docs tool or a harness file is an opt-in
+**pack**, never part of the spine ([`decision_neutral_spine_and_packs`](docs/decisions/decision_neutral_spine_and_packs.md)). A new project copies bedrock, drops its roadmap
 into `ROADMAP.md`, runs `bootstrap.sh`, and grows with that spine as its backbone.
 
 ## Provenance & relationship to PGEN (the most important context)
@@ -24,7 +25,7 @@ into `ROADMAP.md`, runs `bootstrap.sh`, and grows with that spine as its backbon
 - **PGEN is the reference implementation / proving ground.** New doctrines, enforcement
   patterns, and memory-architecture refinements are invented and hardened in PGEN first,
   against a real workload. bedrock is where the **general** parts of that are distilled so
-  *any* Rust project benefits.
+  *any* project benefits, whatever its language or harness.
 - **Direction of flow:** PGEN → (generalize) → bedrock → (`update_scaffold.sh`) → other
   projects. bedrock does not depend on PGEN and contains no PGEN-specific content.
 - **Boundary rule (the user's standing instruction):** keep bedrock content **out of
@@ -43,9 +44,11 @@ into `ROADMAP.md`, runs `bootstrap.sh`, and grows with that spine as its backbon
 | Knowledge map (derived, drift-proof) | The book content about a specific product |
 | The git hooks + CI enforcement layers | Release/version/ledger schemes tied to a product |
 
-The litmus test for porting something from PGEN: **would it help a brand-new, unrelated
-Rust project?** If yes → generalize (strip every domain noun) and add it to the spine. If
-it only makes sense with grammars/parsers/etc. → it stays in PGEN.
+The litmus test for porting something from PGEN is the admission test below, on all three
+axes: **would it help a brand-new, unrelated project, in any language, driven by any harness or
+by a human?** If yes → generalize (strip every domain noun) and add it to the spine. If it only
+makes sense with grammars/parsers/etc. → it stays in PGEN. If it only makes sense with one
+language, build tool, docs tool or harness → it is a **pack**, not the spine.
 
 ## How to transfer a PGEN improvement into bedrock
 
@@ -77,10 +80,23 @@ Two obligations, and they pull against each other on purpose:
    A check that merely had its nouns renamed is not neutral; a check whose LOGIC names a
    domain artifact is domain-bound however it is described.
 
-### The admission test — ask these two, IN THIS ORDER
+### The admission test — ask these three, IN THIS ORDER
+
+**Q0 (the pack gate — a question about WHERE it belongs, asked before value):**
+> *Does its logic name a language, a build or docs tool, or a harness?*
+
+If it does, it is not spine material however useful it is: it goes under `packs/` (a language
+pack, a docs pack or a harness adapter), with its own commands, evidence signatures, install
+hook and CI, and the spine sees it only as data declared under `.doctrine/`. The three axes are
+**project**, **harness** and **language**; the spine must pass all three, and Q1 below is asked
+about a project *in any language, driven by any harness or by a human*. Measured on the reviewed
+tree (`docs/reviews/2026-09-30-consolidated-review.md` §5.1): 49 logic lines named a language
+and 5 named a harness, and every one of them was a gate that a non-Rust or non-Claude child
+passed without being judged.
 
 **Q1 (primary, and it is a question about VALUE):**
-> *Does this objectively benefit **any** present and **any** future project?*
+> *Does this objectively benefit **any** present and **any** future project — in any language,
+> driven by any harness or by a human?*
 
 Answer it by stating, in one sentence and using **no project's nouns**, what the check prevents —
 then asking whether a brand-new project would be better off with it **on day one**. If the honest
@@ -176,8 +192,13 @@ starts fresh.
   `.github/workflows/`.
 - Tools-first: `TOOLBOX.md`. Knowledge map: `KNOWLEDGE_MAP.md` (derived), `knowledge-map/`.
 - Docs surface: `docs/book/` (mdBook). Live-docs: `CHANGELOG.md`, `DEV_NOTES.md`,
-  `LIVE_STATUS.md`. Rust: `Cargo.toml`, `crates/`, `Makefile`, `rust-toolchain.toml`.
+  `LIVE_STATUS.md`. Rust: `Cargo.toml`, `crates/`, `Makefile`, `rust-toolchain.toml` — these
+  and the mdBook skeleton move to `packs/` under `REVIEW-2026-09.8`.
 - Consumer entry: `ROADMAP.md`. Versioning: `DOCTRINE_VERSION`. Sync: `scripts/update_scaffold.sh`.
+- Licence: `LICENSE` (LGPL-2.1-or-later), `NOTICE` (what applies to a child; 0BSD for seed files).
+- **bedrock-only (removed by bootstrap, never shipped):** `MAINTAINING.md`,
+  `docs/tasks/BEDROCK-MAINTENANCE.md`, `docs/tasks/REVIEW-2026-09.md`, every
+  `docs/decisions/*.md` record, `docs/reviews/`.
 
 ## Working on bedrock
 

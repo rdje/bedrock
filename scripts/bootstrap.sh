@@ -22,7 +22,14 @@ name="${1:-}"
 # 0) de-template (only when a project name is given AND this is still a pristine bedrock copy)
 if [ -n "$name" ] && [ -f MAINTAINING.md ]; then
   echo "→ de-templating this bedrock copy into project '$name'…"
-  rm -f MAINTAINING.md docs/tasks/BEDROCK-MAINTENANCE.md docs/decisions/reference_bedrock_provenance.md
+  # ⛔ EVERYTHING bedrock-only goes, not three named files (REVIEW-2026-09.1): the reset INDEX.md
+  # below lists no record, so any decision record left behind fails MEMORY-ARCH in the child's
+  # first gate run — measured on a scratch child before this line existed.
+  rm -f MAINTAINING.md docs/tasks/BEDROCK-MAINTENANCE.md docs/tasks/REVIEW-2026-09.md
+  rm -rf docs/reviews
+  for f in docs/decisions/*.md; do
+    case "$(basename "$f")" in INDEX.md|TEMPLATE.md) ;; *) rm -f "$f" ;; esac
+  done
 
   cat > MEMORY.md <<SEED
 # MEMORY — resume pointer (layer A; overwrite-only)

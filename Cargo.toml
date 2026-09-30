@@ -6,7 +6,8 @@ members = ["crates/*"]
 
 [workspace.package]
 edition = "2021"
-license = "MIT OR Apache-2.0"
+# Declare YOUR project's licence here. This starter crate is seed content (0BSD, see NOTICE);
+# the spine around it is LGPL-2.1-or-later, which does not cover your crates.
 
 # Shared lints so every crate inherits the same strictness (opt in per crate with
 # `[lints] workspace = true`). clippy runs at deny-warnings in `make check` / CI.

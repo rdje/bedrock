@@ -1,6 +1,6 @@
-# bedrock — a Rust project discipline-spine template
+# bedrock — a project discipline-spine template
 
-**bedrock** is a starting point for a new Rust project that ships with a battle-tested
+**bedrock** is a starting point for a new project that ships with a battle-tested
 *discipline spine* already wired in: durable memory, task-tree tracking, a strict commit
 workflow, mechanical doctrine enforcement, a knowledge map, and an mdBook — all
 project-neutral. Copy it, drop in your roadmap, and grow the project with that spine as its
@@ -73,3 +73,8 @@ detail to its canonical home rather than growing this file.
 - Record durable facts/decisions in `docs/decisions/`.
 - Commit per `COMMIT.md`; the hooks + CI enforce the doctrines.
 - Keep **roadmap ↔ code ↔ docs** in lockstep, always.
+
+## Licence
+
+The spine is LGPL-2.1-or-later (`LICENSE`); a project built on it keeps its own licence for its
+own work, and the seed files are 0BSD — see `NOTICE`.

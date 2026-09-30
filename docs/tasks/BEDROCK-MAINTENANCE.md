@@ -27,7 +27,7 @@ process.
 - ID: `BEDROCK-MAINTENANCE`
   Status: `active`
   Goal: SOTA neutral self-enforcing spine
-  Children: `.1`, `.2`
+  Children: `.1`, `.2`, `.3`
 
 - ID: `BEDROCK-MAINTENANCE.1`
   Status: `done`
@@ -735,11 +735,24 @@ process.
   and says it is why it refuses rather than warns — the sentence a reader needs BEFORE reaching for
   `--force`.
 
+- ID: `BEDROCK-MAINTENANCE.3`
+  Status: `active`
+  Goal: close the consolidated external review of 2026-09-30 (`docs/reviews/2026-09-30-consolidated-review.md`:
+  59 items, `BK`/`BR`/`NT`), under three decisions recorded the same day — the spine is project-, harness- and
+  language-neutral with Rust, mdBook and harness files as opt-in packs; a leaf owns a commit only if that
+  commit's evidence is in it; the spine is LGPL-2.1-or-later. The work is executed in its own tree file,
+  `docs/tasks/REVIEW-2026-09.md` (leaves `REVIEW-2026-09.1` … `.9`), because nine large leaves would double
+  this file. Its frontier is the authoritative one while it is active.
+  Acceptance: the review's §9 test matrix green in a conformance suite CI runs; every item closed or recorded.
+  Verification: per leaf, in `docs/tasks/REVIEW-2026-09.md`.
+  Commit: `BEDROCK-REVIEW-0001` onward.
+
 ## Current Frontier
 
 | Order | Leaf | Status | Why next |
 | --- | --- | --- | --- |
-| 1 | `BEDROCK-MAINTENANCE.2` | `active` | the ongoing transfer loop; pick a backlog item below |
+| 1 | `BEDROCK-MAINTENANCE.3` | `active` | the 2026-09-30 review — frontier in `docs/tasks/REVIEW-2026-09.md` |
+| 2 | `BEDROCK-MAINTENANCE.2` | `active` | the ongoing transfer loop; pick a backlog item below |
 | — | `BEDROCK-MAINTENANCE.2.1` | `done` | README Stability Policy + the layer-A byte cap (0.2.0) |
 | — | `BEDROCK-MAINTENANCE.2.2` | `done` | `WAIVER-ROUTING` ported + the neutrality bar written down (0.3.0) |
 | — | `BEDROCK-MAINTENANCE.2.3` | `done` | applicability (Q1) put AHEAD of neutralizability (Q2); backlog re-ranked by benefit |

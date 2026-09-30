@@ -6,8 +6,8 @@
 
 ## Current state (OVERWRITE this block each update — do not append)
 
-- next_action: a `.2.x` backlog item from `docs/tasks/BEDROCK-MAINTENANCE.md` — `GATE-REACHABILITY` as a principle, or an input-bound principle behind a project-declared seam.
-- active_work_unit: `BEDROCK-MAINTENANCE` → frontier leaf: `.2` (`active`).
-- latest_commit: `BEDROCK-MAINTENANCE-0012`.
+- next_action: `REVIEW-2026-09.2` — the conformance suite (`scripts/tests/spine_tests.sh`) and the CI job that runs it; see `docs/tasks/REVIEW-2026-09.md`.
+- active_work_unit: `BEDROCK-MAINTENANCE.3` → executed as tree `REVIEW-2026-09`, frontier leaf `.2` (`pending`).
+- latest_commit: `BEDROCK-REVIEW-0001`.
 - in_flight_uncommitted: none.
 - blockers: none.

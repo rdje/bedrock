@@ -1,5 +1,28 @@
 # CHANGELOG.md
 
+## 0.11.0 — 2026-09-30 — the consolidated review: decisions, licence, and the tree that closes it
+
+`BEDROCK-REVIEW-0001` (leaf `REVIEW-2026-09.1`, phase 0 of `BEDROCK-MAINTENANCE.3`). An external
+review of `0.6.1` (59 items, re-verified against `0.10.0`: every executed finding reproduces) is
+checked in at `docs/reviews/2026-09-30-consolidated-review.md`, and the work that closes it is the
+tree `docs/tasks/REVIEW-2026-09.md`.
+
+- **Three decisions recorded** (`docs/decisions/`): the spine is project-, harness- and
+  language-neutral with Rust, mdBook and harness files as opt-in packs and `AGENTS.md` the only
+  required agent file; a leaf owns a commit only if that commit's evidence is in it (deny-by-default
+  governance, leaf bound by the subject, evidence new in the diff, configuration from the
+  before-snapshot, exceptions as trailers, exit 2 = `REFUSED`); the spine is LGPL-2.1-or-later.
+- **Licence files** (`LICENSE`, `NOTICE`): LGPL-2.1-or-later for the spine, 0BSD for seed files, a
+  child's own work not covered. The Cargo `MIT OR Apache-2.0` field, which no licence file backed, is
+  removed from the starter (BR-20).
+- **The admission test has three axes** (`MAINTAINING.md`): a pack gate (Q0) before Q1, and Q1 asked
+  about a project in any language, under any harness (NT-11).
+- **Bootstrap removes every bedrock-only file**, not three: the review directory, both maintainer
+  trees, and every decision record. Measured before the change: a child inheriting a record failed
+  `MEMORY-ARCH` on its first gate run, because the reset index lists none.
+- ⚠️ **For existing children:** nothing to do yet. Read the review's §2 before running your copy of
+  `update_scaffold.sh`; the updater that replaces itself first arrives with `REVIEW-2026-09.6`.
+
 ## 0.10.0 — 2026-09-21 — never overwrite is now auditable, and the merge is asked for and never applied
 
 `BEDROCK-MAINTENANCE-0016` (leaf `.2.11`). **Maintainer instruction:** *"shall not update files that are

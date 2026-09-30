@@ -12,7 +12,11 @@
 ## Active task-trees
 
 - [`BEDROCK-MAINTENANCE.md`](docs/tasks/BEDROCK-MAINTENANCE.md)
+- [`REVIEW-2026-09.md`](docs/tasks/REVIEW-2026-09.md)
 
 ## Decision records
 
+- [`decision_licence.md`](docs/decisions/decision_licence.md)
+- [`decision_neutral_spine_and_packs.md`](docs/decisions/decision_neutral_spine_and_packs.md)
+- [`decision_ownership_contract.md`](docs/decisions/decision_ownership_contract.md)
 - [`reference_bedrock_provenance.md`](docs/decisions/reference_bedrock_provenance.md)
