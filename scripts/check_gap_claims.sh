@@ -51,7 +51,8 @@ CLAIM_RE='nothing (checks|checked|reads|compares|measures|measured|watches|enfor
 
 # ── the discharge ───────────────────────────────────────────────────────────────────────────────
 # A COMMAND-SHAPED token in the claim's own heading section — the thing that ENUMERATES a
-# population — or an explicit `census:` disclosure. ⛔ The bare word "census" is deliberately NOT a
+# population — INSIDE A CODE SPAN OR A FENCED BLOCK (REVIEW-2026-09.7, BK-16: in prose, "make sure we
+# revisit" carried the token `make ` and discharged a claim), or an explicit `census:` disclosure. ⛔ The bare word "census" is deliberately NOT a
 # discharge: it appears inside the claims themselves ("nothing re-runs this census"). ⛔ `grep -n`
 # and `grep -w` are in the list because they are the commonest census spelling; a BARE `grep` is
 # not, because "verified by grep" is a claim, not tool output. The FLAG is what makes it an
@@ -61,11 +62,14 @@ CENSUS_RE='git grep|grep -r|grep -c|grep -l|grep -o|grep -n|grep -w|git ls-files
 # Section boundaries are ANY ATX heading, deliberately: "nearest heading above" needs no leaf-id
 # syntax and cannot mis-parse one.
 CLASSIFY_AWK='
+  function spans(s,   out) { out = ""; while (match(s, /`[^`]+`/)) { out = out " " substr(s, RSTART+1, RLENGTH-2); s = substr(s, RSTART+RLENGTH) } return out }
   FNR==NR { added[$1+0]=1; next }
-  { line[FNR]=$0; low[FNR]=tolower($0) }
+  { line[FNR]=$0; low[FNR]=tolower($0)
+    if ($0 ~ /^[[:space:]]*```/) fence = !fence
+    code[FNR] = fence ? tolower($0) : tolower(spans($0)) }
   END{
     for(i=1;i<=FNR;i++){ if(line[i] ~ /^#{1,6} /) cur=i; sec[i]=cur }
-    for(i=1;i<=FNR;i++){ if(low[i] ~ CENSUS_RE) has[sec[i]]=1 }
+    for(i=1;i<=FNR;i++){ if(code[i] ~ CENSUS_RE || low[i] ~ /census:/) has[sec[i]]=1 }
     for(i=1;i<=FNR;i++){
       if(added[i] && low[i] ~ CLAIM_RE && !has[sec[i]])
         printf "BLOCKED\t%d\t%s\n", i, substr(line[i],1,160)
@@ -142,6 +146,11 @@ if [ "$mode" = "--self-test" ]; then
   # 8 hunk arithmetic: added lines resolve to NEW-file numbers
   parsed="$(printf '%s\n' '--- a/x.md' '+++ b/x.md' '@@ -1,0 +2,2 @@' '+alpha' '+beta' '@@ -9,1 +11,1 @@' '-old' '+gamma' | added_line_numbers | tr '\n' ' ')"
   [ "$parsed" = "2 3 11 " ] && arm ok "added-line numbers resolve to NEW-file positions (2 3 11)" || arm bad "hunk arithmetic yields '$parsed'"
+  # 9 prose carrying a token is NOT a census; 10 the same token inside a code span is
+  printf '### `.3` — gap\n- **THE GAP** — nothing checks the retry budget; make sure we revisit.\n' > "$work/prose.md"; printf '2\n' > "$work/prose.nums"
+  classify "$work/prose.nums" "$work/prose.md" | grep -q '^BLOCKED' && arm ok "a census token in PROSE does not discharge" || arm bad "'make sure' in prose must not discharge"
+  printf '### `.3` — gap\n- **THE GAP** — nothing checks the retry budget; `make -n check` → 0 targets touch it.\n' > "$work/span.md"; printf '2\n' > "$work/span.nums"
+  [ -z "$(classify "$work/span.nums" "$work/span.md")" ] && arm ok "the same token inside a code span discharges" || arm bad "a census in a code span must discharge"
   ok "--self-test: arms=${passed}/${arms}"
   [ "$passed" = "$arms" ] || exit 1
   exit 0

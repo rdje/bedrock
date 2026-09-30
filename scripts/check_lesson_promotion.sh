@@ -34,19 +34,21 @@ NOTES="DEV_NOTES.md"
 DECLINE_TOKEN="promotion: declined"
 
 # --- the decision, as a pure function so it can carry ground truth ---
-# $1 = count of newly added dated lesson headings; $2 = 1 if a promotion is staged; $3 = 1 if an
-# explicit decline is staged. Echoes: ok | needs-decision
+# $1 = count of newly added dated lesson headings; $2 = 1 if a promotion is staged; $3 = the number
+# of decline tokens ADDED in this change. Echoes: ok | needs-decision.
+# ⛔ ONE DECLINE PER LESSON (REVIEW-2026-09.7, BR-18): one old decline token used to discharge any
+#    number of new lessons; the tokens are now counted among the ADDED lines.
 lesson_promotion_verdict() {
     local added="$1" promoted="$2" declined="$3"
     if [ "$added" -eq 0 ]; then printf 'ok\n'; return 0; fi
-    if [ "$promoted" -eq 1 ] || [ "$declined" -eq 1 ]; then printf 'ok\n'; return 0; fi
+    if [ "$promoted" -eq 1 ] || [ "$declined" -ge "$added" ]; then printf 'ok\n'; return 0; fi
     printf 'needs-decision\n'
 }
 
 lesson_promotion_self_check() {
     local spec want got misses=0
-    for spec in "0:0:0:ok" "0:1:0:ok" "3:1:0:ok" "3:0:1:ok" "3:1:1:ok" \
-                "1:0:0:needs-decision" "9:0:0:needs-decision"; do
+    for spec in "0:0:0:ok" "0:1:0:ok" "3:1:0:ok" "3:0:3:ok" "3:1:1:ok" "1:0:1:ok" \
+                "3:0:1:needs-decision" "1:0:0:needs-decision" "9:0:0:needs-decision"; do
         want="${spec##*:}"
         got="$(lesson_promotion_verdict "$(echo "$spec" | cut -d: -f1)" \
                                         "$(echo "$spec" | cut -d: -f2)" \
@@ -68,7 +70,7 @@ lesson_promotion_self_check() {
     fi
 }
 lesson_promotion_self_check
-[ "${1:-}" = "--self-test" ] && { echo "LESSON-PROMOTION --self-test: 9/9 controls"; exit 0; }
+[ "${1:-}" = "--self-test" ] && { echo "LESSON-PROMOTION --self-test: 11/11 controls"; exit 0; }
 
 # No change => nothing to judge.
 staged="$(spine_changed_paths)"
@@ -80,24 +82,25 @@ added_entries="$(spine_added_text "$NOTES" | grep -E '^## .*[0-9]{4}-[0-9]{2}-[0
 added_count="$(printf '%s' "$added_entries" | grep -c . || true)"
 [ "$added_count" -eq 0 ] && { echo "LESSON-PROMOTION: ok (no new dated lesson in $NOTES)"; exit 0; }
 
-# (a) PROMOTED: a docs/knowledge/ change, or a docs/decisions/ record gaining `answers:`.
+# (a) PROMOTED: a docs/knowledge/ file that carries `answers:` (what makes it retrievable by question —
+#     the Knowledge Map lists docs/knowledge/), or a docs/decisions/ record gaining `answers:`.
 promoted=0
-printf '%s\n' "$staged" | grep -qE '^docs/knowledge/.*\.md$' && promoted=1
+for k in $(printf '%s\n' "$staged" | grep -E '^docs/knowledge/.*\.md$' || true); do
+    spine_read "$k" | grep -qE '^answers:' && { promoted=1; break; }
+done
 if [ "$promoted" -eq 0 ]; then
     for d in $(printf '%s\n' "$staged" | grep -E '^docs/decisions/.*\.md$' || true); do
         spine_added_text "$d" | grep -qE '^answers:' && { promoted=1; break; }
     done
 fi
 
-# (b) DECLINED: an explicit token in a staged task leaf, carrying a REAL reason.
-# ⛔ A MENTION IS NOT A DECISION: the placeholder `(<reason>)` is rejected, the reason must be non-empty.
+# (b) DECLINED: explicit tokens ADDED in this change to a staged task leaf, each carrying a REAL reason,
+#     one per lesson. ⛔ A MENTION IS NOT A DECISION: the placeholder `(<reason>)` is rejected.
 declined=0
 for f in $(printf '%s\n' "$staged" | grep -E '^docs/tasks/[^/]+\.md$' || true); do
     case "$f" in docs/tasks/TEMPLATE.md) continue ;; esac
-    spine_read "$f" > "$T/leaf.md" || continue
-    if grep -E "${DECLINE_TOKEN} \(..*\)" "$T/leaf.md" | grep -vqF "${DECLINE_TOKEN} (<reason>)"; then
-        declined=1; break
-    fi
+    n="$(spine_added_text "$f" | grep -E "${DECLINE_TOKEN} \(..*\)" | grep -vF "${DECLINE_TOKEN} (<reason>)" | grep -c . || true)"
+    declined=$((declined + ${n:-0}))
 done
 
 if [ "$(lesson_promotion_verdict "$added_count" "$promoted" "$declined")" = "ok" ]; then
@@ -106,8 +109,8 @@ if [ "$(lesson_promotion_verdict "$added_count" "$promoted" "$declined")" = "ok"
 fi
 
 {
-    printf 'LESSON-PROMOTION: %d new lesson entr%s in %s with NO promotion and NO explicit decline:\n' \
-        "$added_count" "$([ "$added_count" -eq 1 ] && echo 'y' || echo 'ies')" "$NOTES"
+    printf 'LESSON-PROMOTION: %d new lesson entr%s in %s, no promotion, and %d explicit decline(s) added (one per lesson is required):\n' \
+        "$added_count" "$([ "$added_count" -eq 1 ] && echo 'y' || echo 'ies')" "$NOTES" "$declined"
     printf '%s\n' "$added_entries" | sed 's/^/    /'
     printf '\nA durable lesson that is written down but not retrievable is the measured defect this\n'
     printf 'gate exists to stop (1 592 entries accumulated upstream, none reachable by question).\n\n'

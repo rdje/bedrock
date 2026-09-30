@@ -6,8 +6,8 @@
 
 ## Current state (OVERWRITE this block each update — do not append)
 
-- next_action: `REVIEW-2026-09.7` — the remaining check defects (Knowledge Map status, census/waiver tokens, historical waivers, lesson promotion, table arity in awk). See `docs/tasks/REVIEW-2026-09.md`.
-- active_work_unit: `BEDROCK-MAINTENANCE.3` → executed as tree `REVIEW-2026-09`, frontier leaf `.7` (`pending`).
-- latest_commit: `BEDROCK-REVIEW-0007`.
+- next_action: `REVIEW-2026-09.8` — the neutral spine and the packs (Rust, mdBook, harness adapters), `scripts/run`/`scripts/gate`, the guided question-and-answer setup, `scripts/new_project.sh`. See `docs/tasks/REVIEW-2026-09.md`.
+- active_work_unit: `BEDROCK-MAINTENANCE.3` → executed as tree `REVIEW-2026-09`, frontier leaf `.8` (`pending`).
+- latest_commit: `BEDROCK-REVIEW-0008`.
 - in_flight_uncommitted: none.
 - blockers: none.

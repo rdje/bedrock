@@ -52,8 +52,24 @@ staged="$(spine_changed_paths | grep -E '^docs/tasks/[^/]+\.md$' || true)"
 # That narrower claim is the only thing this doctrine binds.
 WAIVER_RE='(^|[^-[:alnum:]])[Ww]aiver note|[A-Z][A-Z0-9_]*_WAIVER|(signature|signatures|diagnosis.toolbox|diagnosis tool|diagnosis-tool)s? (do|does) not apply|no (signature|diagnosis) (family|group) (fits|matches|models|exists)|cannot be (satisfied|expressed) by (the|any) (gate|check|signature)|exempt from (the|this) (gate|check)'
 
-# An owning leaf id (TREE.4 / TREE.4.2 / TREE.10.4b) or a work-unit id (PREFIX-FAMILY-0001).
-OWNER_RE='`?[A-Z][A-Z0-9-]+\.[0-9]+[0-9a-z.]*`?|[A-Z][A-Z0-9]+-[A-Z0-9-]+-[0-9]{4}'
+# An owning leaf id (TREE.4 / TREE.4.2, or `.4` relative to this tree) or a work-unit id
+# (PREFIX-FAMILY-0001). ⛔ AN OWNER MUST EXIST (REVIEW-2026-09.7, BK-16: "this V1.2 migration" used
+# to discharge a waiver): a leaf id resolves to a `- ID:` section of an existing top-level tree file
+# in this snapshot; a work-unit id is cited by some tree file. "An owner was named" became "an owner
+# exists" — still not "the work happens", which stays the honest limit.
+OWNER_RE='[A-Z][A-Z0-9-]+\.[0-9]+(\.[0-9]+)*[a-z]?|[A-Z][A-Z0-9]+(-[A-Z0-9]+)+-[0-9]{4,}|(^|[^A-Za-z0-9.])\.[0-9]+(\.[0-9]+)*[a-z]?'
+owner_resolves() { # $1 = window text, $2 = this tree file (AFTER content path), $3 = this tree's id
+  local id tree f b
+  for id in $(printf '%s\n' "$1" | grep -oE "$OWNER_RE" | sed 's/^[^A-Za-z0-9.]//' | sort -u); do
+    case "$id" in
+      .*) b="$(spine_leaf_bounds "$2" "$3$id")"; [ -n "$b" ] && return 0 ;;
+      *-[0-9][0-9][0-9][0-9]*) for f in $(spine_after_ls 'docs/tasks/*.md' | grep -E '^docs/tasks/[^/]+\.md$'); do spine_read "$f" | grep -qF "$id" && return 0; done ;;
+      *) tree="${id%%.*}"; spine_read "docs/tasks/$tree.md" > "$T/owner_tree.md" 2>/dev/null || continue
+         b="$(spine_leaf_bounds "$T/owner_tree.md" "$id")"; [ -n "$b" ] && return 0 ;;
+    esac
+  done
+  return 1
+}
 
 fail=0
 for file in $staged; do
@@ -63,15 +79,18 @@ for file in $staged; do
   added="$(spine_added_text "$file" || true)"
   [ -n "$added" ] || continue
 
-  # Bind only when this commit ADDS a waiver claim; the historical record is never retro-bound.
+  # Bind only when this commit ADDS a waiver claim; the historical record is never retro-bound —
+  # and only the ADDED waiver lines are judged (BR-17: adding one properly owned waiver used to
+  # re-judge every old waiver in the file).
   # ⛔ Written to a FILE, not piped. `printf "$var" | grep -q` returns failure ON SUCCESS once the
   # producer exceeds the pipe buffer (~64 KiB) and the match is early: grep exits at the first
   # match, printf takes SIGPIPE (141), and `pipefail` promotes 141 to the pipeline status. This
   # site would then `continue` — i.e. SKIP the file and let an unrouted waiver through. It fails
   # OPEN, which is the worst direction. Measured on the originating project: PIPESTATUS=(141 0).
-  added_file="$(mktemp)"; printf '%s\n' "$added" > "$added_file"
-  if ! grep -qE "$WAIVER_RE" "$added_file"; then rm -f "$added_file"; continue; fi
-  rm -f "$added_file"
+  added_file="$T/added.txt"; printf '%s\n' "$added" > "$added_file"
+  if ! grep -qE "$WAIVER_RE" "$added_file"; then continue; fi
+  spine_added_lines "$file" | sort -un > "$T/added.nums"
+  tree_id="$(basename "$file" .md)"
 
   # A waiver is discharged when an owner is named in its immediate NEIGHBOURHOOD in the file
   # (the trigger line +/- WINDOW lines).
@@ -88,13 +107,10 @@ for file in $staged; do
   while IFS= read -r ln; do
     [ -n "$ln" ] || continue
     lo=$(( ln > WINDOW ? ln - WINDOW : 1 )); hi=$(( ln + WINDOW ))
+    grep -qx "$ln" "$T/added.nums" || continue      # an old waiver line is history, not this change's claim
     win="$(sed -n "${lo},${hi}p" "$T/file.md" 2>/dev/null)"
-    win_file="$(mktemp)"; printf '%s\n' "$win" > "$win_file"
-    if ! grep -qE "$OWNER_RE" "$win_file"; then
-      rm -f "$win_file"
+    if ! owner_resolves "$win" "$T/file.md" "$tree_id"; then
       undischarged="${undischarged}${file}:${ln}: $(sed -n "${ln}p" "$T/file.md")"$'\n'
-    else
-      rm -f "$win_file"
     fi
   done < <(grep -nE "$WAIVER_RE" "$T/file.md" 2>/dev/null | cut -d: -f1)
   [ -n "$undischarged" ] || continue
@@ -109,9 +125,10 @@ for file in $staged; do
   (A real waiver note of exactly this shape was correct and sat unread for months, until a later
   task re-derived the identical gap from scratch.)
 
-  Discharge it by naming an owner ON THE SAME LINE — either is fine:
-    - an existing leaf:  "... signatures do not apply (gate gap owned by TREE-NAME.5)"
-    - a new leaf you open for it, or your work-unit id, e.g. PREFIX-<FAMILY>-<NNNN>.
+  Discharge it by naming an owner that EXISTS, in the same paragraph — either is fine:
+    - a leaf of an existing tree:  "... signatures do not apply (gate gap owned by TREE-NAME.5)"  (or `.5` of this tree)
+    - a work-unit id some tree file cites, e.g. PREFIX-<FAMILY>-<NNNN>.
+  A leaf or id that resolves to nothing is not an owner.
   ⛔ Do NOT delete the waiver to pass this check. Saying it is correct; owning it is the point.
 MSG
   } >&2

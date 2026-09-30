@@ -21,7 +21,22 @@ cat <<'HDR'
 
 ## Key subsystems
 HDR
+curated_lines() { awk '/^## Key subsystems/ { on=1; next } /^## / { on=0 } on && NF { n++ } END { print n+0 }' "$1"; }
 if spine_after_has knowledge-map/subsystems.md; then
+  # ⚠️ a shrinking curated section is reported (stderr) — a comment that swallowed content was silent before (BK-12)
+  if spine_read KNOWLEDGE_MAP.md > "$SPINE_TMP/committed_map.md" 2>/dev/null; then
+    was="$(curated_lines "$SPINE_TMP/committed_map.md")"
+    now="$(spine_read knowledge-map/subsystems.md | awk '
+      { line = $0; out = ""; marker = inc
+        while (1) {
+          if (inc) { j = index(line, "-->"); if (j == 0) { line = ""; break } line = substr(line, j + 3); inc = 0; marker = 1 }
+          i = index(line, "<!--"); if (i == 0) { out = out line; break }
+          out = out substr(line, 1, i - 1); line = substr(line, i + 4); inc = 1; marker = 1
+        }
+        if (!marker || out ~ /[^[:space:]]/) print out
+      }' | awk 'NF { n++ } END { print n+0 }')"
+    [ "$now" -lt "$was" ] && echo "KNOWLEDGE-MAP: warning — the Key subsystems section shrank from $was to $now line(s); check knowledge-map/subsystems.md for a comment that swallowed content" >&2
+  fi
   # embed the curated section with every HTML comment removed — same-line, multi-line, and one
   # left open at end of file. ⛔ Not `sed '/^<!--/,/-->/d'`: a range looks for its END on the lines
   # AFTER its start, so a one-line comment deleted everything down to the next `-->` (BK-12).
@@ -38,12 +53,24 @@ if spine_after_has knowledge-map/subsystems.md; then
 fi
 
 echo
-echo "## Active task-trees"
+echo "## Task-trees"
 echo
 found=0
 for f in $(spine_after_ls 'docs/tasks/*.md' | grep -E '^docs/tasks/[^/]+\.md$' | LC_ALL=C sort); do
   b="$(basename "$f")"; [ "$b" = "TEMPLATE.md" ] && continue
-  echo "- [\`$b\`](docs/tasks/$b)"; found=1
+  st="$(spine_read "$f" | grep -m1 -oE '^- Status: `[^`]+`' | sed 's/^- Status: `//; s/`$//')"
+  echo "- [\`$b\`](docs/tasks/$b) — \`${st:-unknown}\`"; found=1
+done
+if [ "$found" = 0 ]; then echo "- _none yet_"; fi
+
+echo
+echo "## Knowledge (question-shaped, promoted lessons)"
+echo
+found=0
+for f in $(spine_after_ls 'docs/knowledge/*.md' | LC_ALL=C sort); do
+  b="$(basename "$f")"
+  q="$(spine_read "$f" | grep -m1 -E '^answers:' | sed 's/^answers:[[:space:]]*//')"
+  echo "- [\`$b\`](docs/knowledge/$b)${q:+ — $q}"; found=1
 done
 if [ "$found" = 0 ]; then echo "- _none yet_"; fi
 

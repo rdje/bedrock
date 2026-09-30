@@ -42,6 +42,8 @@ mkrepo() {
   git -C "$d" config user.email probe@example.invalid
   git -C "$d" config user.name  probe
   printf '# seed\n' > "$d/docs/tasks/SEED.md"
+  # an owner that EXISTS (REVIEW-2026-09.7): the tree a waiver may route its gate gap to
+  printf '# TREE-NAME\n\n- ID: `TREE-NAME.5`\n  Status: `pending`\n  Goal: fix the gate gap\n' > "$d/docs/tasks/TREE-NAME.md"
   git -C "$d" add -A >/dev/null 2>&1
   git -C "$d" commit -qm "SEED-0001: seed" >/dev/null 2>&1
   printf '%s' "$d"
@@ -97,10 +99,9 @@ s = src.read_text()
 # FIRST occurrence, which sits INSIDE the `if ... ; continue; fi` line, and leaves a dangling
 # `; continue; fi` -- a syntax error, which the probe then scores as "exit 2" rather than as
 # the fail-open it is meant to demonstrate. Caught by CTRL-1 refusing to pass.
-block = [ln for ln in s.split("\n") if 'added_file=' in ln or 'grep -qE "$WAIVER_RE" "$added_file"' in ln
-          or ln.strip() == 'rm -f "$added_file"']
-assert len(block) == 3, block
-i0 = s.index(block[0]); i1 = s.index(block[2], i0) + len(block[2])
+block = [ln for ln in s.split("\n") if 'added_file="$T/added.txt"' in ln or 'grep -qE "$WAIVER_RE" "$added_file"' in ln]
+assert len(block) == 2, block
+i0 = s.index(block[0]); i1 = s.index(block[1], i0) + len(block[1])
 s = s[:i0] + '''  printf '%s\\n' "$added" | grep -qE "$WAIVER_RE" || continue''' + s[i1:]
 dst.write_text(s)
 PY

@@ -1,5 +1,22 @@
 # CHANGELOG.md
 
+## 0.18.0 — 2026-09-30 — the remaining check defects; no review scenario is open
+
+`BEDROCK-REVIEW-0008` (leaf `REVIEW-2026-09.7`).
+
+- ✅ **`TABLE-ARITY-RATCHET` in POSIX awk, by GFM's rules** (BR-15, NT-12): an unescaped pipe splits a cell even
+  inside a code span (the first cut protected it, and its self-test pinned that wrong rule), an escaped pipe
+  never does, outer pipes are optional, a header/delimiter mismatch is not a table, a prose line right after a
+  table is a one-cell row. python3 is no longer needed by any check; 13 self-test arms.
+- ✅ **A census counts only inside a code span or fenced block** (BK-16): "make sure we revisit" no longer
+  discharges a claim.
+- ✅ **A waiver's owner must exist** (BK-16) — a leaf of an existing tree, `.n` of this tree, or a work-unit id a
+  tree cites — and **only waivers added in the change are judged** (BR-17).
+- ✅ **One decline per lesson, and a knowledge file promotes only with `answers:`** (BR-18); the Knowledge Map
+  lists `docs/knowledge/` by question, shows each tree's status, and warns when the curated section shrinks.
+- Conformance suite: `arms: 73 pass / 0 xfail / 0 fail / 0 xpass (of 73)` — every scenario of the review's §9
+  and §10 is now a required, passing arm.
+
 ## 0.17.0 — 2026-09-30 — the updater's manifest lives with the source; unmodified spine files fast-forward, modified ones are never touched
 
 `BEDROCK-REVIEW-0007` (leaf `REVIEW-2026-09.6`), per `docs/decisions/decision_updater_ownership_classes.md`.

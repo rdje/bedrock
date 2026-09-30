@@ -9,10 +9,14 @@
 - _(no subsystems documented yet — add rows as the project grows)_
   - Example: `crates/<name>/` — _what it does, its entry point, its owner._
 
-## Active task-trees
+## Task-trees
 
-- [`BEDROCK-MAINTENANCE.md`](docs/tasks/BEDROCK-MAINTENANCE.md)
-- [`REVIEW-2026-09.md`](docs/tasks/REVIEW-2026-09.md)
+- [`BEDROCK-MAINTENANCE.md`](docs/tasks/BEDROCK-MAINTENANCE.md) — `active`
+- [`REVIEW-2026-09.md`](docs/tasks/REVIEW-2026-09.md) — `active`
+
+## Knowledge (question-shaped, promoted lessons)
+
+- _none yet_
 
 ## Decision records
 

@@ -67,11 +67,11 @@ commit_msg_human_named_claude           req    BK-11
 commit_msg_agent_co_developed_by        req    BK-11
 commit_msg_leading_blank_line           req    BK-11
 knowledge_map_single_line_comment       req    BK-12
-census_make_sure_not_a_discharge        xfail  BK-16
-waiver_owner_must_resolve               xfail  BK-16
+census_make_sure_not_a_discharge        req    BK-16
+waiver_owner_must_resolve               req    BK-16
 scratch_stays_out_of_worktree           req    NT-07
 rename_needs_leaf                       req    BR-08
-python3_missing_refused                 req    BR-05
+no_python3_gate_green                   req    NT-12
 invalid_regex_refused                   req    BR-05
 invalid_regex_repair_allowed            req    BR-05
 ci_message_judged                       req    BR-21
@@ -107,6 +107,11 @@ updater_refuses_dirty_tree              req    BR-01
 updater_refuses_downgrade               req    BR-09
 updater_plan_writes_nothing             req    BR-01
 updater_same_version_is_noop_commitable req    BK-10
+waiver_owner_real_leaf_passes           req    BK-16
+waiver_historical_not_rejudged          req    BR-17
+lesson_decline_per_lesson               req    BR-18
+lesson_promoted_via_knowledge           req    BR-18
+knowledge_map_shows_tree_status         req    BK-12
 "
 
 if [ "$LIST" = 1 ]; then
@@ -416,15 +421,15 @@ arm_scratch_stays_out_of_worktree() {
 arm_rename_needs_leaf() {
   git mv crates/app/src/main.rs crates/app/src/app.rs; gate; refused_by 'TASK-TREE-OWNERSHIP'
 }
-arm_python3_missing_refused() {
-  # a PATH with everything the spine needs except python3: the check must REFUSE, not pass
+arm_no_python3_gate_green() {
+  # a PATH with everything the spine needs except python3: no check needs it any more (NT-12)
   mkdir -p "$T/bin"
   for t in bash sh git awk sed grep head tail cut tr wc sort uniq mktemp dirname basename cat diff cmp mv rm mkdir seq paste date ls cp chmod tar env comm; do
     p="$(command -v "$t" 2>/dev/null)"; [ -n "$p" ] && ln -s "$p" "$T/bin/$t"
   done
   printf '\nA README line.\n' >> README.md; git add README.md
   OUT="$(PATH="$T/bin" bash scripts/check_doctrines.sh 2>&1)"; RC=$?
-  refused_by 'TABLE-ARITY-RATCHET'
+  green && ! has 'python'
 }
 arm_invalid_regex_refused() {
   mkdir -p .doctrine; printf '[\n' > .doctrine/docs_paths.txt; git add .doctrine/docs_paths.txt
@@ -683,6 +688,36 @@ arm_updater_same_version_is_noop_commitable() {
   # a child already current: the run seeds nothing, updates nothing, and its upgrade commit still passes the gate
   ./scripts/update_scaffold.sh "$SRC_REPO" > "$T/.update.log" 2>&1 || return 1
   grep -q '0 seeded, 0 updated, 0 differ' "$T/.update.log"
+}
+
+arm_waiver_owner_real_leaf_passes() {
+  { good_leaf; printf '\n- the diagnosis-toolbox signatures do not apply to this defect class (gate gap owned by FEAT.1).\n'; } > docs/tasks/FEAT.md
+  git add -A; bash scripts/check_waiver_routing.sh >/dev/null 2>&1
+}
+arm_waiver_historical_not_rejudged() {
+  # an OLD unrouted waiver is history; adding a NEW, properly owned one must not re-judge it (BR-17)
+  { good_leaf; printf '\n- old note: the diagnosis-toolbox signatures do not apply here.\n'; } > docs/tasks/FEAT.md
+  git add -A; commit_nohooks 'DEMO-DOC-0001 (leaf FEAT.1): an old waiver' || return 1
+  printf '\n- new note: the diagnosis-toolbox signatures do not apply to this class (gate gap owned by FEAT.1).\n' >> docs/tasks/FEAT.md
+  git add -A; bash scripts/check_waiver_routing.sh >/dev/null 2>&1
+}
+arm_lesson_decline_per_lesson() {
+  printf '\n## _(2026-09-30)_ — lesson one\n\n- a\n\n## _(2026-09-30)_ — lesson two\n\n- b\n' >> DEV_NOTES.md
+  { good_leaf; printf '\n- promotion: declined (per-slice history)\n'; } > docs/tasks/FEAT.md
+  git add -A; OUT="$(bash scripts/check_lesson_promotion.sh 2>&1)"; RC=$?; [ "$RC" -ne 0 ] || return 1
+  printf -- '- promotion: declined (also per-slice history)\n' >> docs/tasks/FEAT.md
+  git add -A; bash scripts/check_lesson_promotion.sh >/dev/null 2>&1
+}
+arm_lesson_promoted_via_knowledge() {
+  printf '\n## _(2026-09-30)_ — a durable lesson\n\n- x\n' >> DEV_NOTES.md
+  mkdir -p docs/knowledge; printf '# retries\n\nsome prose without a question\n' > docs/knowledge/retries.md
+  git add -A; OUT="$(bash scripts/check_lesson_promotion.sh 2>&1)"; RC=$?; [ "$RC" -ne 0 ] || return 1
+  printf 'answers: how many retries does the client make?\n\n# retries\n\nthree, with backoff.\n' > docs/knowledge/retries.md
+  git add -A; bash scripts/check_lesson_promotion.sh >/dev/null 2>&1 || return 1
+  bash knowledge-map/scripts/gen_knowledge_map.sh > "$T/.map" && grep -q 'retries.md' "$T/.map" && grep -q 'how many retries' "$T/.map"
+}
+arm_knowledge_map_shows_tree_status() {
+  bash knowledge-map/scripts/gen_knowledge_map.sh > "$T/.map" && grep -qE 'BOOTSTRAP\.md\) — `done`' "$T/.map"
 }
 
 # ── the runner ────────────────────────────────────────────────────────────────────────────────
